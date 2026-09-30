@@ -1,0 +1,45 @@
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Build and test output
+dist/
+build/
+coverage/
+
+# React Native / Metro
+.expo/
+.metro-health-check*
+
+# Android generated files and signing credentials
+.gradle/
+local.properties
+captures/
+*.keystore
+*.jks
+
+# iOS generated files and signing credentials
+Pods/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.mobileprovision
+*.p12
+
+# Logs and temporary files
+logs/
+*.log
+*.tmp
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
