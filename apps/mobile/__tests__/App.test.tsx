@@ -4,7 +4,7 @@ import ReactTestRenderer from 'react-test-renderer';
 import App from '../src/App';
 
 jest.mock('react-native-safe-area-context', () =>
-  require('react-native-safe-area-context/jest/mock').default,
+  jest.requireActual('react-native-safe-area-context/jest/mock').default,
 );
 
 test('mounts the QueueCare app entry point', async () => {
