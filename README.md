@@ -12,6 +12,19 @@
 
 ---
 
+## Local Mobile Setup — S-05
+
+The team has selected **React Native with Expo Go** for mobile development. Expo is the frontend development tool; Node.js/Express, MongoDB, JWT, and Cloudinary remain the application service stack. See [mobile setup and verification](apps/mobile/README.md).
+
+From the repository root:
+
+```bash
+npm install
+npm run dev:mobile
+```
+
+Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependency installation is currently blocked by a network certificate error, so S-05 still needs installation, checks, and a phone launch. The API is not initialized yet.
+
 ## 1. Project Overview
 
 The project is a digital **Appointment Booking and Queue Management System for Government Hospital OPDs**. The application is intended to reduce manual registration, long waiting times, overcrowding, unclear queue status, repeated questions to reception staff, and difficulty supporting priority patients.
@@ -374,7 +387,7 @@ For this project, “real-time” is implemented as **near-real-time REST pollin
 
 ### Frontend — React Native
 
-- **React Native** mobile application.
+- **React Native with Expo Go** mobile application; Expo SDK 57 is used for development and device preview.
 - React Native components/screens must reproduce the Milestone 02 high-fidelity flows.
 - React Navigation may be used as a frontend library for stacks/tabs.
 - `fetch` or Axios may be used as a frontend library to call the API.
@@ -466,8 +479,11 @@ opd-queue-system/
 ├── apps/
 │   ├── mobile/
 │   │   ├── package.json
-│   │   ├── android/
-│   │   ├── ios/
+│   │   ├── app.json
+│   │   ├── index.js
+│   │   ├── babel.config.js
+│   │   ├── metro.config.js
+│   │   ├── tsconfig.json
 │   │   └── src/
 │   │       ├── api/
 │   │       ├── assets/
@@ -1204,7 +1220,7 @@ For `I-07`, the required behavior is to create an in-app notification record in 
 | **S-02** | Create monorepo folders and workspace config | M1 + M3 | S-01 | `apps/mobile`, `apps/api`, `packages/shared` run locally |
 | **S-03** | Configure lint/format/test scripts | M2 | S-02 | scripts pass in both apps |
 | **S-04** | Create `.env.example` and environment loader | M4 | S-02 | no secrets committed; config documented |
-| **S-05** | Initialize React Native CLI project | M1 | S-02 | app opens on emulator/physical Android device |
+| **S-05** | Initialize React Native project with Expo Go | M1 | S-02 | app opens in Expo Go on a physical device |
 | **S-06** | Initialize Node.js + Express API | M3 | S-02 | `/health` returns 200 |
 | **S-07** | Configure MongoDB connection | M3 | S-06 | API connects successfully and can read/write a test collection |
 | **S-08** | Create MongoDB collections/indexes/data-access helpers | M3 + all review | S-07 | core collections/indexes created by setup/seed script |
@@ -1544,7 +1560,7 @@ Repository / React Native / Node-Express
 
 | Day | Member 1 — Dayarathna | Member 2 — Perera | Member 3 — Shaveena | Member 4 — Rajarathna | Shared Output / Gate |
 |---|---|---|---|---|---|
-| **Day 1 — Foundation** | S-01/S-02, React Native CLI init, navigation skeleton, hospital seed-data shape, A3-01 lead | API client/JWT handling/shared types, begin A3-08 participant recruitment | Express init, MongoDB connection, collections/indexes/seed, error handler, A3-02 architecture draft | `.env`, theme/tokens, reusable components, Cloudinary config, Milestone 03 evidence templates | By night: React Native + Express + MongoDB run locally; Cloudinary test upload works; stack justification/architecture/evidence templates exist; >=5 usability participants scheduled/being confirmed |
+| **Day 1 — Foundation** | S-01/S-02, Expo Go app setup, navigation skeleton, hospital seed-data shape, A3-01 lead | API client/JWT handling/shared types, begin A3-08 participant recruitment | Express init, MongoDB connection, collections/indexes/seed, error handler, A3-02 architecture draft | `.env`, theme/tokens, reusable components, Cloudinary config, Milestone 03 evidence templates | By night: React Native + Express + MongoDB run locally; Cloudinary test upload works; stack justification/architecture/evidence templates exist; >=5 usability participants scheduled/being confirmed |
 | **Day 2 — Auth + Read Flows** | Home, Hospital Search, Hospital Details, hospital/session GET APIs | Patient register/JWT login/demo verification, Sign In/Create Account/Verify screens | Role Selection, staff JWT login, session-list API, OPD Sessions base screen | Staff registration/demo verification, approval path, in-app notification base, Profile + Cloudinary image base | Patient + staff can authenticate with JWT; hospital/session data renders from MongoDB through Express |
 | **Day 3 — Booking + Session Management** | Book Appointment, atomic MongoDB booking creation, Booking Confirmed | My Bookings, Booking Details, cancel booking | Create/Edit/Close OPD Session, Reception Dashboard metrics/screen | Notifications screen/API, priority-list API skeleton, profile + Cloudinary integration | Normal appointment journey works from login -> hospital -> book -> My Bookings; staff can manage sessions |
 | **Day 4 — Priority + Queue** | Booking in-app notification integration + Home/CTA usability fixes | Request Priority + Request Status + patient queue-status polling UI | Check-in, queue number, queue ordering, wait estimate, polling endpoints, live waiting count | Priority Requests, Request Details, accept/decline update, in-app notification on decision | Complete priority loop: patient submits -> staff decides -> patient sees status; session waiting count updates through polling |
@@ -1571,7 +1587,7 @@ Day 1 is the most important dependency day. Do not spend the whole day polishing
 
 ### Next 3–4 hours — split
 
-- **M1:** React Native CLI + navigation + patient route skeleton.
+- **M1:** React Native with Expo Go + navigation + patient route skeleton.
 - **M2:** API client + JWT storage/handling + auth shared types.
 - **M3:** Express + MongoDB connection/collections/seed + `/health`.
 - **M4:** theme + reusable Button/Input/Card/Badge + Cloudinary configuration + environment documentation.
@@ -2485,7 +2501,7 @@ Example root scripts:
 ```json
 {
   "scripts": {
-    "dev:mobile": "npm --workspace apps/mobile run android",
+    "dev:mobile": "npm --workspace apps/mobile run start",
     "dev:api": "npm --workspace apps/api run dev",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces",
@@ -2507,10 +2523,12 @@ npm run dev:api
 npm run dev:mobile
 ```
 
-Android release APK:
+Expo Go is the development preview. The final standalone APK still requires a separate native build. When preparing that release, install the Android build tools, generate the native project, and configure release signing following the [Expo local release guide](https://docs.expo.dev/guides/local-app-production/):
 
 ```bash
-cd apps/mobile/android
+cd apps/mobile
+npx expo prebuild --platform android
+cd android
 ./gradlew assembleRelease
 ```
 
@@ -2575,7 +2593,7 @@ The group should begin in this order:
 ```text
 1. S-01 GitHub repository
 2. S-02 Monorepo structure
-3. S-05 React Native CLI + S-06 Node/Express API in parallel
+3. S-05 React Native with Expo Go + S-06 Node/Express API in parallel
 4. S-07 MongoDB connection
 5. S-08 MongoDB collections/indexes
 6. S-15 Cloudinary backend configuration
@@ -2715,7 +2733,7 @@ This plan was derived from the supplied project artifacts:
 The application must remain inside this stack:
 
 ```text
-Frontend:       React Native
+Frontend:       React Native with Expo Go
 Backend/API:    Node.js + Express
 Database:       MongoDB
 Authentication: JWT
