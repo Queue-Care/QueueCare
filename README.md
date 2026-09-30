@@ -23,7 +23,7 @@ npm install
 npm run dev:mobile
 ```
 
-Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Feature pages remain placeholders, and the API is not initialized yet.
+Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Splash and Welcome now have dedicated screens with tested startup/recovery behavior; see [Member 1 startup handoff](docs/STARTUP.md). Real authentication restoration, prototype comparison, and data-driven feature pages remain pending. The API is not initialized yet.
 
 ## 1. Project Overview
 

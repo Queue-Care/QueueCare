@@ -1,6 +1,6 @@
 # S-12 — Navigation handoff
 
-Member 1 has implemented the root, patient, and staff navigation scaffold with React Navigation 7 and Expo-compatible native screens. Feature pages are placeholders; authentication, API data, and final prototype UI remain separate tasks.
+Member 1 has implemented the root, patient, and staff navigation scaffold with React Navigation 7 and Expo-compatible native screens. Splash and Welcome now have dedicated entry screens; data-driven feature pages remain placeholders. Authentication, API data, and final prototype comparison remain separate tasks.
 
 ## Root flow
 
@@ -11,7 +11,7 @@ Member 1 has implemented the root, patient, and staff navigation scaffold with R
 - While `isRestoring` is true, navigation shows a loading view. It does not flash another role's screens.
 - Changing the authenticated user or role remounts the root stack. Signing out clears authenticated navigation history.
 
-The application currently passes no session, so it starts signed out. Choosing a role does not log in. Staff-only routes are not registered for anonymous users or patients.
+The application runs the startup loader before mounting navigation. The default loader currently returns no session, so it starts signed out; see [startup integration](STARTUP.md). Choosing a role does not log in. Staff-only routes are not registered for anonymous users or patients.
 
 ## Routes and ownership
 
@@ -37,7 +37,7 @@ Member 2's S-13 authentication provider should pass `session={{ userId, role }}`
 
 Guest access permits hospital browsing. Bookings, alerts, profile, appointment creation, and confirmation display a patient sign-in prompt. The Bookings navigator is not mounted for a guest. Feature owners should replace the placeholder components while keeping these access boundaries and typed routes.
 
-S-10 will replace the local scaffold colors with the shared design system. Splash and Welcome are not marked complete against the high-fidelity prototype. No fabricated hospital, appointment, or queue data is used.
+Navigation and entry screens share the README-derived tokens in `theme/tokens.ts`. The broader S-10/S-11 design system is still pending. Splash and Welcome are implemented but not yet verified against the missing high-fidelity prototype. No fabricated hospital, appointment, or queue data is used.
 
 ## Validation
 
