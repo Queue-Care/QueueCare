@@ -1,0 +1,20 @@
+{
+  "name": "queuecare",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start:mobile": "npm --workspace apps/mobile run start",
+    "dev:mobile": "npm --workspace apps/mobile run start",
+    "ios:mobile": "npm --workspace apps/mobile run ios",
+    "lint:mobile": "npm --workspace apps/mobile run lint",
+    "typecheck:mobile": "npm --workspace apps/mobile run typecheck",
+    "test:mobile": "npm --workspace apps/mobile run test -- --runInBand",
+    "android:mobile": "npm --workspace apps/mobile run android",
+    "check:mobile": "npm --workspace apps/mobile run check:dependencies"
+  },
+  "workspaces": [
+    "apps/mobile",
+    "apps/api",
+    "packages/shared"
+  ]
+}

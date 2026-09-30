@@ -1,0 +1,39 @@
+{
+  "name": "@queuecare/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start --go",
+    "android": "expo start --go --android",
+    "ios": "expo start --go --ios",
+    "lint": "eslint .",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "check:dependencies": "expo install --check"
+  },
+  "dependencies": {
+    "expo": "~57.0.26",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@react-native/jest-preset": "0.86.3",
+    "@types/jest": "^29.5.13",
+    "@types/react": "~19.2.2",
+    "@types/react-test-renderer": "^19.1.0",
+    "babel-preset-expo": "~57.0.13",
+    "eslint": "^9.25.0",
+    "eslint-config-expo": "~57.0.2",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.5",
+    "prettier": "2.8.8",
+    "react-test-renderer": "19.2.3",
+    "typescript": "~6.0.3"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}
