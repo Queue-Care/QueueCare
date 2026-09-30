@@ -14,7 +14,7 @@ npm install
 npm run dev:mobile
 ```
 
-Scan the terminal QR code using Expo Go on Android or the Camera app on iOS. Keep the terminal running. The initial screen displays QueueCare; it is a startup scaffold, not the assessed Splash or Welcome flow. Android Studio, Xcode, and USB debugging are not required for this phone workflow.
+Scan the terminal QR code using Expo Go on Android or the Camera app on iOS. Keep the terminal running. The initial screen offers Get Started, Existing Account, and Continue as guest. These open navigation scaffolds; final prototype screens and authentication are separate tasks. Android Studio, Xcode, and USB debugging are not required for this phone workflow.
 
 If the phone cannot connect, check that the network allows devices to communicate and that your firewall allows the Expo development server. Use a shared personal hotspot if your campus network isolates devices.
 
@@ -39,20 +39,18 @@ npm run lint:mobile
 npm run test:mobile -- --watchman=false
 ```
 
-Commit the root `package-lock.json` after a successful install. Use `npm ci` for subsequent clean installs once that lockfile exists. For new mobile libraries, run `npx expo install <package>` from `apps/mobile` so Expo selects compatible versions. Native libraries must be available in Expo Go to use this preview workflow.
+The root `package-lock.json` is present. Use `npm ci` for clean installs and keep lockfile updates with dependency changes. For new mobile libraries, run `npx expo install <package>` from `apps/mobile` so Expo selects compatible versions. Native libraries must be available in Expo Go to use this preview workflow.
 
 ## Current verification status
 
-The configuration has been migrated from the previous React Native CLI scaffold. npm downloads still fail with `UNABLE_TO_VERIFY_LEAF_SIGNATURE` on the setup network, which presents a Fortinet certificate. Use a working network or a trusted CA certificate supplied by your network administrator through `NODE_EXTRA_CA_CERTS`; keep TLS verification enabled.
-
-Dependency installation, Expo's dependency check, TypeScript, lint, tests, and a phone launch remain pending. No lockfile or successful device run is claimed. Record a screenshot under `docs/milestone03/evidence/` after launching QueueCare before marking S-05 complete.
+Dependencies are installed and the user confirmed QueueCare opens in Expo Go (S-05). The S-12 navigation scaffold passes TypeScript, lint, automated tests, and Android/iOS Metro exports. Expo’s offline compatibility check reports dependencies up to date against its bundled metadata. The new navigation flows still need a phone smoke test; follow [the navigation handoff](../../docs/NAVIGATION.md).
 
 ## Project layout
 
 - `index.js` uses Expo's `registerRootComponent` to load `src/App.tsx`.
 - `app.json` contains the Expo app name, slug, and platform identifiers.
 - `metro.config.js` uses `expo/metro-config`, which automatically handles the npm monorepo.
-- `src/` retains the feature folders from the project plan. S-12 will add React Navigation.
+- `src/` retains the feature folders from the project plan. S-12 adds typed root, patient, and staff navigators under `src/navigation/`.
 - Native `android/` and `ios/` directories are generated only when preparing a standalone build and are ignored by Git.
 
 The service stack remains Express, MongoDB, JWT, and Cloudinary. Expo Go previews the frontend. The final submission's standalone APK still requires a separate build; see the root README's release instructions and [Expo's local release guide](https://docs.expo.dev/guides/local-app-production/).

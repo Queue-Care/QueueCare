@@ -7,7 +7,10 @@ The task definitions and ownership remain in the root README.
 - S-01: The local repository has an origin at `https://github.com/Queue-Care/QueueCare.git` and local `main` and `develop` branches. Remote branch protection and required PR review have not been verified.
 - S-02: The repository folders and npm workspace manifests are configured. Empty directories contain `.gitkeep` placeholders so Git retains the scaffold.
 - S-02 is not fully complete until the mobile app and API run locally after S-05 and S-06.
-- S-05: The mobile workspace is configured for React Native with Expo Go (SDK 57), following the team’s updated decision. It includes the QueueCare startup screen, Expo entry point, Metro/Babel/TypeScript configuration, run commands, and a smoke test. Dependency installation remains blocked by the network certificate error; successful checks and an Expo Go phone launch are pending. See [mobile setup](../apps/mobile/README.md).
+- S-05: Complete. Dependencies and the root lockfile are installed; the user confirmed QueueCare opens in Expo Go on a phone. TypeScript, lint, and the original app smoke test pass.
+- S-12: Implemented. Root, patient, and staff navigation, typed entity parameters, guest sign-in gates, and a session integration contract are in place. Automated navigation tests and Android/iOS Metro exports pass; the new flows still need a phone smoke test. See [navigation handoff](NAVIGATION.md).
+- S-06/S-07/S-08: Pending. API entry files remain empty; no API or database implementation was found.
+- S-10/S-11/S-13: Pending. Shared design components and authentication/API integration are not implemented.
 
 ## Workspaces
 
@@ -29,4 +32,4 @@ The mobile manifest now defines its React Native dependencies and scripts. API a
 
 ## Member 1's next implementation task
 
-Finish S-05 verification: resolve npm's network certificate error, install dependencies, run the mobile checks, and launch QueueCare in Expo Go on a physical phone. Then implement S-12 (navigation). M1-01 (Splash screen) also depends on S-10 (shared theme).
+Smoke-test the new S-12 routes in Expo Go using docs/NAVIGATION.md. The next Member 1 feature is M1-01 (the final Splash screen), which depends on Member 4’s S-10 shared theme and the auth-restoration integration from S-13. M1-02 (Welcome) follows. The high-fidelity HTML referenced by the README is not present in the repository, so prototype fidelity has not been verified. Hospital APIs follow S-08/S-16 and should wait for the shared backend foundation.
