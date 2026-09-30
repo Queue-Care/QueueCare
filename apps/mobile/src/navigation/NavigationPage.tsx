@@ -2,14 +2,16 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Local scaffold styling; S-10 will supply the shared design system.
+import { colors } from '../theme/tokens';
+
+// Navigation and entry screens use the same README-derived palette.
 export const navigationColors = {
-  background: '#F5F8F7',
-  panel: '#FFFFFF',
-  text: '#17302A',
-  muted: '#4A625C',
-  primary: '#0E6B5C',
-  border: '#DFE9E5',
+  background: colors.mist,
+  panel: colors.panel,
+  text: colors.ink,
+  muted: colors.inkSoft,
+  primary: colors.teal,
+  border: colors.sageLine,
 };
 
 type Action = { label: string; onPress: () => void };

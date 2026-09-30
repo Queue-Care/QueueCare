@@ -2,12 +2,30 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './navigation/AppNavigator';
+import { loadStartupSession } from './features/startup/loadStartupSession';
+import {
+  useAppStartup,
+  type SessionLoader,
+} from './features/startup/useAppStartup';
+import { SplashScreen } from './screens/SplashScreen';
 
-export default function App() {
+export default function App({
+  loadSession = loadStartupSession,
+}: {
+  loadSession?: SessionLoader;
+}) {
+  const { state, retry, continueSignedOut } = useAppStartup(loadSession);
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
-      <AppNavigator />
+      {state.status === 'error' ? (
+        <SplashScreen error onRetry={retry} onContinue={continueSignedOut} />
+      ) : (
+        <AppNavigator
+          isRestoring={state.status === 'loading'}
+          session={state.status === 'ready' ? state.session : null}
+        />
+      )}
     </SafeAreaProvider>
   );
 }
