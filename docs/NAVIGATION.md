@@ -1,6 +1,6 @@
 # S-12 — Navigation handoff
 
-Member 1 has implemented the root, patient, and staff navigation scaffold with React Navigation 7 and Expo-compatible native screens. Splash and Welcome now have dedicated entry screens; data-driven feature pages remain placeholders. Authentication, API data, and final prototype comparison remain separate tasks.
+Member 1 has implemented the root, patient, and staff navigation scaffold with React Navigation 7 and Expo-compatible native screens. Splash and Welcome now have dedicated entry screens; Patient Home now has a dedicated frontend and API adapter; other data-driven feature pages remain placeholders. Authentication, API data, and final prototype comparison remain separate tasks.
 
 ## Root flow
 
@@ -51,3 +51,7 @@ S-05's initial Expo Go phone launch was confirmed by the user. The new S-12 flow
 4. Continue as guest → Search hospitals → Back → Welcome.
 5. Continue as guest → Bookings / Alerts / Profile → Patient sign in.
 6. Once Member 2 connects real authentication, repeat patient and staff flows with validated sessions and verify logout returns to Welcome.
+
+## Patient Home integration
+
+Patient Home now consumes `NavigationSession.accessToken` when signed in. Its View booking action navigates to `Bookings → BookingDetails` with the returned booking ID. Quick actions navigate to Bookings or Alerts, while guests are directed to PatientAuth. Home refreshes when focused again. See [M1-03 handoff](PATIENT_HOME.md).
