@@ -55,7 +55,8 @@ function ChooseRole({
           label: 'Hospital staff',
           onPress: () =>
             navigation.navigate('StaffAuth', {
-              screen: registering ? 'StaffRegistration' : 'StaffSignIn',
+              // Staff enter through sign-in; new users can request access there.
+              screen: 'StaffSignIn',
               initial: false,
             }),
         },
@@ -75,9 +76,6 @@ function Guest({
       }
     />
   );
-}
-function PatientApp() {
-  return <PatientNavigator guest={false} onSignIn={() => {}} />;
 }
 
 export type AppNavigatorProps = {
@@ -101,11 +99,15 @@ export function AppNavigator({
       >
         {session ? (
           session.role === 'PATIENT' ? (
-            <Root.Screen
-              name="PatientApp"
-              component={PatientApp}
-              options={{ headerShown: false }}
-            />
+            <Root.Screen name="PatientApp" options={{ headerShown: false }}>
+              {() => (
+                <PatientNavigator
+                  guest={false}
+                  accessToken={session.accessToken}
+                  onSignIn={() => {}}
+                />
+              )}
+            </Root.Screen>
           ) : (
             <Root.Screen
               name="StaffApp"

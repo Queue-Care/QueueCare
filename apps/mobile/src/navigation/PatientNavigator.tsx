@@ -1,6 +1,9 @@
 import React from 'react';
 import { Button } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {
+  createBottomTabNavigator,
+  type BottomTabNavigationProp,
+} from '@react-navigation/bottom-tabs';
 import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
@@ -11,6 +14,7 @@ import {
   stackOptions,
   tabOptions,
 } from './NavigationPage';
+import { PatientHomeScreen } from '../screens/PatientHomeScreen';
 import type {
   BookingsStackParams,
   HomeStackParams,
@@ -20,30 +24,18 @@ import type {
 const Tabs = createBottomTabNavigator<PatientTabParams>();
 const Home = createNativeStackNavigator<HomeStackParams>();
 const Bookings = createNativeStackNavigator<BookingsStackParams>();
-type Access = { guest: boolean; onSignIn: () => void; onExit?: () => void };
+type Access = {
+  guest: boolean;
+  accessToken?: string;
+  onSignIn: () => void;
+  onExit?: () => void;
+};
 
-function PatientHome({
-  navigation,
-}: NativeStackScreenProps<HomeStackParams, 'PatientHome'>) {
-  return (
-    <NavigationPage
-      title="Welcome to QueueCare"
-      description="Find a hospital and plan your OPD visit."
-      actions={[
-        {
-          label: 'Search hospitals',
-          onPress: () => navigation.navigate('HospitalSearch'),
-        },
-      ]}
-    />
-  );
-}
-function HomeNavigator({ guest, onSignIn, onExit }: Access) {
+function HomeNavigator({ guest, accessToken, onSignIn, onExit }: Access) {
   return (
     <Home.Navigator screenOptions={stackOptions}>
       <Home.Screen
         name="PatientHome"
-        component={PatientHome}
         options={{
           title: 'QueueCare',
           headerLeft: onExit
@@ -56,7 +48,36 @@ function HomeNavigator({ guest, onSignIn, onExit }: Access) {
               )
             : undefined,
         }}
-      />
+      >
+        {({
+          navigation,
+        }: NativeStackScreenProps<HomeStackParams, 'PatientHome'>) => (
+          <PatientHomeScreen
+            guest={guest}
+            accessToken={accessToken}
+            onSignIn={onSignIn}
+            onSearch={() => navigation.navigate('HospitalSearch')}
+            onBookings={() =>
+              navigation
+                .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                .navigate('Bookings')
+            }
+            onAlerts={() =>
+              navigation
+                .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                .navigate('Alerts')
+            }
+            onViewBooking={bookingId =>
+              navigation
+                .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                .navigate('Bookings', {
+                  screen: 'BookingDetails',
+                  params: { bookingId },
+                })
+            }
+          />
+        )}
+      </Home.Screen>
       <Home.Screen name="HospitalSearch" options={{ title: 'Hospital search' }}>
         {() => <NavigationPage title="Hospital search" />}
       </Home.Screen>
@@ -120,12 +141,22 @@ function BookingsNavigator() {
     </Bookings.Navigator>
   );
 }
-export function PatientNavigator({ guest, onSignIn, onExit }: Access) {
+export function PatientNavigator({
+  guest,
+  accessToken,
+  onSignIn,
+  onExit,
+}: Access) {
   return (
     <Tabs.Navigator screenOptions={tabOptions}>
       <Tabs.Screen name="Home">
         {() => (
-          <HomeNavigator guest={guest} onSignIn={onSignIn} onExit={onExit} />
+          <HomeNavigator
+            guest={guest}
+            accessToken={accessToken}
+            onSignIn={onSignIn}
+            onExit={onExit}
+          />
         )}
       </Tabs.Screen>
       <Tabs.Screen name="Bookings">
