@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import App from '../src/App';
 import { SplashScreen } from '../src/screens/SplashScreen';
@@ -68,8 +69,8 @@ test.each([
     expect(renderer.root.findAllByType(WelcomeScreen)).toHaveLength(0);
     expect(
       renderer.root
-        .findAllByType(NavigationPage)
-        .some(page => page.props.title === title),
+        .findAllByType(Text)
+        .some(label => label.props.children === title),
     ).toBe(true);
   },
 );
@@ -124,11 +125,11 @@ test('late results from an obsolete loader cannot replace the current session', 
   await act(async () => {
     oldSession.resolve({ userId: 'staff-1', role: 'RECEPTION' });
   });
-  const pages = renderer.root.findAllByType(NavigationPage);
-  expect(pages.some(page => page.props.title === 'Welcome to QueueCare')).toBe(
-    true,
-  );
-  expect(pages.some(page => page.props.title === 'Reception dashboard')).toBe(
-    false,
-  );
+  const pages = renderer.root.findAllByType(Text);
+  expect(
+    pages.some(page => page.props.children === 'Welcome to QueueCare'),
+  ).toBe(true);
+  expect(
+    pages.some(page => page.props.children === 'Reception dashboard'),
+  ).toBe(false);
 });
