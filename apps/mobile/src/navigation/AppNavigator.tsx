@@ -76,9 +76,6 @@ function Guest({
     />
   );
 }
-function PatientApp() {
-  return <PatientNavigator guest={false} onSignIn={() => {}} />;
-}
 
 export type AppNavigatorProps = {
   session?: NavigationSession | null;
@@ -101,11 +98,15 @@ export function AppNavigator({
       >
         {session ? (
           session.role === 'PATIENT' ? (
-            <Root.Screen
-              name="PatientApp"
-              component={PatientApp}
-              options={{ headerShown: false }}
-            />
+            <Root.Screen name="PatientApp" options={{ headerShown: false }}>
+              {() => (
+                <PatientNavigator
+                  guest={false}
+                  accessToken={session.accessToken}
+                  onSignIn={() => {}}
+                />
+              )}
+            </Root.Screen>
           ) : (
             <Root.Screen
               name="StaffApp"
