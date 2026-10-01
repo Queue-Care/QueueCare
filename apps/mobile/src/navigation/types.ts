@@ -3,6 +3,8 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 // The authentication owner supplies this only after validating the session.
 export type NavigationSession = {
   userId: string;
+  // Supplied in memory by S-13; never read from a public environment variable.
+  accessToken?: string;
   role: 'PATIENT' | 'RECEPTION' | 'NURSE';
 };
 

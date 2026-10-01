@@ -11,9 +11,11 @@ The task definitions and ownership remain in the root README.
 - S-12: Implemented. Root, patient, and staff navigation, typed entity parameters, guest sign-in gates, and a session integration contract are in place. Automated navigation tests and Android/iOS Metro exports pass; the new flows still need a phone smoke test. See [navigation handoff](NAVIGATION.md).
 - S-06/S-07/S-08: Pending. API entry files remain empty; no API or database implementation was found.
 - S-10/S-11: Started only as needed for Member 1’s entry screens: the README palette and basic typography/spacing tokens are centralized, with a reusable action button and brand mark. The broader shared design system remains pending for its assigned owners.
-- S-13: Pending. No token storage, session validation, or API authentication integration exists.
+- S-13: Pending. No token storage or real session validation exists. Member 1’s Home adapter can consume a JWT supplied in memory by the future authentication provider.
 - M1-01: In-app Splash UI and asynchronous startup/recovery logic implemented and tested. The default loader explicitly returns a signed-out session; real session restoration and prototype fidelity checks remain pending.
 - M1-02: Welcome UI and Get Started / Existing Account / Guest navigation implemented and tested. Prototype comparison and phone visual checks remain pending. See [startup handoff](STARTUP.md).
+
+- M1-03: Patient Home frontend and authenticated next-appointment API adapter implemented. Guest browsing, loading/error/empty states, quick actions, retry, refresh, and booking-detail navigation pass local tests. Real API/authentication integration, prototype comparison, and phone checks remain pending. See [Patient Home handoff](PATIENT_HOME.md).
 
 ## Workspaces
 
@@ -35,4 +37,4 @@ The mobile manifest now defines its React Native dependencies and scripts. API a
 
 ## Member 1's next implementation task
 
-Verify Splash/Welcome on the phone and compare with the high-fidelity HTML once available. Coordinate the S-13 session-restoration handoff with Member 2 and the shared design tokens with Member 4. The next Member 1 feature is M1-03 (Patient Home), which needs shared UI components and API data. M1-04 (hospital search API) also depends on Member 3’s S-08 database foundation and S-16 error handler. The API remains empty, so these data-driven features cannot be marked working yet.
+Verify the new guest Home in Expo Go, then connect M1-03 to Member 2’s booking-list/authentication work and Member 3’s API/MongoDB foundation using docs/API.md. The next Member 1 implementation is M1-04 (hospital search API), dependent on S-08 (database) and S-16 (error handling), followed by M1-05 (Hospital Search screen). The backend remains empty, so M1-03’s live-data acceptance and those API prerequisites remain outstanding.
