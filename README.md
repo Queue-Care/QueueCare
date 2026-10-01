@@ -23,7 +23,7 @@ npm install
 npm run dev:mobile
 ```
 
-Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Splash and Welcome now have dedicated screens with tested startup/recovery behavior; see [Member 1 startup handoff](docs/STARTUP.md). Real authentication restoration, prototype comparison, and data-driven feature pages remain pending. The API is not initialized yet.
+Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Splash and Welcome now have dedicated screens with tested startup/recovery behavior; see [Member 1 startup handoff](docs/STARTUP.md). Patient Home now has its frontend, quick actions, and next-appointment API adapter; see [Patient Home handoff](docs/PATIENT_HOME.md). Real authentication, live API data, and prototype comparison remain pending. The API is not initialized yet.
 
 ## 1. Project Overview
 
@@ -1943,11 +1943,10 @@ RETURN_DEMO_VERIFICATION_CODE=true
 
 ## Mobile configuration
 
-Use a small config file or environment variable supported by the React Native build:
+For Expo Go, copy `apps/mobile/.env.example` to `apps/mobile/.env` and set the public API URL:
 
 ```env
-API_BASE_URL=http://YOUR_LAPTOP_IP:4000/api/v1
-QUEUE_POLL_INTERVAL_MS=5000
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAPTOP_IP:4000/api/v1
 ```
 
 Rules:
