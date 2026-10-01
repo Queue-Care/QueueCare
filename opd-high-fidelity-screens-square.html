@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Government Hospital OPD — High-Fidelity Screens (Square)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --mist:#F5F8F7;
+  --panel:#FFFFFF;
+  --ink:#17302A;
+  --ink-soft:#4A625C;
+  --teal:#0E6B5C;
+  --teal-dark:#0A4F45;
+  --teal-tint:#E4F0EC;
+  --coral:#E2624C;
+  --coral-tint:#FBE7E2;
+  --amber:#C68A1F;
+  --amber-tint:#FBF0DA;
+  --sage:#CFDDD7;
+  --sage-line:#DFE9E5;
+  --canvas:#E8EDEB;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--canvas);
+  color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding:56px 40px 90px;
+}
+
+/* ---------- Canvas headings ---------- */
+.canvas-head{max-width:1180px;margin:0 auto 10px;}
+.canvas-head .eyebrow{color:var(--teal);font-weight:600;font-size:.95rem;margin-bottom:10px;}
+.canvas-head h1{
+  font-family:'Fraunces',serif;font-weight:600;font-size:2.6rem;
+  color:var(--teal-dark);margin:0 0 10px;line-height:1.1;
+}
+.canvas-head p{color:var(--ink-soft);max-width:66ch;line-height:1.55;margin:0;}
+
+.flow-title{
+  max-width:1180px;margin:70px auto 26px;
+  font-family:'Fraunces',serif;font-size:1.5rem;font-weight:500;color:var(--teal-dark);
+  border-bottom:1px solid var(--sage-line);padding-bottom:14px;
+  display:flex;align-items:baseline;gap:14px;
+}
+.flow-title span{
+  font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;
+  font-weight:500;color:var(--ink-soft);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(390px,390px));
+  gap:64px 40px;
+  justify-content:center;
+  max-width:1180px;margin:0 auto;
+}
+
+/* ---------- Device frame ---------- */
+.device{position:relative;}
+.device-label{
+  position:absolute;top:-30px;left:2px;
+  font-size:.78rem;font-weight:600;color:var(--ink-soft);
+}
+.device-label b{color:var(--teal-dark);font-weight:700;}
+.phone{
+  width:390px;height:844px;
+  background:var(--mist);
+  border-radius:0;
+  border:1px solid var(--sage);
+  box-shadow:0 1px 2px rgba(23,48,42,.06),0 18px 40px -18px rgba(23,48,42,.28);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+
+/* ---------- Status bar ---------- */
+.status-bar{
+  height:52px;flex:0 0 52px;
+  padding:14px 26px 0;
+  display:flex;align-items:center;justify-content:space-between;
+  color:var(--ink);
+  position:relative;z-index:3;
+}
+.status-bar.on-teal{color:#fff;}
+.status-time{
+  font-size:15px;font-weight:600;letter-spacing:.2px;
+  font-variant-numeric:tabular-nums;
+}
+.status-icons{display:flex;align-items:center;gap:6px;}
+.status-icons svg{display:block;}
+.notch{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:112px;height:30px;border-radius:0;background:var(--ink);
+  z-index:4;
+}
+
+/* ---------- Screen chrome ---------- */
+.nav-head{
+  flex:0 0 auto;
+  padding:6px 22px 14px;
+  display:flex;align-items:center;gap:14px;
+}
+.nav-head.teal{background:var(--teal-dark);}
+.back-btn{
+  width:38px;height:38px;flex:0 0 38px;border-radius:0;
+  background:var(--panel);border:1px solid var(--sage-line);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--teal-dark);
+}
+.nav-head.teal .back-btn{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22);color:#fff;}
+.nav-head .title{
+  font-family:'Fraunces',serif;font-size:1.12rem;font-weight:600;color:var(--teal-dark);
+}
+.nav-head.teal .title{color:#fff;}
+.nav-head .right{margin-left:auto;display:flex;gap:10px;align-items:center;}
+.icon-btn{
+  width:38px;height:38px;border-radius:0;
+  background:var(--panel);border:1px solid var(--sage-line);
+  display:flex;align-items:center;justify-content:center;color:var(--teal-dark);
+  position:relative;
+}
+.icon-btn .dot-alert{
+  position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:0;
+  background:var(--coral);border:1.5px solid var(--panel);
+}
+
+/* ---------- Body ---------- */
+.body{
+  flex:1 1 auto;
+  padding:4px 22px 22px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.body.pad-top{padding-top:14px;}
+.body.flush{padding-left:0;padding-right:0;}
+.spacer{flex:1 1 auto;min-height:8px;}
+
+h2.screen-title{
+  font-family:'Fraunces',serif;font-size:1.85rem;font-weight:600;
+  color:var(--teal-dark);margin:0 0 6px;line-height:1.15;letter-spacing:-.2px;
+}
+h3.group{
+  font-family:'IBM Plex Sans',sans-serif;font-size:.82rem;font-weight:700;
+  color:var(--ink);margin:20px 0 10px;
+}
+.lede{color:var(--ink-soft);font-size:.92rem;line-height:1.5;margin:0 0 14px;}
+.sub{color:var(--ink-soft);font-size:.82rem;line-height:1.45;margin:2px 0 0;}
+.greet{color:var(--ink-soft);font-size:.88rem;margin:0;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+
+/* ---------- Buttons ---------- */
+.btn{
+  font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:.95rem;
+  border-radius:0;padding:14px 22px;border:1px solid transparent;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;margin-top:10px;cursor:pointer;
+}
+.btn-primary{background:var(--teal);color:#fff;}
+.btn-secondary{background:var(--teal-tint);color:var(--teal-dark);}
+.btn-outline{background:transparent;border-color:var(--sage);color:var(--teal-dark);}
+.btn-urgent{background:var(--coral);color:#fff;}
+.btn-danger-ghost{background:transparent;border-color:var(--coral-tint);color:#A7402C;}
+.btn-sm{padding:9px 16px;font-size:.82rem;width:auto;margin-top:0;}
+.link{
+  text-align:center;color:var(--teal);font-size:.86rem;font-weight:600;
+  margin:14px 0 0;
+}
+.helper{text-align:center;color:var(--ink-soft);font-size:.85rem;margin:16px 0 0;}
+.helper b{color:var(--teal-dark);}
+
+/* ---------- Fields ---------- */
+.field{margin-bottom:14px;}
+.field label{
+  display:block;font-size:.78rem;font-weight:600;color:var(--ink);margin-bottom:6px;
+}
+.control{
+  background:var(--panel);border:1px solid var(--sage);border-radius:0;
+  padding:13px 14px;font-size:.92rem;color:var(--ink);
+  display:flex;align-items:center;gap:10px;min-height:48px;
+}
+.control.placeholder{color:#9CB0AA;}
+.control.focused{border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,107,92,.13);}
+.control .grow{flex:1;}
+.control .chev{color:var(--ink-soft);}
+.control .stack{display:flex;flex-direction:column;line-height:1.25;}
+.control .stack .k{font-size:.7rem;color:var(--ink-soft);font-weight:600;}
+.control .stack .v{font-size:.92rem;color:var(--ink);font-weight:500;}
+.hint{font-size:.74rem;color:var(--ink-soft);margin-top:6px;}
+
+.search{
+  background:var(--panel);border:1px solid var(--sage-line);border-radius:0;
+  padding:12px 16px;display:flex;align-items:center;gap:10px;
+  font-size:.9rem;color:#9CB0AA;margin-bottom:14px;
+}
+
+/* ---------- Segmented tabs ---------- */
+.segment{
+  display:flex;background:var(--teal-tint);border-radius:0;padding:4px;margin:4px 0 16px;
+}
+.segment div{
+  flex:1;text-align:center;padding:9px 6px;font-size:.84rem;font-weight:600;
+  color:var(--teal-dark);border-radius:0;
+}
+.segment div.active{background:var(--panel);color:var(--teal-dark);box-shadow:0 1px 2px rgba(23,48,42,.1);}
+.segment div:not(.active){color:var(--ink-soft);}
+
+/* ---------- Cards ---------- */
+.card{
+  background:var(--panel);border:1px solid var(--sage-line);border-radius:0;
+  padding:16px;margin-bottom:12px;
+}
+.card.tight{padding:14px;}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.card h4{
+  font-family:'IBM Plex Sans',sans-serif;font-size:.98rem;font-weight:700;
+  color:var(--ink);margin:0;
+}
+.card .meta{
+  font-size:.8rem;color:var(--ink-soft);margin-top:10px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.card .meta span{display:flex;align-items:center;gap:6px;}
+.kv{margin:0 0 12px;}
+.kv:last-child{margin-bottom:0;}
+.kv .k{font-size:.72rem;font-weight:600;color:var(--ink-soft);margin-bottom:2px;}
+.kv .v{font-size:.95rem;color:var(--ink);font-weight:500;}
+.divider{height:1px;background:var(--sage-line);margin:14px 0;}
+
+.select-card{
+  background:var(--panel);border:1px solid var(--sage-line);border-radius:0;
+  padding:15px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;
+}
+.select-card.on{border-color:var(--teal);background:#F4FAF8;box-shadow:0 0 0 2px rgba(14,107,92,.1);}
+.select-card .grow{flex:1;}
+.radio{
+  width:22px;height:22px;border-radius:0;border:1.5px solid var(--sage);flex:0 0 22px;
+  display:flex;align-items:center;justify-content:center;background:#fff;
+}
+.radio.on{border-color:var(--teal);border-width:2px;}
+.radio.on::after{content:"";width:11px;height:11px;background:var(--teal);}
+
+/* ---------- Badges ---------- */
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:0;font-size:.72rem;font-weight:600;
+  white-space:nowrap;
+}
+.badge .dot{width:8px;height:8px;border-radius:0;flex:0 0 8px;}
+.badge-waiting{background:var(--amber-tint);color:#8A611A;}
+.badge-waiting .dot{background:var(--amber);}
+.badge-called{background:var(--teal-tint);color:var(--teal-dark);}
+.badge-called .dot{background:var(--teal);}
+.badge-priority{background:var(--coral-tint);color:#A7402C;}
+.badge-priority .dot{background:var(--coral);}
+.badge-done{background:#E7EFE9;color:#3C6B4E;}
+.badge-done .dot{background:#3C8558;}
+
+/* ---------- KPI ---------- */
+.kpi-row{display:flex;gap:12px;margin:16px 0 4px;}
+.kpi{
+  flex:1;background:var(--panel);border:1px solid var(--sage-line);border-radius:0;
+  padding:14px 15px;
+}
+.kpi .k{font-size:.74rem;color:var(--ink-soft);font-weight:600;line-height:1.3;}
+.kpi .n{
+  font-family:'Fraunces',serif;font-size:2rem;font-weight:600;
+  color:var(--teal-dark);line-height:1;margin-top:8px;
+}
+.kpi.alert .n{color:var(--coral);}
+
+/* ---------- List rows ---------- */
+.list{background:var(--panel);border:1px solid var(--sage-line);border-radius:0;overflow:hidden;}
+.list-row{
+  padding:14px 16px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--sage-line);
+}
+.list-row:last-child{border-bottom:none;}
+.list-row .grow{flex:1;min-width:0;}
+.list-row .name{font-size:.94rem;font-weight:600;color:var(--ink);}
+.list-row .chev{color:var(--sage);flex:0 0 auto;}
+.unread{background:#F4FAF8;}
+
+/* ---------- Ticket / hero panel ---------- */
+.ticket{
+  background:var(--teal-dark);color:#fff;border-radius:0;padding:20px;
+  position:relative;overflow:hidden;margin-bottom:12px;
+}
+.ticket::after{
+  content:"";position:absolute;right:-46px;top:-46px;width:132px;height:132px;transform:rotate(45deg);
+  border-radius:0;background:rgba(255,255,255,.055);
+}
+.ticket .k{font-size:.72rem;color:#B9D8CF;font-weight:600;}
+.ticket .num{font-family:'Fraunces',serif;font-size:2.1rem;font-weight:600;line-height:1.1;margin-top:4px;}
+.ticket .dept{color:#B9D8CF;font-size:.85rem;margin-top:6px;}
+.ticket .line{height:1px;background:rgba(255,255,255,.16);margin:14px 0;}
+.ticket .when{display:flex;align-items:center;gap:8px;font-size:.86rem;color:#EAF4F0;}
+
+/* ---------- Note / toast ---------- */
+.note{
+  background:var(--teal-tint);border-radius:0;padding:13px 15px;
+  font-size:.82rem;color:var(--teal-dark);line-height:1.45;margin:12px 0;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.note.warn{background:var(--amber-tint);color:#8A611A;}
+.note svg{flex:0 0 auto;margin-top:1px;}
+
+/* ---------- Timeline ---------- */
+.timeline{margin:18px 0 6px;padding-left:4px;}
+.tl-step{display:flex;gap:14px;position:relative;padding-bottom:20px;}
+.tl-step:last-child{padding-bottom:0;}
+.tl-step::before{
+  content:"";position:absolute;left:8px;top:20px;bottom:0;width:2px;background:var(--sage-line);
+}
+.tl-step:last-child::before{display:none;}
+.tl-dot{
+  width:18px;height:18px;border-radius:0;flex:0 0 18px;background:var(--teal);
+  display:flex;align-items:center;justify-content:center;z-index:1;
+}
+.tl-dot.pending{background:var(--panel);border:2px solid var(--sage);}
+.tl-dot.now{background:var(--amber);}
+.tl-body .t{font-size:.9rem;font-weight:600;color:var(--ink);line-height:1.3;}
+.tl-body .d{font-size:.78rem;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
+.tl-step.dim .t{color:var(--ink-soft);}
+
+/* ---------- Quick action tiles ---------- */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.tile{
+  background:var(--panel);border:1px solid var(--sage-line);border-radius:0;
+  padding:15px;display:flex;flex-direction:column;gap:10px;
+}
+.tile .ico{
+  width:38px;height:38px;border-radius:0;background:var(--teal-tint);
+  display:flex;align-items:center;justify-content:center;color:var(--teal-dark);
+}
+.tile .ico.coral{background:var(--coral-tint);color:#A7402C;}
+.tile .t{font-size:.88rem;font-weight:600;color:var(--ink);line-height:1.25;}
+
+/* ---------- Avatar ---------- */
+.avatar{
+  width:38px;height:38px;border-radius:0;background:var(--teal-tint);
+  color:var(--teal-dark);display:flex;align-items:center;justify-content:center;
+  font-size:.82rem;font-weight:700;flex:0 0 38px;
+}
+.avatar.lg{width:76px;height:76px;font-size:1.5rem;font-family:'Fraunces',serif;font-weight:600;}
+.avatar.coral{background:var(--coral-tint);color:#A7402C;}
+
+/* ---------- Logo mark ---------- */
+.mark{
+  width:84px;height:84px;border-radius:0;background:var(--teal);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  margin:0 auto 22px;box-shadow:0 10px 24px -10px rgba(14,107,92,.7);
+}
+.mark.tint{background:var(--teal-tint);color:var(--teal-dark);box-shadow:none;}
+.mark.coral{background:var(--coral-tint);color:var(--coral);box-shadow:none;}
+
+/* ---------- OTP ---------- */
+.otp{display:flex;gap:9px;margin:20px 0 6px;}
+.otp div{
+  flex:1;height:58px;border-radius:0;border:1px solid var(--sage);background:var(--panel);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;color:var(--teal-dark);
+}
+.otp div.filled{border-color:var(--teal);background:#F4FAF8;}
+.otp div.caret{border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,107,92,.13);color:var(--sage);}
+
+/* ---------- Bottom tab bar ---------- */
+.tabbar{
+  flex:0 0 auto;background:var(--panel);border-top:1px solid var(--sage-line);
+  padding:10px 14px 8px;display:flex;justify-content:space-around;align-items:flex-start;
+}
+.tabbar a{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  font-size:.68rem;font-weight:600;color:#93A8A2;text-decoration:none;flex:1;
+}
+.tabbar a.active{color:var(--teal);}
+.tabbar .tab-ico{position:relative;display:flex;}
+.tabbar .tab-ico .badge-dot{
+  position:absolute;top:-2px;right:-5px;min-width:15px;height:15px;border-radius:0;
+  background:var(--coral);color:#fff;font-size:.6rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;padding:0 4px;
+  border:1.5px solid var(--panel);
+}
+.home-indicator{
+  flex:0 0 auto;height:22px;background:var(--panel);
+  display:flex;align-items:center;justify-content:center;
+}
+.home-indicator::after{content:"";width:134px;height:5px;border-radius:0;background:var(--ink);opacity:.25;}
+.home-indicator.bare{background:transparent;}
+.home-indicator.on-teal::after{background:#fff;opacity:.5;}
+
+footer.canvas-foot{
+  max-width:1180px;margin:80px auto 0;color:var(--canvas-ink-soft,var(--ink-soft));font-size:.85rem;
+  border-top:1px solid var(--canvas-line,var(--sage-line));padding-top:24px;line-height:1.6;
+}
+
+/* ---------- Canvas theming (device screens stay light by design) ---------- */
+:root{--canvas-ink:var(--teal-dark);--canvas-ink-soft:var(--ink-soft);--canvas-line:var(--sage-line);}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --canvas:#12201D;--canvas-ink:#DCEBE6;--canvas-ink-soft:#9FB6B0;--canvas-line:#25403A;
+  }
+}
+:root[data-theme="dark"]{
+  --canvas:#12201D;--canvas-ink:#DCEBE6;--canvas-ink-soft:#9FB6B0;--canvas-line:#25403A;
+}
+.canvas-head h1,.flow-title{color:var(--canvas-ink);}
+.canvas-head p,.flow-title span,.device-label{color:var(--canvas-ink-soft);}
+.device-label b{color:var(--canvas-ink);}
+.flow-title{border-color:var(--canvas-line);}
+
+/* ---------- Narrow viewports ---------- */
+@media (max-width:900px){
+  body{padding:40px 16px 60px;}
+  .grid{
+    display:flex;gap:56px 28px;overflow-x:auto;
+    padding:34px 4px 14px;justify-content:flex-start;
+    scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;
+  }
+  .device{flex:0 0 390px;scroll-snap-align:center;}
+  .device-label{top:-24px;}
+  .canvas-head h1{font-size:2rem;}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<div class="canvas-head">
+  <div class="eyebrow">Milestone 03 — High-fidelity screens</div>
+  <h1>Government Hospital OPD Booking &amp; Queue</h1>
+  <p>All 24 wireframes rendered in the shared design system. Every screen carries a live status bar with time, signal, Wi-Fi and battery, and the four primary destinations sit in a persistent bottom tab bar. Coral appears only where a patient is flagged as priority.</p>
+</div>
+
+<div class="flow-title">Patient app <span>Screens 01–17</span></div>
+<div class="grid">
+<div class="device">
+  <div class="device-label"><b>01</b> — Splash</div>
+  <div class="phone" style="background:var(--teal-dark)">
+    <div class="status-bar on-teal">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#fff"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#fff"/>
+        <rect x="10" y="3" width="3" height="9" fill="#fff"/>
+        <rect x="15" y="0" width="3" height="12" fill="#fff" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#fff" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#fff" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#fff" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#fff"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#fff" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#fff"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#fff" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="body" style="align-items:center;justify-content:center;text-align:center">
+      <div class="spacer"></div>
+      <div class="mark" style="background:rgba(255,255,255,.14);color:#fff;box-shadow:none;width:92px;height:92px">
+        <svg width="42" height="42" viewBox="0 0 42 42" fill="none"><path d="M21 5.5 8 11.2v9c0 8 5.5 15.3 13 17.3 7.5-2 13-9.3 13-17.3v-9L21 5.5Z" stroke="#fff" stroke-width="2.2" stroke-linejoin="miter"/><path d="M21 15v11M15.5 20.5h11" stroke="#fff" stroke-width="2.4" stroke-linecap="square"/></svg>
+      </div>
+      <h2 class="screen-title" style="color:#fff;font-size:2rem">Government Hospital</h2>
+      <p class="lede" style="color:#B9D8CF;margin-top:4px">OPD booking &amp; queue management</p>
+      <div class="spacer"></div>
+      <p class="sub" style="color:#8FBBB0">Ministry of Health · Sri Lanka</p>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>02</b> — Welcome</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="body" style="text-align:center">
+      <div class="spacer"></div>
+      <div class="mark tint" style="width:96px;height:96px;border-radius:0">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="6" y="9" width="32" height="29" stroke="currentColor" stroke-width="2.4"/><path d="M6 17h32M15 4v7M29 4v7" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/><path d="M22 23v8M18 27h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="square"/></svg>
+      </div>
+      <h2 class="screen-title">Book your OPD visit<br>without the queue</h2>
+      <p class="lede" style="margin:0 auto;max-width:30ch">Find a government hospital, pick an available session, and track your place in line from your phone.</p>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">Get started</div>
+      <div class="btn btn-outline">I already have an account</div>
+      <p class="link">Continue without signing in</p>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>03</b> — Choose role</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title"></div></div>
+    <div class="body">
+      <h2 class="screen-title">Who is using<br>this device?</h2>
+      <p class="lede">You can switch roles later from your profile.</p>
+      <div class="card" style="border-color:var(--teal);background:#F4FAF8;box-shadow:0 0 0 2px rgba(14,107,92,.1)">
+        <div class="card-top">
+          <div class="avatar" style="width:44px;height:44px;flex:0 0 44px"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.6" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M4.4 18.6a6.8 6.8 0 0 1 13.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></div>
+          <div style="flex:1;margin-left:12px">
+            <h4>Patient</h4>
+            <p class="sub">Book OPD appointments, track your queue number and request priority assistance.</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-top">
+          <div class="avatar" style="width:44px;height:44px;flex:0 0 44px;background:var(--amber-tint);color:#8A611A"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="3.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/></svg></div>
+          <div style="flex:1;margin-left:12px">
+            <h4>Hospital staff</h4>
+            <p class="sub">Open and manage OPD sessions, review priority requests at reception.</p>
+          </div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">Continue as patient</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>04</b> — Patient sign in</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title"></div></div>
+    <div class="body">
+      <h2 class="screen-title">Sign in</h2>
+      <p class="lede">Use the NIC number you registered with.</p>
+      <div class="spacer" style="max-height:18px"></div>
+      <div class="field">
+        <label>NIC or email</label>
+        <div class="control"><span class="grow">200145601234</span></div>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="control focused"><span class="grow">••••••••••</span>
+          <svg width="18" height="16" viewBox="0 0 18 16" fill="none"><path d="M1 8s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z" stroke="#4A625C" stroke-width="1.5" stroke-linejoin="miter"/><circle cx="9" cy="8" r="2.2" stroke="#4A625C" stroke-width="1.5"/></svg>
+        </div>
+        <div class="hint">Forgot your password? Reset it with your mobile number.</div>
+      </div>
+      <div class="btn btn-primary">Sign in</div>
+      <p class="link">Reset password</p>
+      <div class="spacer"></div>
+      <div class="divider"></div>
+      <p class="helper">New here? <b>Create an account</b></p>
+      <div class="btn btn-outline">Register as a patient</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>05</b> — Create account</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Create account</div></div>
+    <div class="body">
+      <p class="lede">Your NIC links this account to your hospital records.</p>
+      <div class="field"><label>Full name</label><div class="control"><span class="grow">Kasun Perera</span></div></div>
+      <div class="field"><label>NIC number</label><div class="control"><span class="grow">200145601234</span></div></div>
+      <div class="field"><label>Mobile number</label><div class="control"><span class="grow">+94 77 123 4567</span></div>
+        <div class="hint">We send your queue alerts to this number.</div></div>
+      <div class="field"><label>Email address</label><div class="control placeholder"><span class="grow">Optional</span></div></div>
+      <div class="field"><label>Create password</label><div class="control"><span class="grow">••••••••</span></div>
+        <div class="hint">At least 8 characters.</div></div>
+      <div class="note"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 6.8v4M7.5 4.5v.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><div>Creating an account means you accept the hospital service terms and privacy notice.</div></div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">Create account</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>06</b> — Home</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="title"></div><div class="right"><div class="icon-btn"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2a4.6 4.6 0 0 0-4.6 4.6c0 3.5-1.3 4.6-1.3 4.6h11.8s-1.3-1.1-1.3-4.6A4.6 4.6 0 0 0 9 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M10.6 14a1.8 1.8 0 0 1-3.2 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><span class="dot-alert"></span></div><div class="avatar">KP</div></div></div>
+    <div class="body" style="padding-top:0">
+      <p class="greet">Good morning,</p>
+      <h2 class="screen-title" style="margin-bottom:14px">Kasun Perera</h2>
+      <div class="search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 3.4 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"/></svg><span>Search hospitals or clinics</span></div>
+      <div class="ticket">
+        <div class="k">Next appointment</div>
+        <div class="num">General OPD</div>
+        <div class="dept">Colombo National Hospital</div>
+        <div class="line"></div>
+        <div class="when"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg><span>Thu 24 Sep · 8:30 AM</span></div>
+      </div>
+      <h3 class="group">Quick actions</h3>
+      <div class="tiles">
+        <div class="tile"><div class="ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.4c-2.3 0-4.2 1.9-4.2 4.2 0 3.1 4.2 7 4.2 7s4.2-3.9 4.2-7c0-2.3-1.9-4.2-4.2-4.2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/><circle cx="7" cy="5.6" r="1.5" stroke="currentColor" stroke-width="1.4"/></svg></div><div class="t">Find a hospital</div></div>
+        <div class="tile"><div class="ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="4.4" width="15.6" height="14.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.2 8.6h15.6M7.4 2.6v3.4M14.6 2.6v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></div><div class="t">My bookings</div></div>
+        <div class="tile"><div class="ico coral"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5.2 19.4V3.6M5.2 4.4h9.4l-1.6 3.4 1.6 3.4H5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="t">Priority queue</div></div>
+        <div class="tile"><div class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2a4.6 4.6 0 0 0-4.6 4.6c0 3.5-1.3 4.6-1.3 4.6h11.8s-1.3-1.1-1.3-4.6A4.6 4.6 0 0 0 9 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M10.6 14a1.8 1.8 0 0 1-3.2 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg></div><div class="t">Notifications</div></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+    <nav class="tabbar"><a href="#" class="active"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3.5 9 11 3.2 18.5 9v9a1.3 1.3 0 0 1-1.3 1.3H4.8A1.3 1.3 0 0 1 3.5 18V9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M8.6 19.3v-6h4.8v6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/></svg></span>Home</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="4.4" width="15.6" height="14.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.2 8.6h15.6M7.4 2.6v3.4M14.6 2.6v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Bookings</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3a5.4 5.4 0 0 0-5.4 5.4c0 4-1.5 5.4-1.5 5.4h13.8s-1.5-1.4-1.5-5.4A5.4 5.4 0 0 0 11 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M12.9 16.8a2.2 2.2 0 0 1-3.8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg><span class="badge-dot">3</span></span>Alerts</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.6" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M4.4 18.6a6.8 6.8 0 0 1 13.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Profile</a></nav>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>07</b> — Find a hospital</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Find a hospital</div></div>
+    <div class="body">
+      <div class="search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 3.4 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"/></svg><span>Hospital name or city</span></div>
+      <div class="segment"><div class="active">Nearby</div><div>All hospitals</div></div>
+      <div class="card">
+        <div class="card-top"><h4>Colombo National Hospital</h4><span class="badge badge-called"><span class="dot"></span>Open</span></div>
+        <p class="sub">Regent Street, Colombo 10</p>
+        <div class="meta"><span><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.4c-2.3 0-4.2 1.9-4.2 4.2 0 3.1 4.2 7 4.2 7s4.2-3.9 4.2-7c0-2.3-1.9-4.2-4.2-4.2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/><circle cx="7" cy="5.6" r="1.5" stroke="currentColor" stroke-width="1.4"/></svg> 2.4 km</span><span>General · Cardiology · Dermatology</span></div>
+      </div>
+      <div class="card">
+        <div class="card-top"><h4>District General Hospital</h4><span class="badge badge-called"><span class="dot"></span>Open</span></div>
+        <p class="sub">Gampaha</p>
+        <div class="meta"><span><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.4c-2.3 0-4.2 1.9-4.2 4.2 0 3.1 4.2 7 4.2 7s4.2-3.9 4.2-7c0-2.3-1.9-4.2-4.2-4.2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/><circle cx="7" cy="5.6" r="1.5" stroke="currentColor" stroke-width="1.4"/></svg> 18 km</span><span>General · Medical · Surgical</span></div>
+      </div>
+      <div class="card">
+        <div class="card-top"><h4>Base Hospital Negombo</h4><span class="badge badge-waiting"><span class="dot"></span>Opens 8:00</span></div>
+        <p class="sub">Negombo</p>
+        <div class="meta"><span><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.4c-2.3 0-4.2 1.9-4.2 4.2 0 3.1 4.2 7 4.2 7s4.2-3.9 4.2-7c0-2.3-1.9-4.2-4.2-4.2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/><circle cx="7" cy="5.6" r="1.5" stroke="currentColor" stroke-width="1.4"/></svg> 31 km</span><span>General · Child · Medical</span></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>08</b> — Hospital details</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title"></div><div class="right"><div class="icon-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.4c-2.3 0-4.2 1.9-4.2 4.2 0 3.1 4.2 7 4.2 7s4.2-3.9 4.2-7c0-2.3-1.9-4.2-4.2-4.2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter"/><circle cx="7" cy="5.6" r="1.5" stroke="currentColor" stroke-width="1.4"/></svg></div></div></div>
+    <div class="body">
+      <h2 class="screen-title">Colombo National Hospital</h2>
+      <p class="lede">Regent Street, Colombo 10</p>
+      <div class="card tight">
+        <h4 style="margin-bottom:10px">OPD services</h4>
+        <div class="list-row" style="padding:10px 0;border-color:var(--sage-line)"><span class="grow name" style="font-weight:500">General OPD</span><span class="badge badge-called"><span class="dot"></span>6 sessions</span></div>
+        <div class="list-row" style="padding:10px 0"><span class="grow name" style="font-weight:500">Medical clinic</span><span class="badge badge-called"><span class="dot"></span>2 sessions</span></div>
+        <div class="list-row" style="padding:10px 0;border-bottom:none"><span class="grow name" style="font-weight:500">Dermatology clinic</span><span class="badge badge-waiting"><span class="dot"></span>Full today</span></div>
+      </div>
+      <div class="card tight">
+        <h4 style="margin-bottom:8px">Opening hours</h4>
+        <div class="meta" style="margin-top:0"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg><span>Monday to Friday · 8:00 AM – 4:00 PM</span></div>
+        <div class="meta"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg><span>Saturday · 8:00 AM – 12:00 PM</span></div>
+      </div>
+      <div class="note"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 6.8v4M7.5 4.5v.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><div>Pick an OPD service to see the sessions still taking patients today.</div></div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">View OPD sessions</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>09</b> — Book appointment</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Book appointment</div></div>
+    <div class="body">
+      <p class="lede">Colombo National Hospital</p>
+      <h3 class="group" style="margin-top:6px">Choose a session</h3>
+      <div class="select-card on">
+        <div class="grow"><h4>General OPD</h4><p class="sub">Thu 24 Sep · 8:30 AM</p>
+          <div class="meta" style="margin-top:8px"><span class="badge badge-called"><span class="dot"></span>12 slots left</span></div></div>
+        <div class="radio on"></div>
+      </div>
+      <div class="select-card">
+        <div class="grow"><h4>General OPD</h4><p class="sub">Thu 24 Sep · 10:30 AM</p>
+          <div class="meta" style="margin-top:8px"><span class="badge badge-waiting"><span class="dot"></span>3 slots left</span></div></div>
+        <div class="radio"></div>
+      </div>
+      <div class="select-card">
+        <div class="grow"><h4>Dermatology</h4><p class="sub">Fri 25 Sep · 9:00 AM</p>
+          <div class="meta" style="margin-top:8px"><span class="badge badge-called"><span class="dot"></span>20 slots left</span></div></div>
+        <div class="radio"></div>
+      </div>
+      <h3 class="group">Patient</h3>
+      <div class="control"><div class="avatar" style="width:30px;height:30px;flex:0 0 30px;font-size:.7rem">KP</div><div class="stack grow"><span class="v">Kasun Perera</span><span class="k">NIC ········234V</span></div><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">Confirm appointment</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>10</b> — Booking confirmed</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="body" style="text-align:center;padding-top:20px">
+      <div class="spacer" style="max-height:40px"></div>
+      <div class="mark"><svg width="34" height="34" viewBox="0 0 34 34" fill="none"><path d="M9 17.5 14.5 23 25 11.5" stroke="currentColor" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/></svg></div>
+      <h2 class="screen-title">Booking confirmed</h2>
+      <p class="lede" style="margin:0 auto 18px;max-width:30ch">Show this booking ID at the hospital reception desk.</p>
+      <div class="ticket" style="text-align:left">
+        <div class="k">Booking ID</div>
+        <div class="num mono" style="font-family:'IBM Plex Mono',monospace;font-size:1.5rem;letter-spacing:.5px">OPD-2026-00481</div>
+        <div class="line"></div>
+        <div class="dept" style="color:#EAF4F0;font-size:.92rem;font-weight:500">General OPD</div>
+        <div class="dept">Colombo National Hospital</div>
+        <div class="when" style="margin-top:12px"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg><span>Thu 24 Sep 2026 · 8:30 AM</span></div>
+      </div>
+      <div class="note" style="text-align:left"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 6.8v4M7.5 4.5v.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><div>We will remind you the evening before, and again when the queue reaches your number.</div></div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">View booking</div>
+      <div class="btn btn-outline">Back to home</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>11</b> — My bookings</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="title">My bookings</div><div class="right"><div class="icon-btn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 3.4 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"/></svg></div></div></div>
+    <div class="body" style="padding-top:0">
+      <div class="segment"><div class="active">Upcoming</div><div>Past</div></div>
+      <div class="card">
+        <div class="card-top"><div><h4>General OPD</h4><p class="sub">Colombo National Hospital</p></div>
+          <span class="badge badge-called"><span class="dot"></span>Confirmed</span></div>
+        <div class="meta"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg><span>Thu 24 Sep · 8:30 AM</span><span class="mono">OPD-2026-00481</span></div>
+      </div>
+      <div class="card">
+        <div class="card-top"><div><h4>Dermatology</h4><p class="sub">District General Hospital</p></div>
+          <span class="badge badge-priority"><span class="dot"></span>Priority</span></div>
+        <div class="meta"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg><span>Fri 02 Oct · 9:00 AM</span><span class="mono">OPD-2026-00512</span></div>
+      </div>
+      <div class="card">
+        <div class="card-top"><div><h4>Medical clinic</h4><p class="sub">Base Hospital Negombo</p></div>
+          <span class="badge badge-waiting"><span class="dot"></span>Awaiting slot</span></div>
+        <div class="meta"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg><span>Mon 12 Oct · time to be set</span></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+    <nav class="tabbar"><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3.5 9 11 3.2 18.5 9v9a1.3 1.3 0 0 1-1.3 1.3H4.8A1.3 1.3 0 0 1 3.5 18V9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M8.6 19.3v-6h4.8v6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/></svg></span>Home</a><a href="#" class="active"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="4.4" width="15.6" height="14.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.2 8.6h15.6M7.4 2.6v3.4M14.6 2.6v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Bookings</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3a5.4 5.4 0 0 0-5.4 5.4c0 4-1.5 5.4-1.5 5.4h13.8s-1.5-1.4-1.5-5.4A5.4 5.4 0 0 0 11 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M12.9 16.8a2.2 2.2 0 0 1-3.8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg><span class="badge-dot">3</span></span>Alerts</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.6" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M4.4 18.6a6.8 6.8 0 0 1 13.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Profile</a></nav>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>12</b> — Booking details</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Booking details</div></div>
+    <div class="body">
+      <div class="ticket">
+        <div class="k">Booking ID</div>
+        <div class="num" style="font-family:'IBM Plex Mono',monospace;font-size:1.4rem;letter-spacing:.5px">OPD-2026-00481</div>
+        <div class="line"></div>
+        <div class="when"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg><span>Thu 24 Sep 2026 · 8:30 AM</span></div>
+      </div>
+      <div class="card">
+        <div class="kv"><div class="k">Hospital</div><div class="v">Colombo National Hospital</div></div>
+        <div class="kv"><div class="k">Service</div><div class="v">General OPD</div></div>
+        <div class="kv"><div class="k">Patient</div><div class="v">Kasun Perera · NIC ········234V</div></div>
+        <div class="kv"><div class="k">Status</div><div class="v"><span class="badge badge-called"><span class="dot"></span>Confirmed</span></div></div>
+      </div>
+      <div class="note"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 6.8v4M7.5 4.5v.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><div>Arrive 15 minutes before your session and report to reception with this ID.</div></div>
+      <div class="spacer"></div>
+      <div class="btn btn-secondary">Request priority queue</div>
+      <div class="btn btn-danger-ghost">Cancel booking</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>13</b> — Request priority</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Priority queue</div></div>
+    <div class="body">
+      <p class="lede">Ask reception to move you ahead in the queue if you need assistance.</p>
+      <div class="card tight">
+        <div class="card-top"><div><h4>General OPD</h4><p class="sub">Thu 24 Sep · 8:30 AM</p></div>
+          <span class="badge badge-called"><span class="dot"></span>Confirmed</span></div>
+      </div>
+      <h3 class="group">Reason for the request</h3>
+      <div class="select-card on"><div class="grow"><h4>Elderly patient</h4><p class="sub">65 years or older</p></div><div class="radio on"></div></div>
+      <div class="select-card"><div class="grow"><h4>Mobility assistance</h4><p class="sub">Wheelchair or walking support</p></div><div class="radio"></div></div>
+      <div class="select-card"><div class="grow"><h4>Pregnant patient</h4></div><div class="radio"></div></div>
+      <div class="select-card"><div class="grow"><h4>Something else</h4></div><div class="radio"></div></div>
+      <div class="field" style="margin-top:6px"><label>Anything reception should know?</label>
+        <div class="control placeholder"><span class="grow">Optional</span></div></div>
+      <div class="spacer"></div>
+      <div class="btn btn-urgent">Submit request</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>14</b> — Request status</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Priority request</div></div>
+    <div class="body">
+      <div class="card" style="text-align:center;border-color:var(--amber);background:var(--amber-tint)">
+        <p class="sub" style="color:#8A611A;font-weight:600">Current status</p>
+        <h2 class="screen-title" style="color:#8A611A;font-size:1.7rem;margin:6px 0 4px">Under review</h2>
+        <p class="sub" style="color:#8A611A">Submitted 23 Sep · 6:20 PM</p>
+      </div>
+      <div class="timeline">
+        <div class="tl-step"><div class="tl-dot"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.2 4.1 7.3 8 2.8" stroke="#fff" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></div>
+          <div class="tl-body"><div class="t">Request submitted</div><div class="d">23 Sep 2026 · 6:20 PM</div></div></div>
+        <div class="tl-step"><div class="tl-dot now"></div>
+          <div class="tl-body"><div class="t">Reception is reviewing</div><div class="d">Usually answered within 2 hours during opening times.</div></div></div>
+        <div class="tl-step dim"><div class="tl-dot pending"></div>
+          <div class="tl-body"><div class="t">Decision</div><div class="d">You will be notified either way.</div></div></div>
+      </div>
+      <div class="card tight">
+        <div class="kv"><div class="k">Reason given</div><div class="v">Elderly patient</div></div>
+        <div class="kv" style="margin-bottom:0"><div class="k">Appointment</div><div class="v">General OPD · 24 Sep, 8:30 AM</div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn btn-outline">Back to booking</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>15</b> — Notifications</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="title">Notifications</div><div class="right"><div class="icon-btn"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2.5 8.5 7 13l7.5-9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></div></div></div>
+    <div class="body flush" style="padding-top:0">
+      <div class="list" style="border-radius:0;border-left:none;border-right:none">
+        <div class="list-row unread">
+          <div class="avatar coral"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5.2 19.4V3.6M5.2 4.4h9.4l-1.6 3.4 1.6 3.4H5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg></div>
+          <div class="grow"><div class="name">Priority request received</div>
+            <p class="sub">Reception at Colombo National is reviewing it now.</p>
+            <p class="sub" style="margin-top:4px;font-size:.72rem">10 minutes ago</p></div>
+          <span class="badge badge-priority"><span class="dot"></span>New</span>
+        </div>
+        <div class="list-row unread">
+          <div class="avatar"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="4.4" width="15.6" height="14.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.2 8.6h15.6M7.4 2.6v3.4M14.6 2.6v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></div>
+          <div class="grow"><div class="name">Booking confirmed</div>
+            <p class="sub">General OPD, 24 Sep at 8:30 AM.</p>
+            <p class="sub" style="margin-top:4px;font-size:.72rem">Yesterday · 6:18 PM</p></div>
+        </div>
+        <div class="list-row unread">
+          <div class="avatar"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 3.8V7l2.2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter"/></svg></div>
+          <div class="grow"><div class="name">Appointment tomorrow</div>
+            <p class="sub">Arrive by 8:15 AM and report to reception.</p>
+            <p class="sub" style="margin-top:4px;font-size:.72rem">Yesterday · 7:00 AM</p></div>
+        </div>
+        <div class="list-row">
+          <div class="avatar"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="3.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/></svg></div>
+          <div class="grow"><div class="name">Dermatology sessions reopened</div>
+            <p class="sub">New slots released for the first week of October.</p>
+            <p class="sub" style="margin-top:4px;font-size:.72rem">20 Sep</p></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+    <nav class="tabbar"><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3.5 9 11 3.2 18.5 9v9a1.3 1.3 0 0 1-1.3 1.3H4.8A1.3 1.3 0 0 1 3.5 18V9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M8.6 19.3v-6h4.8v6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/></svg></span>Home</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="4.4" width="15.6" height="14.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.2 8.6h15.6M7.4 2.6v3.4M14.6 2.6v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Bookings</a><a href="#" class="active"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3a5.4 5.4 0 0 0-5.4 5.4c0 4-1.5 5.4-1.5 5.4h13.8s-1.5-1.4-1.5-5.4A5.4 5.4 0 0 0 11 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M12.9 16.8a2.2 2.2 0 0 1-3.8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg><span class="badge-dot">3</span></span>Alerts</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.6" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M4.4 18.6a6.8 6.8 0 0 1 13.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Profile</a></nav>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>16</b> — Profile</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="title">Profile</div><div class="right"><div class="icon-btn"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.6" stroke="currentColor" stroke-width="1.5"/><path d="M9 1.6v1.8M9 14.6v1.8M16.4 9h-1.8M3.4 9H1.6M14.2 3.8l-1.3 1.3M5.1 12.9l-1.3 1.3M14.2 14.2l-1.3-1.3M5.1 5.1 3.8 3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg></div></div></div>
+    <div class="body" style="padding-top:0">
+      <div class="card" style="text-align:center;padding:22px 16px">
+        <div class="avatar lg" style="margin:0 auto 12px">KP</div>
+        <h4 style="font-size:1.1rem">Kasun Perera</h4>
+        <p class="sub">NIC ········234V · +94 77 123 4567</p>
+      </div>
+      <div class="list">
+        <div class="list-row"><span class="grow name" style="font-weight:500">Personal information</span><span class="chev"><svg width="8" height="13" viewBox="0 0 8 13" fill="none"><path d="M1.5 1 6.5 6.5 1.5 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div>
+        <div class="list-row"><span class="grow name" style="font-weight:500">Notification settings</span><span class="chev"><svg width="8" height="13" viewBox="0 0 8 13" fill="none"><path d="M1.5 1 6.5 6.5 1.5 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div>
+        <div class="list-row"><span class="grow name" style="font-weight:500">Language</span><span class="sub" style="margin:0">English</span><span class="chev"><svg width="8" height="13" viewBox="0 0 8 13" fill="none"><path d="M1.5 1 6.5 6.5 1.5 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div>
+        <div class="list-row"><span class="grow name" style="font-weight:500">Saved hospitals</span><span class="chev"><svg width="8" height="13" viewBox="0 0 8 13" fill="none"><path d="M1.5 1 6.5 6.5 1.5 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div>
+        <div class="list-row"><span class="grow name" style="font-weight:500">Help and support</span><span class="chev"><svg width="8" height="13" viewBox="0 0 8 13" fill="none"><path d="M1.5 1 6.5 6.5 1.5 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn btn-outline">Sign out</div>
+    </div>
+    <nav class="tabbar"><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3.5 9 11 3.2 18.5 9v9a1.3 1.3 0 0 1-1.3 1.3H4.8A1.3 1.3 0 0 1 3.5 18V9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M8.6 19.3v-6h4.8v6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/></svg></span>Home</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="4.4" width="15.6" height="14.4" stroke="currentColor" stroke-width="1.6"/><path d="M3.2 8.6h15.6M7.4 2.6v3.4M14.6 2.6v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Bookings</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3a5.4 5.4 0 0 0-5.4 5.4c0 4-1.5 5.4-1.5 5.4h13.8s-1.5-1.4-1.5-5.4A5.4 5.4 0 0 0 11 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M12.9 16.8a2.2 2.2 0 0 1-3.8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg><span class="badge-dot">3</span></span>Alerts</a><a href="#" class="active"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.6" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M4.4 18.6a6.8 6.8 0 0 1 13.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Profile</a></nav>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>17</b> — Verify number</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title"></div></div>
+    <div class="body">
+      <h2 class="screen-title">Verify your<br>mobile number</h2>
+      <p class="lede">We sent a 6-digit code to +94 77 123 4567.</p>
+      <div class="otp">
+        <div class="filled">4</div><div class="filled">8</div><div class="filled">1</div>
+        <div class="caret">|</div><div></div><div></div>
+      </div>
+      <p class="helper">Code expires in <b>02:34</b></p>
+      <div class="spacer" style="max-height:30px"></div>
+      <div class="btn btn-primary">Verify and continue</div>
+      <p class="link">Send the code again</p>
+      <div class="spacer"></div>
+      <div class="note"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 6.8v4M7.5 4.5v.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><div>Wrong number? Go back and edit it before requesting a new code.</div></div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+</div>
+
+<div class="flow-title">Reception &amp; hospital staff <span>Screens 18–24</span></div>
+<div class="grid">
+<div class="device">
+  <div class="device-label"><b>18</b> — Staff sign in</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title"></div></div>
+    <div class="body">
+      <div class="mark tint" style="margin:6px auto 20px;width:70px;height:70px;border-radius:0"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="3.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/></svg></div>
+      <h2 class="screen-title">Staff sign in</h2>
+      <p class="lede">For reception and OPD coordinators.</p>
+      <div class="spacer" style="max-height:14px"></div>
+      <div class="field"><label>Staff ID</label><div class="control"><span class="grow mono">CNH-RC-0421</span></div></div>
+      <div class="field"><label>Password</label><div class="control focused"><span class="grow">••••••••••</span></div></div>
+      <div class="field"><label>Hospital</label>
+        <div class="control"><span class="grow">Colombo National Hospital</span><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div></div>
+      <div class="btn btn-primary">Sign in</div>
+      <p class="link">Reset password</p>
+      <div class="spacer"></div>
+      <div class="note warn"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 6.8v4M7.5 4.5v.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><div>Staff accounts are approved by the hospital administrator before first use.</div></div>
+      <div class="btn btn-outline">Request a staff account</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>19</b> — Staff registration</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Request access</div></div>
+    <div class="body">
+      <p class="lede">Your administrator approves the account before you can sign in.</p>
+      <div class="field"><label>Full name</label><div class="control"><span class="grow">Nimasha Fernando</span></div></div>
+      <div class="field"><label>Staff ID</label><div class="control"><span class="grow mono">CNH-RC-0421</span></div></div>
+      <div class="field"><label>Hospital</label><div class="control"><span class="grow">Colombo National Hospital</span><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div></div>
+      <div class="field"><label>Role</label><div class="control"><span class="grow">Reception</span><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div></div>
+      <div class="field"><label>Mobile number</label><div class="control"><span class="grow">+94 71 998 2210</span></div></div>
+      <div class="field"><label>Work email</label><div class="control"><span class="grow">n.fernando@health.gov.lk</span></div></div>
+      <div class="field"><label>Create password</label><div class="control"><span class="grow">••••••••</span></div></div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">Send for approval</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>20</b> — Reception dashboard</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="title"></div><div class="right"><div class="icon-btn"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2a4.6 4.6 0 0 0-4.6 4.6c0 3.5-1.3 4.6-1.3 4.6h11.8s-1.3-1.1-1.3-4.6A4.6 4.6 0 0 0 9 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M10.6 14a1.8 1.8 0 0 1-3.2 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><span class="dot-alert"></span></div><div class="avatar">NF</div></div></div>
+    <div class="body" style="padding-top:0">
+      <p class="greet">Good morning,</p>
+      <h2 class="screen-title" style="margin-bottom:2px">Reception desk</h2>
+      <p class="sub">Colombo National Hospital · Counter 3</p>
+      <div class="kpi-row">
+        <div class="kpi"><div class="k">Sessions today</div><div class="n">6</div></div>
+        <div class="kpi alert"><div class="k">Priority waiting</div><div class="n">4</div></div>
+      </div>
+      <div class="kpi-row" style="margin-top:12px">
+        <div class="kpi"><div class="k">Patients checked in</div><div class="n">38</div></div>
+        <div class="kpi"><div class="k">Now serving</div><div class="n">A-014</div></div>
+      </div>
+      <h3 class="group">Today's sessions</h3>
+      <div class="list">
+        <div class="list-row"><div class="grow"><div class="name">General OPD</div><p class="sub">8:30 AM · 42 of 50 booked</p></div>
+          <span class="badge badge-called"><span class="dot"></span>Running</span></div>
+        <div class="list-row"><div class="grow"><div class="name">Dermatology</div><p class="sub">10:00 AM · 28 of 30 booked</p></div>
+          <span class="badge badge-waiting"><span class="dot"></span>Next</span></div>
+        <div class="list-row"><div class="grow"><div class="name">Medical clinic</div><p class="sub">1:30 PM · 12 of 40 booked</p></div>
+          <span class="badge badge-waiting"><span class="dot"></span>Later</span></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn btn-urgent">Review 4 priority requests</div>
+    </div>
+    <nav class="tabbar"><a href="#" class="active"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3.5 9 11 3.2 18.5 9v9a1.3 1.3 0 0 1-1.3 1.3H4.8A1.3 1.3 0 0 1 3.5 18V9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M8.6 19.3v-6h4.8v6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/></svg></span>Dashboard</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="3.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/></svg></span>Sessions</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5.2 19.4V3.6M5.2 4.4h9.4l-1.6 3.4 1.6 3.4H5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg><span class="badge-dot">4</span></span>Priority</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.6" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M4.4 18.6a6.8 6.8 0 0 1 13.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Profile</a></nav>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>21</b> — OPD sessions</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="title">OPD sessions</div><div class="right"><div class="icon-btn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 3.4 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"/></svg></div></div></div>
+    <div class="body" style="padding-top:0">
+      <div class="segment"><div class="active">Today</div><div>Upcoming</div></div>
+      <div class="card">
+        <div class="card-top"><div><h4>General OPD</h4><p class="sub">24 Sep · 8:30 AM – 12:30 PM</p></div>
+          <span class="badge badge-called"><span class="dot"></span>Running</span></div>
+        <div class="meta"><span>42 of 50 booked</span><span class="badge badge-priority" style="font-size:.68rem"><span class="dot"></span>2 priority</span></div>
+        <div class="divider" style="margin:12px 0"></div>
+        <div style="display:flex;gap:8px"><div class="btn btn-secondary btn-sm">Edit session</div><div class="btn btn-outline btn-sm">Close bookings</div></div>
+      </div>
+      <div class="card">
+        <div class="card-top"><div><h4>Dermatology</h4><p class="sub">24 Sep · 10:00 AM – 1:00 PM</p></div>
+          <span class="badge badge-waiting"><span class="dot"></span>Next</span></div>
+        <div class="meta"><span>28 of 30 booked</span></div>
+        <div class="divider" style="margin:12px 0"></div>
+        <div style="display:flex;gap:8px"><div class="btn btn-secondary btn-sm">Edit session</div><div class="btn btn-outline btn-sm">Close bookings</div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">Add a session</div>
+    </div>
+    <nav class="tabbar"><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3.5 9 11 3.2 18.5 9v9a1.3 1.3 0 0 1-1.3 1.3H4.8A1.3 1.3 0 0 1 3.5 18V9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M8.6 19.3v-6h4.8v6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/></svg></span>Dashboard</a><a href="#" class="active"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="3.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/></svg></span>Sessions</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5.2 19.4V3.6M5.2 4.4h9.4l-1.6 3.4 1.6 3.4H5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg><span class="badge-dot">4</span></span>Priority</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.6" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M4.4 18.6a6.8 6.8 0 0 1 13.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Profile</a></nav>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>22</b> — Add session</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Add session</div></div>
+    <div class="body">
+      <p class="lede">Bookings open to patients as soon as you save.</p>
+      <div class="field"><label>OPD service</label>
+        <div class="control"><span class="grow">General OPD</span><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div></div>
+      <div class="field"><label>Date</label>
+        <div class="control"><span class="grow">Thursday, 24 September 2026</span><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>Starts</label>
+          <div class="control"><span class="grow">08:30 AM</span><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div></div>
+        <div class="field" style="flex:1"><label>Ends</label>
+          <div class="control"><span class="grow">12:30 PM</span><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div></div>
+      </div>
+      <div class="field"><label>Patient capacity</label>
+        <div class="control"><span class="grow">50</span></div>
+        <div class="hint">Priority requests are admitted within this capacity.</div></div>
+      <div class="field"><label>Doctor or clinic team</label>
+        <div class="control"><span class="grow">General OPD team</span><span class="chev"><svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/></svg></span></div></div>
+      <div class="note warn"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 6.8v4M7.5 4.5v.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><div>Only authorised staff can create or edit sessions. Changes are recorded against your staff ID.</div></div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">Save session</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>23</b> — Priority requests</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="title">Priority requests</div><div class="right"><div class="icon-btn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.7"/><path d="m11 11 3.4 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="square"/></svg></div></div></div>
+    <div class="body flush" style="padding-top:0">
+      <div style="padding:0 22px"><div class="segment"><div class="active">Pending · 4</div><div>Decided</div></div></div>
+      <div class="list" style="border-radius:0;border-left:none;border-right:none">
+        <div class="list-row unread"><div class="avatar coral">KP</div>
+          <div class="grow"><div class="name">Kasun Perera</div><p class="sub">General OPD · 8:30 AM</p>
+            <p class="sub" style="margin-top:4px">Elderly patient</p></div>
+          <span class="badge badge-priority"><span class="dot"></span>Pending</span></div>
+        <div class="list-row unread"><div class="avatar coral">AS</div>
+          <div class="grow"><div class="name">Amaya Silva</div><p class="sub">Medical OPD · 9:00 AM</p>
+            <p class="sub" style="margin-top:4px">Mobility assistance</p></div>
+          <span class="badge badge-priority"><span class="dot"></span>Pending</span></div>
+        <div class="list-row unread"><div class="avatar coral">RF</div>
+          <div class="grow"><div class="name">Ruwan Fernando</div><p class="sub">General OPD · 10:30 AM</p>
+            <p class="sub" style="margin-top:4px">Something else</p></div>
+          <span class="badge badge-priority"><span class="dot"></span>Pending</span></div>
+        <div class="list-row unread"><div class="avatar coral">DP</div>
+          <div class="grow"><div class="name">Dinithi Perera</div><p class="sub">Child OPD · 11:00 AM</p>
+            <p class="sub" style="margin-top:4px">Pregnant patient</p></div>
+          <span class="badge badge-priority"><span class="dot"></span>Pending</span></div>
+        <div class="list-row"><div class="avatar">IB</div>
+          <div class="grow"><div class="name">Ishara Bandara</div><p class="sub">General OPD · 8:30 AM</p>
+            <p class="sub" style="margin-top:4px">Elderly patient</p></div>
+          <span class="badge badge-done"><span class="dot"></span>Accepted</span></div>
+      </div>
+      <div class="spacer"></div>
+    </div>
+    <nav class="tabbar"><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3.5 9 11 3.2 18.5 9v9a1.3 1.3 0 0 1-1.3 1.3H4.8A1.3 1.3 0 0 1 3.5 18V9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/><path d="M8.6 19.3v-6h4.8v6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/></svg></span>Dashboard</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="3.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="3.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/><rect x="12.2" y="12.2" width="6.6" height="6.6" stroke="currentColor" stroke-width="1.6"/></svg></span>Sessions</a><a href="#" class="active"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5.2 19.4V3.6M5.2 4.4h9.4l-1.6 3.4 1.6 3.4H5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg><span class="badge-dot">4</span></span>Priority</a><a href="#"><span class="tab-ico"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.6" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M4.4 18.6a6.8 6.8 0 0 1 13.2 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></span>Profile</a></nav>
+    <div class="home-indicator"></div>
+  </div>
+</div>
+<div class="device">
+  <div class="device-label"><b>24</b> — Request details</div>
+  <div class="phone">
+    <div class="status-bar">
+    <div class="status-time">9:41</div>
+    <div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" aria-label="Cellular signal">
+        <rect x="0" y="8" width="3" height="4" fill="#17302A"/>
+        <rect x="5" y="5.5" width="3" height="6.5" fill="#17302A"/>
+        <rect x="10" y="3" width="3" height="9" fill="#17302A"/>
+        <rect x="15" y="0" width="3" height="12" fill="#17302A" opacity="0.35"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-label="Wi-Fi">
+        <path d="M1 3.6A11 11 0 0 1 15 3.6" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M3.6 6.5a7 7 0 0 1 8.8 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <path d="M6.2 9.3a3 3 0 0 1 3.6 0" stroke="#17302A" stroke-width="1.7" stroke-linecap="square"/>
+        <circle cx="8" cy="11.2" r="1" fill="#17302A"/>
+      </svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-label="Battery 82 percent">
+        <rect x="0.6" y="0.6" width="22" height="11.8" stroke="#17302A" stroke-width="1.1" opacity="0.5"/>
+        <rect x="2.2" y="2.2" width="15.6" height="8.6" fill="#17302A"/>
+        <path d="M24.4 4.4v4.2a2.3 2.3 0 0 0 0-4.2Z" fill="#17302A" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+    
+    <div class="nav-head"><div class="back-btn"><svg width="10" height="16" viewBox="0 0 10 16" fill="none"><path d="M8 1 2 8l6 7" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg></div><div class="title">Request details</div></div>
+    <div class="body">
+      <div class="card">
+        <div class="card-top" style="align-items:center">
+          <div class="avatar coral" style="width:46px;height:46px;flex:0 0 46px;font-size:.95rem">KP</div>
+          <div style="flex:1;margin-left:12px"><h4>Kasun Perera</h4><p class="sub">NIC ········234V · +94 77 123 4567</p></div>
+          <span class="badge badge-priority"><span class="dot"></span>Pending</span>
+        </div>
+        <div class="divider"></div>
+        <div class="kv"><div class="k">Booking</div><div class="v mono">OPD-2026-00481</div></div>
+        <div class="kv"><div class="k">Service</div><div class="v">General OPD</div></div>
+        <div class="kv" style="margin-bottom:0"><div class="k">Session</div><div class="v">24 Sep 2026 · 8:30 AM</div></div>
+      </div>
+      <div class="card">
+        <h4>Reason given</h4>
+        <p class="sub" style="font-size:.92rem;color:var(--ink);margin-top:6px">Elderly patient</p>
+        <p class="sub" style="margin-top:8px">"My father is 78 and cannot stand for long. We will arrive by 8:00 AM."</p>
+      </div>
+      <div class="note"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M7.5 6.8v4M7.5 4.5v.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg><div>The patient is notified as soon as you decide, and the queue order updates immediately.</div></div>
+      <div class="spacer"></div>
+      <div class="btn btn-primary">Accept request</div>
+      <div class="btn btn-danger-ghost">Decline request</div>
+    </div>
+    <div class="home-indicator bare"></div>
+  </div>
+</div>
+</div>
+
+<footer class="canvas-foot">
+  Built on the Milestone 02 design foundation — Clinic Teal #0E6B5C, Coral #E2624C reserved for priority states, Fraunces for headings and queue numbers, IBM Plex Sans for interface text.
+</footer>
+
+</body>
+</html>

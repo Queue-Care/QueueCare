@@ -55,7 +55,8 @@ function ChooseRole({
           label: 'Hospital staff',
           onPress: () =>
             navigation.navigate('StaffAuth', {
-              screen: registering ? 'StaffRegistration' : 'StaffSignIn',
+              // Staff enter through sign-in; new users can request access there.
+              screen: 'StaffSignIn',
               initial: false,
             }),
         },
