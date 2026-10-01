@@ -15,6 +15,7 @@ export default function App({
   loadSession?: SessionLoader;
 }) {
   const { state, retry, continueSignedOut } = useAppStartup(loadSession);
+
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
