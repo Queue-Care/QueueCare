@@ -1,6 +1,6 @@
 # API contracts
 
-The root README section 15 defines the overall API routes. Hospital search and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
+The root README section 15 defines the overall API routes. Hospital search, details, OPD services, and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
 
 ## Hospital search — implemented (M1-04)
 
@@ -40,6 +40,55 @@ Unknown parameters and repeated parameters are rejected with HTTP 400, `VALIDATI
 Unexpected database/query errors return HTTP 500 with `INTERNAL_ERROR`, a generic message, and no successful `data` fallback. The shared handler follows the README's `success: false, error: { code, message, fieldErrors }` format. Unknown endpoints return 404 `NOT_FOUND`.
 
 `GET /health` pings MongoDB. Success returns `{ "success": true, "data": { "status": "ok", "database": "connected" } }`; database failure returns HTTP 503 `SERVICE_UNAVAILABLE`.
+
+## Hospital details and services — implemented (M1-06)
+
+These endpoints are public for guest and patient discovery. `hospitalId` must be a 24-character hexadecimal MongoDB ObjectId; uppercase hex is accepted. Invalid IDs return HTTP 400 `VALIDATION_ERROR` with `fieldErrors.hospitalId`. Neither endpoint accepts query parameters; unsupported parameters return 400.
+
+```http
+GET /api/v1/hospitals/000000000000000000000101
+Accept: application/json
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "000000000000000000000101",
+    "name": "Demo Central Hospital",
+    "address": "Demo location — not a real hospital",
+    "city": "Colombo"
+  }
+}
+```
+
+The details response includes `phone` and `imageUrl` when stored. It exposes only the same public hospital fields as search, without internal image IDs, flags, timestamps, or notes.
+
+```http
+GET /api/v1/hospitals/000000000000000000000101/services
+Accept: application/json
+```
+
+```json
+{
+  "success": true,
+  "data": [
+    { "_id": "000000000000000000000201", "hospitalId": "000000000000000000000101", "name": "General OPD" },
+    { "_id": "000000000000000000000202", "hospitalId": "000000000000000000000101", "name": "Medical clinic" }
+  ],
+  "meta": { "total": 2 }
+}
+```
+
+Services come from `opdServices` and require both the selected hospital and service to have `isActive: true`. Only services linked by the selected hospital's ObjectId are included. IDs are serialized as strings. Services use case-insensitive ascending name order with an `_id` tie-breaker. This endpoint returns the hospital's whole service catalog without pagination; `meta.total` is the returned array length. It is intended for the small per-hospital academic dataset, not bulk service search.
+
+A valid active hospital with no active services returns `{ "success": true, "data": [], "meta": { "total": 0 } }`. A missing or inactive hospital returns the same HTTP 404 response on both endpoints, even if service records exist:
+
+```json
+{ "success": false, "error": { "code": "NOT_FOUND", "message": "Hospital not found.", "fieldErrors": {} } }
+```
+
+Database failures return HTTP 500 `INTERNAL_ERROR`, never a successful empty catalog or false 404. Hospital and service reads are separate operations, not a transactional snapshot. Service availability, session counts, and capacity belong to M1-08 and are not inferred from the catalog. Opening hours are not present in the README's current hospital schema and are not invented by this API. See [M1-06 handoff and M1-07 integration](HOSPITAL_DETAILS.md).
 
 ## Patient Home — next appointment (proposed; not implemented)
 

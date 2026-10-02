@@ -1,6 +1,6 @@
 # QueueCare API
 
-Member 1's M1-04 implements public hospital search using Express and MongoDB. The supporting server, database connection, hospital indexes, and shared error handler are now available. Authentication, bookings, services, and sessions are still pending.
+Member 1's M1-04 implements public hospital search using Express and MongoDB. M1-06 adds hospital details and active OPD service catalogs. The supporting server, database connection, discovery indexes, and shared error handler are available. Authentication, bookings, and sessions are still pending.
 
 ## Run locally
 
@@ -24,11 +24,15 @@ npm run db:seed:hospitals
 
 This command inserts missing demo IDs only: repeated runs do not duplicate records, overwrite edited seeds, or delete existing data. It does not create users, services, or sessions. Starting the server does not seed data automatically.
 
+For the hospital details/services flow, use `npm run db:seed:discovery` instead. It inserts the same missing demo hospitals plus six fictional OPD services, preserving existing records and edits. It creates no users or sessions. See [M1-06 setup and handoff](../../docs/HOSPITAL_DETAILS.md).
+
 Try the endpoints:
 
 ```bash
 curl http://localhost:4000/health
 curl 'http://localhost:4000/api/v1/hospitals?search=demo&city=Colombo&page=1&limit=20'
+curl http://localhost:4000/api/v1/hospitals/000000000000000000000101
+curl http://localhost:4000/api/v1/hospitals/000000000000000000000101/services
 ```
 
 An empty database returns a successful empty hospital list. Database failures return errors, not demo data. The complete search contract is in [docs/API.md](../../docs/API.md).
@@ -68,4 +72,4 @@ npm run test:api
 
 Integration tests require `mongod` on PATH (or set `MONGOD_BINARY` to its executable path) and permission to listen on localhost. Each run launches its own MongoDB process with a fresh temporary directory and an ephemeral HTTP port, then cleans them up. Tests never use `MONGODB_URI` or modify your development database.
 
-Coverage includes real MongoDB name/city filtering, inactive hospital exclusion, literal regex characters, pagination, public response fields, query validation, health/error responses, and safe repeatable seeding.
+All 27 API tests pass as of M1-06. Coverage includes real MongoDB name/city filtering, hospital details, parent-scoped active services, inactive hospital exclusion, literal regex characters, pagination, public response fields, ID/query validation, health/error responses, shared connections, and safe repeatable seeding.
