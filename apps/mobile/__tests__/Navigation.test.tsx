@@ -76,8 +76,11 @@ test('existing staff accounts reach sign-in without entering staff-only screens'
   expect(ref.getCurrentRoute()?.name).toBe('StaffSignIn');
   expect(ref.getRootState()?.routeNames).not.toContain('StaffApp');
   expect(ref.getRootState()?.routeNames).not.toContain('PatientApp');
-  await press('Register as staff');
+  await press('Don’t have an account? Request a staff account');
   expect(ref.getCurrentRoute()?.name).toBe('StaffRegistration');
+  await change(() => ref.goBack());
+  await press('Reset password');
+  expect(ref.getCurrentRoute()?.name).toBe('ResetPassword');
 });
 
 test('guests can search hospitals and are prompted to sign in for bookings', async () => {

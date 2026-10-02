@@ -1,51 +1,56 @@
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
+import { readConfig } from './env.js';
 
-let client;
-let database;
-
-async function connectToMongoDB() {
-  const mongoUri = process.env.MONGODB_URI;
-  const databaseName = process.env.MONGODB_DB_NAME || 'queuecare';
-
-  if (!mongoUri) {
-    throw new Error('MONGODB_URI is not configured.');
+export async function connectMongo({ mongoUri, dbName }) {
+  const client = new MongoClient(mongoUri, {
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+  });
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    await db.command({ ping: 1 });
+    return { client, db };
+  } catch (error) {
+    await client.close();
+    throw error;
   }
-
-  if (database) {
-    return database;
-  }
-
-  client = new MongoClient(mongoUri);
-
-  await client.connect();
-
-  database = client.db(databaseName);
-
-  console.log(`MongoDB connected: ${databaseName}`);
-
-  return database;
 }
 
-function getDatabase() {
-  if (!database) {
+// Shared connection API from develop, using the same ESM/configuration contract.
+// connectMongo remains available for callers that own an isolated connection.
+let sharedConnection;
+let pendingConnection;
+
+export async function connectToMongoDB(config = readConfig()) {
+  if (sharedConnection) return sharedConnection.db;
+  if (!pendingConnection) {
+    pendingConnection = connectMongo(config)
+      .then((connection) => {
+        sharedConnection = connection;
+        return connection;
+      })
+      .finally(() => {
+        pendingConnection = undefined;
+      });
+  }
+  return (await pendingConnection).db;
+}
+
+export function getDatabase() {
+  if (!sharedConnection) {
     throw new Error(
       'MongoDB has not been connected. Call connectToMongoDB() first.'
     );
   }
 
-  return database;
+  return sharedConnection.db;
 }
 
-async function closeMongoDB() {
-  if (client) {
-    await client.close();
-    client = undefined;
-    database = undefined;
+export async function closeMongoDB() {
+  if (pendingConnection) await pendingConnection;
+  if (sharedConnection) {
+    await sharedConnection.client.close();
+    sharedConnection = undefined;
   }
 }
-
-module.exports = {
-  connectToMongoDB,
-  getDatabase,
-  closeMongoDB,
-};

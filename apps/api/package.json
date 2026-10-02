@@ -3,9 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^18.0.5",
     "express": "^5.2.1",
-    "mongodb": "^7.7.0"
+    "mongodb": "^7.7.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch src/server.js",
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "seed:hospitals": "node --env-file-if-exists=.env src/seeds/run.js",
+    "test": "node --test src/tests/*.test.js",
+    "check:db": "node --env-file-if-exists=.env src/config/checkDatabase.js"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

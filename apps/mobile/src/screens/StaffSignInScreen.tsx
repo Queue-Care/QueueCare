@@ -14,7 +14,7 @@ import { colors } from '../theme/colors';
 export const StaffSignInScreen = ({ navigation }: any) => {
   const [staffId, setStaffId] = useState('CNH-RC-0421');
   const [password, setPassword] = useState('••••••••••');
-  const [hospital, setHospital] = useState('Colombo National Hospital');
+  const [hospital] = useState('Colombo National Hospital');
 
   const handleSignIn = () => {
     Alert.alert('Staff Sign In', `Signing in with Staff ID: ${staffId}`);
@@ -87,7 +87,12 @@ export const StaffSignInScreen = ({ navigation }: any) => {
           <Text style={styles.btnPrimaryText}>Sign in</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity activeOpacity={0.7}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Reset password"
+          onPress={() => navigation?.navigate?.('ResetPassword')}
+        >
           <Text style={styles.linkText}>Reset password</Text>
         </TouchableOpacity>
 

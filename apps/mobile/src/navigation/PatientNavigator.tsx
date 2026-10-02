@@ -15,6 +15,7 @@ import {
   tabOptions,
 } from './NavigationPage';
 import { PatientHomeScreen } from '../screens/PatientHomeScreen';
+import { HospitalSearchScreen } from '../screens/HospitalSearchScreen';
 import type {
   BookingsStackParams,
   HomeStackParams,
@@ -79,7 +80,13 @@ function HomeNavigator({ guest, accessToken, onSignIn, onExit }: Access) {
         )}
       </Home.Screen>
       <Home.Screen name="HospitalSearch" options={{ title: 'Hospital search' }}>
-        {() => <NavigationPage title="Hospital search" />}
+        {({ navigation }) => (
+          <HospitalSearchScreen
+            onSelectHospital={hospitalId =>
+              navigation.navigate('HospitalDetails', { hospitalId })
+            }
+          />
+        )}
       </Home.Screen>
       <Home.Screen
         name="HospitalDetails"

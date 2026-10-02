@@ -23,7 +23,19 @@ npm install
 npm run dev:mobile
 ```
 
-Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Splash and Welcome now have dedicated screens with tested startup/recovery behavior; see [Member 1 startup handoff](docs/STARTUP.md). Patient Home now has its frontend, quick actions, and next-appointment API adapter; see [Patient Home handoff](docs/PATIENT_HOME.md). Real authentication, live API data, and prototype comparison remain pending. The API is not initialized yet.
+Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Splash and Welcome now have dedicated screens with tested startup/recovery behavior; see [Member 1 startup handoff](docs/STARTUP.md). Patient Home now has its frontend, quick actions, and next-appointment API adapter; see [Patient Home handoff](docs/PATIENT_HOME.md). Real authentication, live booking data, and prototype comparison remain pending.
+
+## Local API Setup — M1-04
+
+Express startup, MongoDB connectivity, hospital search, and standard errors are implemented. With MongoDB running locally, execute these commands from the **QueueCare repository root** (copy the environment example only on first setup):
+
+```bash
+cp apps/api/.env.example apps/api/.env
+npm run db:seed:hospitals
+npm run dev:api
+```
+
+The seed adds three fictional demo hospitals without replacing existing data. The search endpoint is `http://localhost:4000/api/v1/hospitals`; `http://localhost:4000/health` checks database connectivity. See [API prerequisites, configuration, and tests](apps/api/README.md). M1-05, the Hospital Search screen, is now connected to this endpoint for guests and patients. Configure the mobile API URL and follow [Hospital Search phone checks](docs/HOSPITAL_SEARCH.md). Member 1’s next task is M1-06, the Hospital Details API, followed by M1-07, the details screen. See [current project progress](docs/DEVELOPMENT_PLAN.md).
 
 ## 1. Project Overview
 
