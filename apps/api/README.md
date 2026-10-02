@@ -35,9 +35,30 @@ An empty database returns a successful empty hospital list. Database failures re
 
 ## Expo Go connection
 
-Keep the phone and computer on the same network. The API binds to `0.0.0.0` by default so it can accept phone requests. When implementing M1-05, set the mobile environment variable `EXPO_PUBLIC_API_BASE_URL` to `http://<computer-LAN-IP>:4000/api/v1` and restart Expo. `localhost` on a physical phone refers to the phone itself.
+Keep the phone and computer on the same network. The API binds to `0.0.0.0` by default so it can accept phone requests. Set the mobile environment variable `EXPO_PUBLIC_API_BASE_URL` to `http://<computer-LAN-IP>:4000/api/v1` in `apps/mobile/.env` and restart Expo. `localhost` on a physical phone refers to the phone itself.
 
-The Hospital Search screen has not been connected yet. Patient Home's booking request also needs the still-pending authentication and booking endpoints; starting this API does not complete that flow.
+The Hospital Search screen now uses this public endpoint; follow the [M1-05 phone checklist](../../docs/HOSPITAL_SEARCH.md). Patient Home's booking request still needs the pending authentication and booking endpoints; starting this API does not complete that flow.
+
+## Troubleshoot MongoDB connections
+
+Run this read-only check from the repository root using the settings in `apps/api/.env`:
+
+```bash
+npm run check:db
+```
+
+It connects and pings MongoDB without writing data. Success prints the selected database name. Startup, seeding, and the check command now distinguish TLS, DNS, authentication, network, permissions, and occupied-port errors without printing credentials or raw driver messages.
+
+If `MONGODB_URI` points to Atlas, starting local `mongod` will not fix that Atlas connection. For an Atlas TLS/network failure:
+
+1. Confirm the cluster is available in the correct Atlas project.
+2. Check the project's **Network Access / IP Access List** and add your current public IP if it is missing. Allow the specific development IP; a network change or VPN can change it.
+3. Check whether your VPN or firewall interferes with the connection. Keep TLS and certificate verification enabled.
+4. Run `npm run check:db` again, then `npm run dev:api` once the check succeeds.
+
+A TLS failure happens before database authentication; it does not by itself establish that the password or IP access list is wrong. See [MongoDB's connection troubleshooting guide](https://www.mongodb.com/docs/atlas/troubleshoot-connection/).
+
+For intentional local development, use the values in `.env.example`. Local MongoDB and Atlas are separate databases; changing the URI does not transfer existing records. The application never silently switches between them.
 
 ## Tests
 
