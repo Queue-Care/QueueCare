@@ -35,7 +35,7 @@ npm run db:seed:hospitals
 npm run dev:api
 ```
 
-The seed adds three fictional demo hospitals without replacing existing data. The search endpoint is `http://localhost:4000/api/v1/hospitals`; `http://localhost:4000/health` checks database connectivity. See [API prerequisites, configuration, and tests](apps/api/README.md). M1-05, the Hospital Search screen, is now connected to this endpoint for guests and patients. Configure the mobile API URL and follow [Hospital Search phone checks](docs/HOSPITAL_SEARCH.md). Member 1’s next task is M1-06, the Hospital Details API, followed by M1-07, the details screen. See [current project progress](docs/DEVELOPMENT_PLAN.md).
+The seed adds three fictional demo hospitals without replacing existing data. The search endpoint is `http://localhost:4000/api/v1/hospitals`; `http://localhost:4000/health` checks database connectivity. See [API prerequisites, configuration, and tests](apps/api/README.md). M1-05, the Hospital Search screen, is connected to this endpoint for guests and patients. Configure the mobile API URL and follow [Hospital Search phone checks](docs/HOSPITAL_SEARCH.md). M1-06 now provides `/api/v1/hospitals/:hospitalId` and `/api/v1/hospitals/:hospitalId/services`. Run `npm run db:seed:discovery` to add demo hospitals and services; see [Hospital Details API setup](docs/HOSPITAL_DETAILS.md). Member 1’s next task is **M1-07, the Hospital Details screen**. See [current project progress](docs/DEVELOPMENT_PLAN.md).
 
 ## 1. Project Overview
 
