@@ -14,7 +14,7 @@ npm install
 npm run dev:mobile
 ```
 
-Scan the terminal QR code using Expo Go on Android or the Camera app on iOS. Keep the terminal running. Startup shows the in-app Splash while resolving the session, then Welcome offers Get Started, Existing Account, and Continue as guest. Welcome has a dedicated layout; guest Patient Home has its own layout; other downstream feature screens remain navigation scaffolds. The default session loader is signed out until S-13 authentication is connected. Android Studio, Xcode, and USB debugging are not required for this phone workflow.
+Scan the terminal QR code using Expo Go on Android or the Camera app on iOS. Keep the terminal running. Startup shows the in-app Splash while resolving the session, then Welcome offers Get Started, Existing Account, and Continue as guest. Welcome, Patient Home, Hospital Search, and Hospital Details have dedicated layouts. Session selection and booking still have navigation scaffolds. The default session loader is signed out until S-13 authentication is connected. Android Studio, Xcode, and USB debugging are not required for this phone workflow.
 
 If the phone cannot connect, check that the network allows devices to communicate and that your firewall allows the Expo development server. Use a shared personal hotspot if your campus network isolates devices.
 
@@ -57,4 +57,12 @@ The service stack remains Express, MongoDB, JWT, and Cloudinary. Expo Go preview
 
 ## Patient Home API setup
 
-Home now supports next-appointment loading, empty/error states, retry/refresh, hospital search, and booking/alert actions. For real appointment data, copy `.env.example` to `.env` in `apps/mobile` and configure the public API URL, then connect the real authentication provider and booking-list backend. See [Patient Home integration](../../docs/PATIENT_HOME.md). Guest browsing works without an API connection. The current suite contains 44 passing tests; live-data and phone acceptance remain pending.
+Home now supports next-appointment loading, empty/error states, retry/refresh, hospital search, and booking/alert actions. For real appointment data, copy `.env.example` to `.env` in `apps/mobile` and configure the public API URL, then connect the real authentication provider and booking-list backend. See [Patient Home integration](../../docs/PATIENT_HOME.md). Guest Home opens without an API connection; hospital results require the configured API and MongoDB. Live booking data and phone acceptance remain pending.
+
+## Hospital Search — M1-05
+
+From Home, tap Search hospitals to browse, submit name/city filters, refresh, or load more results. The screen uses `/api/v1/hospitals` without authentication and passes the selected hospital ID to the details route. See [setup and phone verification](../../docs/HOSPITAL_SEARCH.md).
+
+## Hospital Details — M1-07
+
+Tap a hospital to load its information and OPD services. Select one service to enable View OPD sessions. Hospital/service IDs are passed to the next route; guests retain the sign-in gate. Loading, empty, unavailable, failure, retry, and refresh states are implemented. Opening hours and session availability are not invented. See [setup, current limitations, and phone checks](../../docs/HOSPITAL_DETAILS.md). The next Member 1 task is M1-08's available sessions API.

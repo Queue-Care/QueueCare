@@ -8,4 +8,12 @@ This changes the development workflow. It does not remove the assignment's stand
 
 ## Entry-screen design awaiting prototype comparison
 
-The high-fidelity HTML referenced by the README is absent from this checkout. Splash and Welcome use the README’s color palette and permitted system-font fallbacks; their layout, copy, and code-drawn mark are interim choices. Exact visual fidelity is unverified. Member 1 must compare them with the prototype before accepting any visual deviation. The startup loader remains explicitly signed out until Member 2 connects S-13; no completed authentication flow is claimed.
+The high-fidelity HTML was absent when the entry screens were built and is now present as `opd-high-fidelity-screens-square.html` after the develop merge. Splash and Welcome use the README’s color palette and permitted system-font fallbacks; their layout, copy, and code-drawn mark are interim choices. Exact visual fidelity is unverified. Member 1 must compare them with the prototype before accepting any visual deviation. The startup loader remains explicitly signed out until Member 2 connects S-13; no completed authentication flow is claimed.
+
+## M1-07 hospital details — interim data and flow limitations
+
+Screen 08's title/address, service list, opening-hours panel, explanatory note, and primary CTA are implemented. Square panels follow the merged prototype; the CTA reuses the existing rounded ActionButton and permitted system-font fallbacks. Device visual comparison is pending.
+
+The hospital schema does not yet contain opening hours, so the panel says hours have not been provided. Static prototype times would misrepresent real hospital data. Session-count and “Full today” badges are deferred until M1-08 supplies sessions and capacity. Service rows instead expose a single accessible selection state, and the CTA requires a selection. A listed service does not imply appointment availability.
+
+The next route receives the selected hospital/service IDs, but session selection (M1-09) remains pending. Guests encounter the existing sign-in gate. This records current implementation limits, not approval to omit these features from the final release.

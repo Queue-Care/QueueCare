@@ -6,20 +6,25 @@ export function ActionButton({
   label,
   onPress,
   variant = 'primary',
+  disabled = false,
 }: {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'outline' | 'onDark';
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         styles[variant],
         pressed && styles.pressed,
+        disabled && styles.disabled,
       ]}
     >
       <Text style={[styles.label, variant !== 'primary' && styles.darkLabel]}>
@@ -51,4 +56,5 @@ const styles = StyleSheet.create({
   },
   darkLabel: { color: colors.tealDark },
   pressed: { opacity: 0.78 },
+  disabled: { opacity: 0.5 },
 });

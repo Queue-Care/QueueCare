@@ -24,7 +24,11 @@ export type HomeStackParams = {
   PatientHome: undefined;
   HospitalSearch: undefined;
   HospitalDetails: { hospitalId: string };
-  BookAppointment: { hospitalId: string; sessionId?: string };
+  BookAppointment: {
+    hospitalId: string;
+    serviceId?: string;
+    sessionId?: string;
+  };
   BookingConfirmation: { bookingId: string };
 };
 export type BookingsStackParams = {

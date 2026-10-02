@@ -12,7 +12,7 @@ The Patient Home frontend and API adapter are implemented. This task is not comp
 - Loading, successful-empty, and failed requests have separate states. A failed request never appears as “No upcoming appointments.”
 - Retry, pull-to-refresh, and returning to Home request fresh data. Superseded/blurred requests are cancelled, and late responses cannot replace the current account's data.
 
-The destination feature screens are still placeholders. No appointment or hospital data is fabricated in production code.
+Hospital Search and Hospital Details now have their own screens and public API integration; see [M1-05 handoff](HOSPITAL_SEARCH.md) and [M1-07 handoff](HOSPITAL_DETAILS.md). Booking/notification destinations from Home remain placeholders. No appointment or hospital data is fabricated in production code.
 
 ## Connect the backend and authentication
 

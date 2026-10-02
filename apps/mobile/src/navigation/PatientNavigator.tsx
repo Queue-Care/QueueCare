@@ -15,6 +15,8 @@ import {
   tabOptions,
 } from './NavigationPage';
 import { PatientHomeScreen } from '../screens/PatientHomeScreen';
+import { HospitalSearchScreen } from '../screens/HospitalSearchScreen';
+import { HospitalDetailsScreen } from '../screens/HospitalDetailsScreen';
 import type {
   BookingsStackParams,
   HomeStackParams,
@@ -79,13 +81,30 @@ function HomeNavigator({ guest, accessToken, onSignIn, onExit }: Access) {
         )}
       </Home.Screen>
       <Home.Screen name="HospitalSearch" options={{ title: 'Hospital search' }}>
-        {() => <NavigationPage title="Hospital search" />}
+        {({ navigation }) => (
+          <HospitalSearchScreen
+            onSelectHospital={hospitalId =>
+              navigation.navigate('HospitalDetails', { hospitalId })
+            }
+          />
+        )}
       </Home.Screen>
       <Home.Screen
         name="HospitalDetails"
         options={{ title: 'Hospital details' }}
       >
-        {() => <NavigationPage title="Hospital details" />}
+        {({ route, navigation }) => (
+          <HospitalDetailsScreen
+            hospitalId={route.params.hospitalId}
+            onSearch={() => navigation.navigate('HospitalSearch')}
+            onViewSessions={serviceId =>
+              navigation.navigate('BookAppointment', {
+                hospitalId: route.params.hospitalId,
+                serviceId,
+              })
+            }
+          />
+        )}
       </Home.Screen>
       <Home.Screen
         name="BookAppointment"
@@ -95,7 +114,10 @@ function HomeNavigator({ guest, accessToken, onSignIn, onExit }: Access) {
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
-            <NavigationPage title="Book appointment" />
+            <NavigationPage
+              title="OPD sessions"
+              description="Session selection is not available here yet. Please check again later."
+            />
           )
         }
       </Home.Screen>
