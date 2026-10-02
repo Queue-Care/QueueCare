@@ -16,6 +16,7 @@
     "test:api": "npm --workspace apps/api run test",
     "db:seed:hospitals": "npm --workspace apps/api run seed:hospitals",
     "db:seed:discovery": "npm --workspace apps/api run seed:discovery",
+    "db:seed:sessions": "npm --workspace apps/api run seed:sessions --",
     "check:db": "npm --workspace apps/api run check:db"
   },
   "workspaces": [

@@ -48,4 +48,4 @@ Phone checklist:
 - Stop the API, refresh, and confirm an error rather than “no hospitals.” Restart it and tap Try again.
 - Check the keyboard, scrolling, large text, and touch targets on the phone. Test load-more with more than 20 active records in a separate development/test dataset.
 
-M1-06's API and M1-07's Hospital Details screen are implemented; see [the handoff](HOSPITAL_DETAILS.md). The next Member 1 task is **M1-08 — Available sessions API**. Authentication, booking data, and the complete booking flow remain separate unfinished work.
+M1-06's API and M1-07's Hospital Details screen are implemented; see [the handoff](HOSPITAL_DETAILS.md). M1-08’s [Available Sessions API](SESSIONS.md) is implemented. The next Member 1 task is **M1-09 — Book Appointment screen**. Authentication, booking data, and the complete booking flow remain separate unfinished work.
