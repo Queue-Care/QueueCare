@@ -3,6 +3,7 @@ import { once } from 'node:events';
 import { createApp } from './app.js';
 import { readConfig } from './config/env.js';
 import { connectMongo } from './config/mongodb.js';
+import { connectionDiagnostic } from './config/connectionDiagnostic.js';
 import {
   createHospitalRepository,
   ensureHospitalIndexes,
@@ -39,10 +40,8 @@ try {
       });
     });
   }
-} catch {
-  console.error(
-    'API startup failed. Check the API environment settings, MongoDB availability, and port.'
-  );
+} catch (error) {
+  console.error(`API startup failed. ${connectionDiagnostic(error)}`);
   if (connection) await connection.client.close();
   process.exitCode = 1;
 }
