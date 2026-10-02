@@ -19,6 +19,7 @@ The task definitions and ownership remain in the root README.
 
 - M1-03: Patient Home frontend and authenticated next-appointment API adapter implemented. Guest browsing, loading/error/empty states, quick actions, retry, refresh, and booking-detail navigation pass local tests. Real API/authentication integration, prototype comparison, and phone checks remain pending. See [Patient Home handoff](PATIENT_HOME.md).
 - M1-04: Hospital search API implemented and tested against real temporary MongoDB over HTTP. Supports active-only name/city search, pagination, public response fields, and validation. See [hospital API contract](API.md).
+- M1-05: Hospital Search screen and public API adapter implemented. Guest/patient browsing, submitted name/city filters, result cards, ID navigation, loading/empty/error states, retry, refresh, and pagination are tested. Physical phone-to-API testing and matching prototype comparison remain pending. See [Hospital Search handoff](HOSPITAL_SEARCH.md).
 
 ## Workspaces
 
@@ -40,4 +41,4 @@ The mobile and API manifests define their runtime dependencies and scripts. The 
 
 ## Member 1's next implementation task
 
-The next Member 1 implementation is **M1-05: Hospital Search screen**, consuming M1-04 with search/loading/empty/error states and hospital navigation. S-13 (shared API client/JWT handling) is still incomplete; the public search endpoint can support guest discovery while that shared work proceeds. Hospital details (M1-06/M1-07) follow. Continue phone checks and prototype comparison, and connect M1-03 to Member 2’s authentication and booking-list implementation when available. The full assessed flow is not yet complete.
+The next Member 1 implementation is **M1-06: Hospital details/services API**, followed by **M1-07: Hospital Details screen**. Search already passes the selected hospital ID to the details route, which remains a placeholder. S-13 (shared API client/JWT handling) is still incomplete; public hospital search works independently of authentication. Follow the M1-05 phone checklist, continue prototype comparison, and connect M1-03 to Member 2’s authentication and booking-list implementation when available. The full assessed flow is not yet complete.
