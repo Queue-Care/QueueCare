@@ -7,7 +7,7 @@ The Hospital Search screen now consumes M1-04's public MongoDB-backed API. Both 
 - Opening the screen loads active hospitals from `/api/v1/hospitals`.
 - Enter a hospital name or city in the main field. The optional City field further restricts results to that exact city name, ignoring case. Tap **Find hospitals** or the keyboard's search key to apply the filters.
 - Editing fields does not send a request until submission. Clear filters resets both fields and loads page one. Submitting unchanged filters also refreshes the search.
-- Cards display the actual returned name, city, and address. Selecting a card passes its ID to `HospitalDetails`. That destination remains a placeholder until M1-06/M1-07 are implemented.
+- Cards display the actual returned name, city, and address. Selecting a card passes its ID to the implemented `HospitalDetails` screen, which loads the hospital and its active OPD services.
 - Loading, empty database, no matching results, and failed requests have separate states. Errors offer retry and do not become successful empty results.
 - Load more requests the next page of 20. A failed page preserves existing results and retries the same page. Duplicate IDs across pages are removed because the API does not guarantee a pagination snapshot during edits.
 - Pull-to-refresh and returning to this screen reload page one with the applied filters. New searches, leaving the screen, and unmounting cancel the previous request. Late responses cannot replace a newer result.
@@ -48,4 +48,4 @@ Phone checklist:
 - Stop the API, refresh, and confirm an error rather than “no hospitals.” Restart it and tap Try again.
 - Check the keyboard, scrolling, large text, and touch targets on the phone. Test load-more with more than 20 active records in a separate development/test dataset.
 
-M1-06's hospital details/services API is now implemented; see [the handoff](HOSPITAL_DETAILS.md). The next Member 1 task is **M1-07 — Hospital Details screen**. Authentication, booking data, sessions, and the complete booking flow remain separate unfinished work.
+M1-06's API and M1-07's Hospital Details screen are implemented; see [the handoff](HOSPITAL_DETAILS.md). The next Member 1 task is **M1-08 — Available sessions API**. Authentication, booking data, and the complete booking flow remain separate unfinished work.
