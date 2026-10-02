@@ -1,4 +1,5 @@
 import { buildHospitalFilter } from './hospitalQuery.js';
+import { HttpError } from '../../utils/HttpError.js';
 
 const collation = { locale: 'en', strength: 2 };
 const projection = {
@@ -23,11 +24,47 @@ export async function ensureHospitalIndexes(db) {
       collation,
     },
   ]);
+  await db
+    .collection('opdServices')
+    .createIndex(
+      { hospitalId: 1, isActive: 1, name: 1, _id: 1 },
+      { name: 'service_hospital_active_name', collation }
+    );
 }
 
 export function createHospitalRepository(db) {
   const collection = db.collection('hospitals');
+  async function findActiveHospital(hospitalId) {
+    const hospital = await collection.findOne(
+      { _id: hospitalId, isActive: true },
+      { projection, maxTimeMS: 3000 }
+    );
+    // Inactive and missing hospitals have the same public response.
+    if (!hospital) throw new HttpError(404, 'NOT_FOUND', 'Hospital not found.');
+    return { ...hospital, _id: hospital._id.toString() };
+  }
   return {
+    getDetails: findActiveHospital,
+    async getServices(hospitalId) {
+      await findActiveHospital(hospitalId);
+      const services = await db
+        .collection('opdServices')
+        .find(
+          { hospitalId, isActive: true },
+          {
+            projection: { _id: 1, hospitalId: 1, name: 1 },
+            maxTimeMS: 3000,
+          }
+        )
+        .collation(collation)
+        .sort({ name: 1, _id: 1 })
+        .toArray();
+      return services.map((service) => ({
+        ...service,
+        _id: service._id.toString(),
+        hospitalId: service.hospitalId.toString(),
+      }));
+    },
     async search(query) {
       const filter = buildHospitalFilter(query);
       const [hospitals, total] = await Promise.all([
