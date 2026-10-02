@@ -14,7 +14,8 @@
     "dev:api": "npm --workspace apps/api run dev",
     "start:api": "npm --workspace apps/api run start",
     "test:api": "npm --workspace apps/api run test",
-    "db:seed:hospitals": "npm --workspace apps/api run seed:hospitals"
+    "db:seed:hospitals": "npm --workspace apps/api run seed:hospitals",
+    "check:db": "npm --workspace apps/api run check:db"
   },
   "workspaces": [
     "apps/mobile",
