@@ -1,6 +1,6 @@
 # Database implementation status
 
-The root README section 13 defines the planned MongoDB schemas. Hospital discovery and OPD service catalogs now have working repositories/indexes and seeds; other collections remain pending.
+The root README section 13 defines the planned MongoDB schemas. Hospital discovery, OPD service catalogs, and session availability now have working read repositories/indexes and seeds; other collections remain pending.
 
 ## Hospitals
 
@@ -24,3 +24,13 @@ The `opdServices` documents follow README section 13.3: `_id` and `hospitalId` a
 Startup/seed index setup also creates `service_hospital_active_name` on `{ hospitalId: 1, isActive: 1, name: 1, _id: 1 }`, with `en` collation at strength 2. The service read first verifies the parent is active, then reads only that hospital's active services with a three-second query execution limit. The response exposes only `_id`, `hospitalId`, and `name`.
 
 `npm run db:seed:discovery` extends the explicit hospital seed with six fictional service records, using fixed IDs and `$setOnInsert`. Missing/inactive demo parents are skipped. Reruns preserve service edits and existing records. Services do not imply open sessions or available booking capacity. Opening hours are not yet represented in the hospital schema.
+
+## OPD sessions — M1-08 read API
+
+`opdSessions` uses the README's ObjectId relationships, `doctorOrTeam`, `sessionDate`, `startTime`, `endTime`, `capacity`, `bookedCount`, status, and timestamps. Staff session creation/editing remains Member 3's work; no collection validator or session write endpoint is implemented yet.
+
+**Storage convention for future writers:** `sessionDate` is a BSON Date at UTC midnight representing the selected calendar date, e.g. `2026-10-03T00:00:00.000Z`. It is a day marker, not the session's start instant or Sri Lanka midnight. Store `startTime`/`endTime` as zero-padded 24-hour `HH:mm` strings interpreted in `Asia/Colombo`. The read pipeline uses MongoDB `$dateFromString` with that timezone to derive UTC instants. Sessions must start and end on the same day, with end after start. Capacity is a positive safe integer; booked count is a nonnegative safe integer. Malformed records are excluded from public availability.
+
+Startup and seeds create `session_hospital_status_date_service` on `{ hospitalId: 1, status: 1, sessionDate: 1, serviceId: 1, startTime: 1, _id: 1 }`. The query selects an active hospital's active services and `OPEN` sessions on the chosen date, then calculates timestamps, filters already-started sessions, and sorts by start/ID. The computed timestamp sort is not supplied by the index. Reads have a three-second execution limit.
+
+`npm run db:seed:sessions` inserts missing demo hospitals/services plus two fictional sessions per active demo service for tomorrow in Sri Lanka (up to 12). `-- --date=YYYY-MM-DD` selects another day. IDs are stable per service/date/time, and `$setOnInsert` preserves existing session edits, counts, status, and other data. New dates intentionally create additional records. System demo seeds use `seedSource: "queuecare-demo"` and omit `createdById`; future authenticated staff writes must provide their real creator ID. No fictitious staff accounts are created. See [session setup and handoff](SESSIONS.md).

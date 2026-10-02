@@ -1,6 +1,6 @@
 # M1-06/M1-07 — Hospital Details handoff
 
-M1-04/M1-05 hospital search and M1-06's public hospital details/service APIs are implemented and merged. M1-07 now replaces the mobile Hospital Details placeholder with a screen consuming both endpoints. The next Member 1 task is **M1-08 — Available sessions API**, followed by M1-09's booking/session-selection screen.
+M1-04/M1-05 hospital search and M1-06's public hospital details/service APIs are implemented and merged. M1-07 now replaces the mobile Hospital Details placeholder with a screen consuming both endpoints. M1-08’s [Available Sessions API](SESSIONS.md) is now implemented. The next Member 1 task is **M1-09 — Book Appointment screen**, which will consume session availability.
 
 ## Run and check
 
@@ -36,7 +36,7 @@ The complete response and error contract is in [API.md](API.md). IDs above are f
 - Loading, hospital failure, hospital unavailable (404/invalid ID), empty services, and service-only failure have distinct states. A service failure retains hospital information and offers retry; it never displays a successful empty catalog. A 404 from either endpoint makes the hospital unavailable.
 - Pull-to-refresh clears selection and reloads both endpoints. Retry and refocus reload both too. Requests have 15-second timeouts and are cancelled on blur, unmount, retry, or hospital-ID changes. Late responses cannot replace the current hospital. Selection is usable only while that service is present in the currently loaded hospital catalog.
 - Layout follows screen 08 of `opd-high-fidelity-screens-square.html`: title/address, OPD service panel, opening-hours panel, explanatory note, and prominent CTA. It uses the app's existing font fallbacks and shared button. Physical-device visual fidelity remains unverified.
-- The opening-hours panel explicitly says hours have not been provided. No static prototype hours, session counts, or “Full today” badges are copied into live UI. Supplying actual hours and deriving session availability remain outstanding; see [design/data limitations](milestone03/DEVIATIONS.md).
+- The opening-hours panel explicitly says hours have not been provided. No static prototype hours, session counts, or “Full today” badges are copied into live UI. Supplying actual hours and integrating session availability into this screen remain outstanding; see [design/data limitations](milestone03/DEVIATIONS.md).
 
 ## Expo Go check
 

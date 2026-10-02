@@ -1,6 +1,6 @@
 # API contracts
 
-The root README section 15 defines the overall API routes. Hospital search, details, OPD services, and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
+The root README section 15 defines the overall API routes. Hospital search, details, OPD services, available sessions, and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
 
 ## Hospital search — implemented (M1-04)
 
@@ -88,7 +88,55 @@ A valid active hospital with no active services returns `{ "success": true, "dat
 { "success": false, "error": { "code": "NOT_FOUND", "message": "Hospital not found.", "fieldErrors": {} } }
 ```
 
-Database failures return HTTP 500 `INTERNAL_ERROR`, never a successful empty catalog or false 404. Hospital and service reads are separate operations, not a transactional snapshot. Service availability, session counts, and capacity belong to M1-08 and are not inferred from the catalog. Opening hours are not present in the README's current hospital schema and are not invented by this API. See [M1-06 handoff and M1-07 integration](HOSPITAL_DETAILS.md).
+Database failures return HTTP 500 `INTERNAL_ERROR`, never a successful empty catalog or false 404. Hospital and service reads are separate operations, not a transactional snapshot. Session availability and capacity are returned by the M1-08 endpoint below, not inferred from the service catalog. Opening hours are not present in the README's current hospital schema and are not invented by this API. See [M1-06 handoff and M1-07 integration](HOSPITAL_DETAILS.md).
+
+## Available sessions — implemented (M1-08)
+
+```http
+GET /api/v1/hospitals/000000000000000000000101/sessions?date=2026-10-03&serviceId=000000000000000000000201
+Accept: application/json
+```
+
+Public endpoint for active hospitals and their active services. The example date is illustrative; use a future date containing sessions when testing.
+
+| Parameter | Default | Validation |
+| --- | --- | --- |
+| `date` | Today's calendar date in `Asia/Colombo` | One real `YYYY-MM-DD` date, years 1000–9999 |
+| `serviceId` | All active services of this hospital | One 24-character hexadecimal ObjectId |
+
+Malformed hospital IDs, blank/invalid filters, repeated parameters, and unknown parameters return HTTP 400 `VALIDATION_ERROR` with field errors. Missing/inactive hospitals return 404 `NOT_FOUND`. A specified service that is missing, inactive, or belongs to another hospital also returns 404. Valid filters with no sessions return a successful empty list.
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "000000000000000000000301",
+      "hospitalId": "000000000000000000000101",
+      "serviceId": "000000000000000000000201",
+      "serviceName": "General OPD",
+      "doctorOrTeam": "Demo OPD team",
+      "sessionDate": "2026-10-03",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "startsAt": "2026-10-03T03:30:00.000Z",
+      "endsAt": "2026-10-03T04:30:00.000Z",
+      "status": "OPEN",
+      "capacity": 20,
+      "bookedCount": 8,
+      "remainingCapacity": 12,
+      "isBookable": true
+    }
+  ],
+  "meta": { "date": "2026-10-03", "timeZone": "Asia/Colombo", "total": 1, "bookableCount": 1 }
+}
+```
+
+Returns only `OPEN` sessions whose start instant is strictly later than the server's captured request time. Sessions already started, including exactly at the cutoff, are excluded. Dates/times describe Sri Lanka local time; ISO timestamps carry UTC `Z`. Results are ordered by start time, then ID. This is an unpaginated daily hospital catalog intended for the small academic dataset.
+
+Full sessions remain visible with `remainingCapacity: 0` and `isBookable: false`; overbooked legacy records also clamp remaining capacity to zero. `meta.total` counts returned sessions and `bookableCount` counts sessions with spare capacity. Invalid times, end times at/before the start, invalid capacity/counts, and missing display data are excluded. Staff/internal fields are omitted.
+
+Availability reads do not reserve capacity or guarantee a booking. Hospital, service, and session reads are separate; the future M1-10 booking transaction must revalidate status, parent/service activity, duplicate bookings, and capacity atomically. Database failures return HTTP 500 `INTERNAL_ERROR`, never successful empty availability. See [storage conventions, demo seeding, and M1-09 handoff](SESSIONS.md).
 
 ## Patient Home — next appointment (proposed; not implemented)
 
