@@ -3,6 +3,7 @@ import { connectMongo } from '../config/mongodb.js';
 import { connectionDiagnostic } from '../config/connectionDiagnostic.js';
 import { ensureHospitalIndexes } from '../modules/hospitals/hospitalRepository.js';
 import { seedHospitals } from './hospitals.js';
+import { seedServices } from './services.js';
 
 let connection;
 try {
@@ -12,6 +13,12 @@ try {
   console.log(
     `Inserted ${result.upsertedCount} demo hospitals. Existing records were preserved.`
   );
+  if (process.argv.includes('--services')) {
+    const services = await seedServices(connection.db);
+    console.log(
+      `Inserted ${services.upsertedCount} demo OPD services. Existing records were preserved.`
+    );
+  }
 } catch (error) {
   console.error(`Hospital seed failed. ${connectionDiagnostic(error)}`);
   process.exitCode = 1;
