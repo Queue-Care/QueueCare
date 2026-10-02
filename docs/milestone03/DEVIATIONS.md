@@ -14,6 +14,6 @@ The high-fidelity HTML was absent when the entry screens were built and is now p
 
 Screen 08's title/address, service list, opening-hours panel, explanatory note, and primary CTA are implemented. Square panels follow the merged prototype; the CTA reuses the existing rounded ActionButton and permitted system-font fallbacks. Device visual comparison is pending.
 
-The hospital schema does not yet contain opening hours, so the panel says hours have not been provided. Static prototype times would misrepresent real hospital data. Session-count and “Full today” badges are deferred until M1-08 supplies sessions and capacity. Service rows instead expose a single accessible selection state, and the CTA requires a selection. A listed service does not imply appointment availability.
+The hospital schema does not yet contain opening hours, so the panel says hours have not been provided. Static prototype times would misrepresent real hospital data. M1-08 now supplies sessions and capacity through a separate endpoint; session-count and “Full today” badges still need mobile integration. Service rows instead expose a single accessible selection state, and the CTA requires a selection. A listed service does not imply appointment availability.
 
 The next route receives the selected hospital/service IDs, but session selection (M1-09) remains pending. Guests encounter the existing sign-in gate. This records current implementation limits, not approval to omit these features from the final release.
