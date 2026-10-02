@@ -99,9 +99,10 @@ export async function startMongo(t) {
   // Drain logs after startup so the child cannot block on a full pipe.
   child.stdout.resume();
   child.stderr.resume();
-  connection = await connectMongo({
+  const config = {
     mongoUri: `mongodb://127.0.0.1:${port}`,
     dbName: 'queuecare_test',
-  });
-  return connection.db;
+  };
+  connection = await connectMongo(config);
+  return { db: connection.db, config };
 }

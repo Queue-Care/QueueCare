@@ -13,7 +13,7 @@ test(
   'hospital API with real MongoDB and HTTP',
   { timeout: 40000 },
   async (t) => {
-    const db = await startMongo(t);
+    const { db } = await startMongo(t);
     await ensureHospitalIndexes(db);
     await ensureHospitalIndexes(db);
     const collection = db.collection('hospitals');
