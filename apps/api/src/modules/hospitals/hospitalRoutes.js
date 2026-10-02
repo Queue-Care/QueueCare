@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { parseHospitalQuery } from './hospitalQuery.js';
 import { parseHospitalId, rejectHospitalDetailQuery } from './hospitalId.js';
+import { parseSessionQuery } from './sessionQuery.js';
 
 export function hospitalRoutes(repository) {
   const router = Router();
@@ -24,6 +25,12 @@ export function hospitalRoutes(repository) {
       data: services,
       meta: { total: services.length },
     });
+  });
+  router.get('/:hospitalId/sessions', async (request, response) => {
+    const hospitalId = parseHospitalId(request.params.hospitalId);
+    const query = parseSessionQuery(request.query);
+    const result = await repository.getSessions(hospitalId, query);
+    response.json({ success: true, ...result });
   });
   return router;
 }
