@@ -1,8 +1,47 @@
 # API contracts
 
-The root README section 15 defines the overall API routes. The API application is not implemented yet. The contract below is the proposed integration shape used by Member 1's Patient Home adapter; it is not evidence of a live endpoint.
+The root README section 15 defines the overall API routes. Hospital search and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
 
-## Patient Home — next appointment
+## Hospital search — implemented (M1-04)
+
+```http
+GET /api/v1/hospitals?search=central&city=Colombo&page=1&limit=20
+Accept: application/json
+```
+
+Public endpoint: guest browsing does not require authentication. Returns only documents with `isActive: true`. `search` matches a literal substring in either hospital name or city, ignoring case. An optional `city` filter matches a full city name, ignoring case; both filters apply when provided. Blank text filters are ignored. Regular expression characters are treated as text.
+
+| Parameter | Default | Validation |
+| --- | --- | --- |
+| `search` | Empty | One string, trimmed, maximum 100 characters, no control characters |
+| `city` | Empty | One string, trimmed, maximum 80 characters, no control characters |
+| `page` | `1` | Integer 1–1000, written as digits without leading zeros |
+| `limit` | `20` | Integer 1–50, written as digits without leading zeros |
+
+Unknown parameters and repeated parameters are rejected with HTTP 400, `VALIDATION_ERROR`, and field-specific messages. Results use case-insensitive ascending name order, with `_id` as a stable tie-breaker.
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "000000000000000000000101",
+      "name": "Demo Central Hospital",
+      "address": "Demo location — not a real hospital",
+      "city": "Colombo"
+    }
+  ],
+  "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1, "hasNextPage": false }
+}
+```
+
+`phone` and `imageUrl` are included when present in MongoDB. Internal fields such as `imagePublicId` are excluded. IDs are strings. No matches return `data: []`, `total: 0`, `totalPages: 0`, and `hasNextPage: false`. A page beyond the results returns an empty array while retaining the matching total. Pagination/count are separate reads and may reflect concurrent edits; no snapshot guarantee is provided.
+
+Unexpected database/query errors return HTTP 500 with `INTERNAL_ERROR`, a generic message, and no successful `data` fallback. The shared handler follows the README's `success: false, error: { code, message, fieldErrors }` format. Unknown endpoints return 404 `NOT_FOUND`.
+
+`GET /health` pings MongoDB. Success returns `{ "success": true, "data": { "status": "ok", "database": "connected" } }`; database failure returns HTTP 503 `SERVICE_UNAVAILABLE`.
+
+## Patient Home — next appointment (proposed; not implemented)
 
 **Owner handoff:** Member 2's patient booking-list API, using Member 3's MongoDB/session foundation. Member 1 consumes the result in Home.
 
