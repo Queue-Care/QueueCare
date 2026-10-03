@@ -1,6 +1,6 @@
 # M1-06/M1-07 — Hospital Details handoff
 
-M1-04/M1-05 hospital search and M1-06's public hospital details/service APIs are implemented and merged. M1-07 now replaces the mobile Hospital Details placeholder with a screen consuming both endpoints. M1-08’s [Available Sessions API](SESSIONS.md) is now implemented. M1-09’s [Book Appointment screen](BOOK_APPOINTMENT.md) consumes session availability. The next Member 1 task is **M1-10 — transactional create-booking API**.
+M1-04/M1-05 hospital search and M1-06's public hospital details/service APIs are implemented and merged. M1-07 now replaces the mobile Hospital Details placeholder with a screen consuming both endpoints. M1-08’s [Available Sessions API](SESSIONS.md) is now implemented. M1-09’s [Book Appointment screen](BOOK_APPOINTMENT.md) consumes session availability. M1-10’s [booking API](BOOKING_API.md) is implemented. M1-11’s [confirmation action](CONFIRM_APPOINTMENT.md) is implemented. The next task is **M1-12 — full Booking Confirmation screen**.
 
 ## Run and check
 
@@ -32,7 +32,7 @@ The complete response and error contract is in [API.md](API.md). IDs above are f
 
 - Hospital Search passes `route.params.hospitalId`. The details adapter loads hospital information and OPD services concurrently without a JWT. It validates IDs, names, addresses, optional phone data, and service ownership; wrong-hospital records, duplicate service IDs, and malformed responses are rejected.
 - The screen shows database-backed name, address, city, optional phone, and service names. One radio-style service can be selected at a time. **View OPD sessions** remains disabled until a valid service is selected.
-- The action navigates to `BookAppointment` with `{ hospitalId, serviceId }`. `serviceId` is an optional typed route parameter; existing hospital/session routes remain valid. The next screen now supports date/session selection and capacity for patients, with the existing sign-in gate for guests. Confirmation remains disabled until M1-10/M1-11.
+- The action navigates to `BookAppointment` with `{ hospitalId, serviceId }`. `serviceId` is an optional typed route parameter; existing hospital/session routes remain valid. The next screen now supports date/session selection and capacity for patients, with the existing sign-in gate for guests. M1-11 now enables confirmation with a real patient token, loaded profile, and available selected session.
 - Loading, hospital failure, hospital unavailable (404/invalid ID), empty services, and service-only failure have distinct states. A service failure retains hospital information and offers retry; it never displays a successful empty catalog. A 404 from either endpoint makes the hospital unavailable.
 - Pull-to-refresh clears selection and reloads both endpoints. Retry and refocus reload both too. Requests have 15-second timeouts and are cancelled on blur, unmount, retry, or hospital-ID changes. Late responses cannot replace the current hospital. Selection is usable only while that service is present in the currently loaded hospital catalog.
 - Layout follows screen 08 of `opd-high-fidelity-screens-square.html`: title/address, OPD service panel, opening-hours panel, explanatory note, and prominent CTA. It uses the app's existing font fallbacks and shared button. Physical-device visual fidelity remains unverified.
