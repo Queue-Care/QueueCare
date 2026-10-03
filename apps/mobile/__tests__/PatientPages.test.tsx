@@ -10,8 +10,12 @@ import {
   parsePriority,
   patientApi,
 } from '../src/features/patient/api';
-import type { PatientAuthParams , RootStackParams } from '../src/navigation/types';
+import type {
+  PatientAuthParams,
+  RootStackParams,
+} from '../src/navigation/types';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { bookingDetailsPayload } from '../test-utils/bookingFixtures';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from '../src/navigation/AppNavigator';
@@ -197,6 +201,20 @@ test('booking and priority contracts reject malformed dates and unexpected statu
       reason: 'OTHER',
       status: 'ACCEPTED',
       createdAt: 'invalid',
+    }),
+  ).toThrow();
+});
+
+test('patient pages read the nested booking details returned by develop', () => {
+  const booking = parseBooking(bookingDetailsPayload.data);
+  expect(booking.hospitalName).toBe(bookingDetailsPayload.data.hospital.name);
+  expect(booking.serviceName).toBe(bookingDetailsPayload.data.service.name);
+  expect(booking.startsAt).toBe(bookingDetailsPayload.data.session.startsAt);
+  expect(booking._id).toBe(bookingDetailsPayload.data._id);
+  expect(() =>
+    parseBooking({
+      ...bookingDetailsPayload.data,
+      session: { startsAt: 'invalid' },
     }),
   ).toThrow();
 });

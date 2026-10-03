@@ -35,6 +35,20 @@ const zonedDate = (value: unknown): value is string =>
   Number.isFinite(Date.parse(value));
 
 export function parseBooking(value: unknown): Booking {
+  // Develop's details endpoint returns linked records; lists use flat summaries.
+  if (
+    object(value) &&
+    object(value.hospital) &&
+    object(value.service) &&
+    object(value.session)
+  ) {
+    value = {
+      ...value,
+      hospitalName: value.hospital.name,
+      serviceName: value.service.name,
+      startsAt: value.session.startsAt,
+    };
+  }
   if (
     !object(value) ||
     !['_id', 'bookingCode', 'hospitalName', 'serviceName'].every(key =>
