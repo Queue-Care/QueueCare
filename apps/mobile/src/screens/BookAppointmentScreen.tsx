@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -9,6 +10,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { bookingMessages } from '../features/booking/createBooking';
+import type { BookingSubmission } from '../features/booking/useBookingSubmission';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
 import {
@@ -27,10 +31,18 @@ export function BookAppointmentScreen({
   serviceId,
   patient,
   onChooseHospital,
+  submission,
+  onConfirmed,
+  onBookings,
+  onSessionExpired,
 }: {
   hospitalId: string;
   serviceId?: string;
   patient?: PatientSummary;
+  submission: BookingSubmission;
+  onConfirmed: (bookingId: string) => void;
+  onBookings: () => void;
+  onSessionExpired?: () => void;
   onChooseHospital: () => void;
 }) {
   const [date, setDate] = useState(colomboDate);
@@ -41,8 +53,58 @@ export function BookAppointmentScreen({
     serviceId,
     date,
   });
+  const focused = useIsFocused();
+  const [confirmedCandidate, setConfirmedCandidate] = useState<{
+    id: string;
+    epoch: number;
+  }>();
+  const focus = useRef({ active: false, epoch: 0 });
+  useFocusEffect(
+    useCallback(() => {
+      focus.current.active = true;
+      focus.current.epoch++;
+      return () => {
+        focus.current.active = false;
+        focus.current.epoch++;
+      };
+    }, []),
+  );
+  useEffect(() => {
+    if (
+      confirmedCandidate &&
+      focused &&
+      focus.current.active &&
+      focus.current.epoch === confirmedCandidate.epoch &&
+      !['background', 'inactive'].includes(AppState.currentState)
+    )
+      onConfirmed(confirmedCandidate.id);
+  }, [confirmedCandidate, focused, onConfirmed]);
+  const attempt =
+    selected && submission.outcomes[selected.id]
+      ? {
+          sessionId: selected.id,
+          label: `${selected.serviceName} · ${
+            selected.sessionDate
+          } · ${sessionTimeLabel(selected)}`,
+        }
+      : submission.lastAttempt;
+  const outcome = attempt ? submission.outcomes[attempt.sessionId] : undefined;
+  const handled = useRef(outcome);
+  useEffect(() => {
+    if (handled.current === outcome) return;
+    handled.current = outcome;
+    if (
+      outcome?.status === 'error' &&
+      ['full', 'unavailable', 'validation'].includes(outcome.kind)
+    )
+      reload();
+  }, [outcome, reload]);
+  const refresh = () => {
+    if (!submission.pending) reload();
+  };
   const today = colomboDate(new Date(now));
   const chooseDate = (value: string) => {
+    if (submission.pending) return;
     if (!isCalendarDate(value) || value < colomboDate()) {
       setDateError('Enter today or a future date in YYYY-MM-DD format.');
       return;
@@ -59,6 +121,47 @@ export function BookAppointmentScreen({
     state.status === 'ready'
       ? state.sessions.filter(item => Date.parse(item.startsAt) > now)
       : [];
+  const selectedOutcome = selected
+    ? submission.outcomes[selected.id]
+    : undefined;
+  const needsRecovery =
+    selectedOutcome?.status === 'success' ||
+    selectedOutcome?.status === 'pending' ||
+    (selectedOutcome?.status === 'error' &&
+      ['uncertain', 'duplicate'].includes(selectedOutcome.kind));
+  const canConfirm =
+    !!selected &&
+    !!patientName &&
+    submission.authenticated &&
+    !submission.pending &&
+    !needsRecovery;
+  const confirm = async (retryUncertain = false) => {
+    if (
+      !selected ||
+      !patientName ||
+      !submission.authenticated ||
+      submission.pending ||
+      !isSessionBookable(selected)
+    )
+      return;
+    if (
+      needsRecovery &&
+      !(
+        retryUncertain &&
+        selectedOutcome?.status === 'error' &&
+        selectedOutcome.kind === 'uncertain'
+      )
+    )
+      return;
+    const epoch = focus.current.epoch;
+    const booking = await submission.submit(
+      selected.id,
+      `${selected.serviceName} · ${selected.sessionDate} · ${sessionTimeLabel(
+        selected,
+      )}`,
+    );
+    if (booking) setConfirmedCandidate({ id: booking.id, epoch });
+  };
   return (
     <SafeAreaView style={styles.page} edges={['bottom', 'left', 'right']}>
       <ScrollView
@@ -67,7 +170,8 @@ export function BookAppointmentScreen({
         refreshControl={
           <RefreshControl
             refreshing={state.status === 'loading'}
-            onRefresh={reload}
+            onRefresh={refresh}
+            enabled={!submission.pending}
             tintColor={colors.teal}
           />
         }
@@ -95,6 +199,7 @@ export function BookAppointmentScreen({
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={10}
+            editable={!submission.pending}
             onChangeText={value => {
               setDraftDate(value);
               setDateError('');
@@ -109,6 +214,7 @@ export function BookAppointmentScreen({
           )}
           <ActionButton
             label="Show sessions"
+            disabled={submission.pending}
             variant="outline"
             onPress={() => chooseDate(draftDate)}
           />
@@ -117,7 +223,7 @@ export function BookAppointmentScreen({
               <ActionButton
                 label="Previous day"
                 variant="outline"
-                disabled={date <= today}
+                disabled={submission.pending || date <= today}
                 onPress={() => {
                   if (date > colomboDate()) chooseDate(shiftDate(date, -1));
                 }}
@@ -127,7 +233,7 @@ export function BookAppointmentScreen({
               <ActionButton
                 label="Next day"
                 variant="outline"
-                disabled={date === '9999-12-31'}
+                disabled={submission.pending || date === '9999-12-31'}
                 onPress={() => {
                   if (date !== '9999-12-31') chooseDate(shiftDate(date, 1));
                 }}
@@ -166,7 +272,8 @@ export function BookAppointmentScreen({
             </Text>
             <ActionButton
               label="Try again"
-              onPress={reload}
+              onPress={refresh}
+              disabled={submission.pending}
               variant="outline"
             />
           </View>
@@ -195,14 +302,19 @@ export function BookAppointmentScreen({
                   <Pressable
                     key={session.id}
                     accessibilityRole="radio"
-                    disabled={!bookable}
+                    disabled={!bookable || submission.pending}
                     accessibilityLabel={`${session.serviceName}, ${
                       session.sessionDate
                     }, ${sessionTimeLabel(session)}, ${
                       session.doctorOrTeam
                     }, ${capacity}`}
-                    accessibilityState={{ checked, disabled: !bookable }}
-                    onPress={() => select(session)}
+                    accessibilityState={{
+                      checked,
+                      disabled: !bookable || submission.pending,
+                    }}
+                    onPress={() => {
+                      if (!submission.pending) select(session);
+                    }}
                     style={({ pressed }) => [
                       styles.card,
                       checked && styles.selected,
@@ -234,7 +346,8 @@ export function BookAppointmentScreen({
             <ActionButton
               label="Refresh availability"
               variant="outline"
-              onPress={reload}
+              onPress={refresh}
+              disabled={submission.pending}
             />
           </>
         )}
@@ -267,11 +380,86 @@ export function BookAppointmentScreen({
             <Text style={styles.body}>{sessionTimeLabel(selected)}</Text>
           </View>
         )}
+        {!submission.authenticated && !submission.pending && (
+          <View style={styles.card}>
+            <Text style={styles.body}>
+              Sign in with an active patient account to confirm an appointment.
+            </Text>
+            {onSessionExpired && (
+              <ActionButton
+                label="Sign in again"
+                variant="outline"
+                onPress={onSessionExpired}
+              />
+            )}
+          </View>
+        )}
+        {attempt && outcome && (
+          <View style={styles.card} accessibilityLiveRegion="polite">
+            <Text style={styles.heading}>Booking request</Text>
+            <Text style={styles.body}>{attempt.label}</Text>
+            {outcome.status === 'pending' ? (
+              <>
+                <ActivityIndicator color={colors.teal} />
+                <Text style={styles.body}>Confirming your appointment…</Text>
+              </>
+            ) : outcome.status === 'success' ? (
+              <>
+                <Text style={styles.heading}>Appointment saved</Text>
+                <Text selectable style={styles.body}>
+                  {outcome.booking.bookingCode}
+                </Text>
+                <ActionButton
+                  label="View confirmation"
+                  onPress={() => onConfirmed(outcome.booking.id)}
+                />
+              </>
+            ) : (
+              <>
+                <Text accessibilityRole="alert" style={styles.body}>
+                  {bookingMessages[outcome.kind]}
+                </Text>
+                {['duplicate', 'uncertain'].includes(outcome.kind) && (
+                  <ActionButton
+                    label="Check My bookings"
+                    variant="outline"
+                    onPress={onBookings}
+                  />
+                )}
+                {outcome.kind === 'uncertain' &&
+                  selected?.id === attempt.sessionId && (
+                    <ActionButton
+                      label="Retry same session"
+                      variant="outline"
+                      disabled={
+                        !patientName ||
+                        !submission.authenticated ||
+                        submission.pending
+                      }
+                      onPress={() => {
+                        void confirm(true);
+                      }}
+                    />
+                  )}
+              </>
+            )}
+          </View>
+        )}
         <Text style={styles.body}>
-          Online appointment confirmation isn’t available yet. Selecting a
-          session does not reserve a place.
+          Selecting a session does not reserve a place. Your booking is
+          confirmed only after it is saved.
         </Text>
-        <ActionButton label="Confirm appointment" disabled onPress={() => {}} />
+        <ActionButton
+          label={
+            submission.pending
+              ? 'Confirming appointment…'
+              : 'Confirm appointment'
+          }
+          disabled={!canConfirm}
+          onPress={() => {
+            void confirm();
+          }}
+        />
       </ScrollView>
     </SafeAreaView>
   );
