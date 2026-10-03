@@ -15,7 +15,12 @@ test('mounts the QueueCare app entry point', async () => {
   });
 
   const labels = renderer!.root.findAllByType(Text);
-  expect(labels.some(label => label.props.children === 'QueueCare')).toBe(true);
+  expect(
+    labels.some(label =>
+      Array.isArray(label.props.children) &&
+      label.props.children.join('') === 'Book your OPD visit\nwithout the queue',
+    ),
+  ).toBe(true);
 
   await ReactTestRenderer.act(async () => {
     renderer!.unmount();

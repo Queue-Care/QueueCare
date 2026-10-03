@@ -10,7 +10,13 @@ export function ActionButton({
 }: {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'outline' | 'onDark';
+  variant?:
+    | 'primary'
+    | 'outline'
+    | 'onDark'
+    | 'urgent'
+    | 'secondary'
+    | 'danger';
   disabled?: boolean;
 }) {
   return (
@@ -27,7 +33,14 @@ export function ActionButton({
         disabled && styles.disabled,
       ]}
     >
-      <Text style={[styles.label, variant !== 'primary' && styles.darkLabel]}>
+      <Text
+        style={[
+          styles.label,
+          ['outline', 'onDark', 'secondary'].includes(variant) &&
+            styles.darkLabel,
+          variant === 'danger' && { color: colors.coral },
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -46,6 +59,9 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: colors.teal, borderColor: colors.teal },
   outline: { backgroundColor: colors.panel, borderColor: colors.sage },
   onDark: { backgroundColor: colors.panel, borderColor: colors.panel },
+  secondary: { backgroundColor: colors.tealTint, borderColor: colors.tealTint },
+  urgent: { backgroundColor: colors.coral, borderColor: colors.coral },
+  danger: { backgroundColor: colors.coralTint, borderColor: colors.coralTint },
   label: {
     fontFamily: fonts.body,
     fontSize: 16,

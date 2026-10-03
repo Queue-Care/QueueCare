@@ -4,6 +4,8 @@ The task definitions and ownership remain in the root README.
 
 ## Current status
 
+- Patient pages update: Welcome now follows supplied HTML screen 02. Create Account, My Bookings, Booking Details, Request Priority, and Request Status replace their navigation placeholders with frontend pages and API adapters (HTML screens 05 and 11–14). Registration validation, confirmed-booking cancellation confirmation, priority submission, and decision rendering are implemented on the client. Backend CRUD, real verification/session restoration, and phone fidelity verification remain pending. See [patient pages handoff](PATIENT_PAGES.md).
+
 - S-01: The local repository has an origin at `https://github.com/Queue-Care/QueueCare.git` and local `main` and `develop` branches. Remote branch protection and required PR review have not been verified.
 - S-02: The repository folders and npm workspace manifests are configured. Empty directories contain `.gitkeep` placeholders so Git retains the scaffold.
 - S-02 is not fully complete until the mobile app and API run locally after S-05 and S-06.
