@@ -15,6 +15,10 @@ import {
   tabOptions,
 } from './NavigationPage';
 import { PatientHomeScreen } from '../screens/PatientHomeScreen';
+import { MyBookingsScreen } from '../screens/MyBookingsScreen';
+import { BookingDetailsScreen } from '../screens/BookingDetailsScreen';
+import { RequestPriorityScreen } from '../screens/RequestPriorityScreen';
+import { RequestStatusScreen } from '../screens/RequestStatusScreen';
 import type {
   BookingsStackParams,
   HomeStackParams,
@@ -114,29 +118,31 @@ function HomeNavigator({ guest, accessToken, onSignIn, onExit }: Access) {
     </Home.Navigator>
   );
 }
-function BookingsNavigator() {
+function BookingsNavigator({ accessToken }: { accessToken?: string }) {
   return (
     <Bookings.Navigator screenOptions={stackOptions}>
       <Bookings.Screen name="MyBookings" options={{ title: 'My bookings' }}>
-        {() => <NavigationPage title="My bookings" />}
+        {props => <MyBookingsScreen {...props} accessToken={accessToken} />}
       </Bookings.Screen>
       <Bookings.Screen
         name="BookingDetails"
         options={{ title: 'Booking details' }}
       >
-        {() => <NavigationPage title="Booking details" />}
+        {props => <BookingDetailsScreen {...props} accessToken={accessToken} />}
       </Bookings.Screen>
       <Bookings.Screen
         name="RequestPriority"
         options={{ title: 'Request priority' }}
       >
-        {() => <NavigationPage title="Request priority" />}
+        {props => (
+          <RequestPriorityScreen {...props} accessToken={accessToken} />
+        )}
       </Bookings.Screen>
       <Bookings.Screen
         name="PriorityRequestStatus"
         options={{ title: 'Request status' }}
       >
-        {() => <NavigationPage title="Priority request status" />}
+        {props => <RequestStatusScreen {...props} accessToken={accessToken} />}
       </Bookings.Screen>
     </Bookings.Navigator>
   );
@@ -161,7 +167,11 @@ export function PatientNavigator({
       </Tabs.Screen>
       <Tabs.Screen name="Bookings">
         {() =>
-          guest ? <SignInGate onSignIn={onSignIn} /> : <BookingsNavigator />
+          guest ? (
+            <SignInGate onSignIn={onSignIn} />
+          ) : (
+            <BookingsNavigator accessToken={accessToken} />
+          )
         }
       </Tabs.Screen>
       <Tabs.Screen name="Alerts">
