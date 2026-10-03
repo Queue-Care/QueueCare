@@ -2,8 +2,14 @@ import express from 'express';
 import { errorHandler } from './middleware/errorHandler.js';
 import { hospitalRoutes } from './modules/hospitals/hospitalRoutes.js';
 import { HttpError } from './utils/HttpError.js';
+import { bookingRoutes } from './modules/bookings/bookingRoutes.js';
 
-export function createApp({ hospitalRepository, checkDatabase }) {
+export function createApp({
+  hospitalRepository,
+  checkDatabase,
+  bookingRepository,
+  authenticate,
+}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('query parser', 'simple');
@@ -24,6 +30,20 @@ export function createApp({ hospitalRepository, checkDatabase }) {
     });
   });
   app.use('/api/v1/hospitals', hospitalRoutes(hospitalRepository));
+  app.use(
+    '/api/v1/bookings',
+    bookingRoutes(
+      bookingRepository,
+      authenticate ??
+        ((_request, _response) => {
+          throw new HttpError(
+            401,
+            'UNAUTHORIZED',
+            'Please sign in to continue.'
+          );
+        })
+    )
+  );
   app.use((_request, _response, next) =>
     next(
       new HttpError(404, 'NOT_FOUND', 'The requested endpoint was not found.')
