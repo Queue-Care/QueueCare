@@ -5,6 +5,7 @@ import {
 } from '@react-navigation/native-stack';
 import { NavigationPage, stackOptions } from './NavigationPage';
 import type { PatientAuthParams, StaffAuthParams } from './types';
+import { CreateAccountScreen } from '../screens/CreateAccountScreen';
 
 const Patient = createNativeStackNavigator<PatientAuthParams>();
 const Staff = createNativeStackNavigator<StaffAuthParams>();
@@ -61,9 +62,8 @@ export function PatientAuthNavigator() {
       <Patient.Screen
         name="PatientCreateAccount"
         options={{ title: 'Create account' }}
-      >
-        {() => <NavigationPage title="Create patient account" />}
-      </Patient.Screen>
+        component={CreateAccountScreen}
+      />
       <Patient.Screen name="VerifyMobile" options={{ title: 'Verify mobile' }}>
         {() => <NavigationPage title="Verify mobile" />}
       </Patient.Screen>
