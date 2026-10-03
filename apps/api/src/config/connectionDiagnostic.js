@@ -20,6 +20,10 @@ export function connectionDiagnostic(error) {
   }
   if (codes.has('EADDRINUSE'))
     return 'The API port is already in use. Stop the other API instance or change PORT in apps/api/.env.';
+  if (codes.has('AUTH_CONFIG'))
+    return 'JWT_SECRET must be a random secret of at least 32 bytes in apps/api/.env. Never use a public mobile environment variable.';
+  if (codes.has(11000))
+    return 'A required unique index conflicts with existing data. Resolve duplicate booking codes or patient/session pairs before restarting; no records were deleted.';
   if (codes.has(18) || codes.has('AuthenticationFailed'))
     return 'MongoDB authentication failed. Check the database username, password, and authSource in apps/api/.env.';
   if (codes.has(13))
