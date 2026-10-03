@@ -1,6 +1,6 @@
 # API contracts
 
-The root README section 15 defines the overall API routes. Hospital search, details, OPD services, available sessions, and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
+The root README section 15 defines the overall API routes. Hospital search, details, OPD services, available sessions, protected booking creation, and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
 
 ## Hospital search — implemented (M1-04)
 
@@ -136,7 +136,40 @@ Returns only `OPEN` sessions whose start instant is strictly later than the serv
 
 Full sessions remain visible with `remainingCapacity: 0` and `isBookable: false`; overbooked legacy records also clamp remaining capacity to zero. `meta.total` counts returned sessions and `bookableCount` counts sessions with spare capacity. Invalid times, end times at/before the start, invalid capacity/counts, and missing display data are excluded. Staff/internal fields are omitted.
 
-Availability reads do not reserve capacity or guarantee a booking. Hospital, service, and session reads are separate; the future M1-10 booking transaction must revalidate status, parent/service activity, duplicate bookings, and capacity atomically. Database failures return HTTP 500 `INTERNAL_ERROR`, never successful empty availability. See [storage conventions, demo seeding, and M1-09 handoff](SESSIONS.md).
+Availability reads do not reserve capacity or guarantee a booking. Hospital, service, and session reads are separate; the M1-10 booking transaction revalidates status, parent/service activity, duplicate bookings, and capacity atomically. Database failures return HTTP 500 `INTERNAL_ERROR`, never successful empty availability. See [storage conventions, demo seeding, and M1-09 handoff](SESSIONS.md).
+
+## Create booking — implemented (M1-10)
+
+```http
+POST /api/v1/bookings
+Authorization: Bearer <JWT>
+Content-Type: application/json
+
+{"sessionId":"000000000000000000000301"}
+```
+
+Requires a verified JWT and a current ACTIVE PATIENT account. The only accepted field is a 24-character hexadecimal `sessionId`; query parameters and additional fields (including `patientId`) return 400. Patient identity comes from the verified token subject and current database account.
+
+Success returns HTTP 201:
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "000000000000000000000401",
+    "bookingCode": "OPD-74A099F60D3B48C18409D3A835176FA0",
+    "patientId": "000000000000000000000001",
+    "sessionId": "000000000000000000000301",
+    "status": "CONFIRMED",
+    "createdAt": "2026-10-03T02:00:00.000Z",
+    "updatedAt": "2026-10-03T02:00:00.000Z"
+  }
+}
+```
+
+The booking insert and conditional capacity increment commit together. Existing patient/session pairs return 409 `BOOKING_ALREADY_EXISTS` even if cancelled; full sessions return 409 `SESSION_FULL`; closed/started/malformed sessions or inactive parents return 409 `SESSION_UNAVAILABLE`. Missing sessions return 404. Invalid authentication returns 401, and non-patient/inactive accounts return 403. Unconfigured JWT verification or a standalone database returns 503. Unexpected failures return a generic 500 with no driver details.
+
+A lost response may follow a successful commit. Repeated requests prevent duplicates but do not replay the original 201; callers must handle `BOOKING_ALREADY_EXISTS` and recover the existing booking through Member 2's list/details endpoints when available. No notifications or confirmation-screen navigation are implemented in this step. See [full contract, auth handoff, and replica-set setup](BOOKING_API.md).
 
 ## Patient Home — next appointment (proposed; not implemented)
 
