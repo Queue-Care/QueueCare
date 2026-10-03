@@ -6,6 +6,7 @@ import { connectMongo } from './config/mongodb.js';
 import { connectionDiagnostic } from './config/connectionDiagnostic.js';
 import { readAuthConfig } from './config/auth.js';
 import { authenticate } from './middleware/auth.js';
+import { ensureBookingNotificationIndexes } from './modules/bookings/bookingNotification.js';
 import {
   createBookingRepository,
   ensureBookingIndexes,
@@ -22,6 +23,7 @@ try {
   connection = await connectMongo(config);
   await ensureHospitalIndexes(connection.db);
   await ensureBookingIndexes(connection.db);
+  await ensureBookingNotificationIndexes(connection.db);
   const server = createServer(
     createApp({
       hospitalRepository: createHospitalRepository(connection.db),
