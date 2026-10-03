@@ -55,7 +55,9 @@ export function shiftDate(date: string, days: number) {
   value.setUTCDate(value.getUTCDate() + days);
   return value.toISOString().slice(0, 10);
 }
-export function sessionTimeLabel(session: AvailableSession) {
+export function sessionTimeLabel(
+  session: Pick<AvailableSession, 'startsAt' | 'endsAt'>,
+) {
   const time = (value: string) =>
     new Intl.DateTimeFormat('en-GB', {
       timeZone: SESSION_TIME_ZONE,
@@ -81,7 +83,7 @@ function integer(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 // Validate that the server's UTC instant and Sri Lanka wall-clock fields agree.
-function matchesInstant(
+export function matchesSessionInstant(
   value: unknown,
   date: string,
   time: unknown,
@@ -136,8 +138,8 @@ export function parseAvailableSessions(
       !text(item.doctorOrTeam) ||
       item.sessionDate !== query.date ||
       item.status !== 'OPEN' ||
-      !matchesInstant(item.startsAt, query.date, item.startTime) ||
-      !matchesInstant(item.endsAt, query.date, item.endTime) ||
+      !matchesSessionInstant(item.startsAt, query.date, item.startTime) ||
+      !matchesSessionInstant(item.endsAt, query.date, item.endTime) ||
       Date.parse(item.endsAt) <= Date.parse(item.startsAt) ||
       !integer(item.capacity) ||
       item.capacity === 0 ||

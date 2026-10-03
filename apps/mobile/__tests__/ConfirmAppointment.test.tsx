@@ -31,7 +31,19 @@ import {
   serviceId,
   session,
 } from '../test-utils/sessionFixtures';
-import { bookingPayload, patientId } from '../test-utils/bookingFixtures';
+import {
+  bookingPayload,
+  bookingDetailsPayload,
+  patientId,
+} from '../test-utils/bookingFixtures';
+import {
+  getBookingDetails,
+  parseBookingDetails,
+} from '../src/features/booking/bookingDetails';
+jest.mock('../src/features/booking/bookingDetails', () => ({
+  ...jest.requireActual('../src/features/booking/bookingDetails'),
+  getBookingDetails: jest.fn(),
+}));
 jest.mock(
   'react-native-safe-area-context',
   () => jest.requireActual('react-native-safe-area-context/jest/mock').default,
@@ -128,6 +140,12 @@ beforeEach(() => {
   load.mockReset();
   expired.mockReset();
   post.mockResolvedValue(saved);
+  jest
+    .mocked(getBookingDetails)
+    .mockReset()
+    .mockResolvedValue(
+      parseBookingDetails(bookingDetailsPayload, saved.id, patientId),
+    );
   load.mockResolvedValue(
     parseAvailableSessions(envelope(), { hospitalId, serviceId, date }),
   );
@@ -172,6 +190,13 @@ test('valid patient selects, posts once despite rapid taps, and replaces form wi
     params: { bookingId: saved.id },
   });
   expect(renderer.root.findAllByType(BookAppointmentScreen)).toHaveLength(0);
+  expect(getBookingDetails).toHaveBeenCalledWith(
+    saved.id,
+    patientId,
+    patient.accessToken,
+    expect.anything(),
+  );
+  expect(hasText(bookingPayload.data.bookingCode)).toBe(true);
   const view = renderer.root
     .findAll(
       node =>
