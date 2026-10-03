@@ -1,6 +1,6 @@
 # Database implementation status
 
-The root README section 13 defines the planned MongoDB schemas. Hospital discovery, OPD service catalogs, and session availability now have working read repositories/indexes and seeds; other collections remain pending.
+The root README section 13 defines the planned MongoDB schemas. Hospital discovery, OPD service catalogs, and session availability now have working read repositories/indexes and seeds; booking creation/read and booking-confirmed notification writes are also implemented; other collection APIs remain pending.
 
 ## Hospitals
 
@@ -42,3 +42,11 @@ Startup and seeds create `session_hospital_status_date_service` on `{ hospitalId
 Creation requires a replica set or sharded deployment and uses a transaction with the conditional capacity increment. Standalone MongoDB returns 503 without a partial write. Snapshot reads, majority commit, conditional updates, and unique indexes protect capacity and duplicates. `bookingRevision` fields on users/hospitals/services are internal lock counters updated in the same transaction to force fresh eligibility checks during concurrent suspension/deactivation; rollback restores those counters too. No public response exposes them.
 
 The minimal `users` read is for JWT/account authorization only. Registration, password hashes, user seed data, login, and profile APIs remain pending. Cancellation/rescheduling owners must update bookings and capacity together and preserve the all-status uniqueness rule. See [transaction details and local replica-set setup](BOOKING_API.md).
+
+## Booking-confirmed notifications — M1-13
+
+New bookings insert one notification using the same MongoDB transaction/session as booking creation and capacity increment. The document follows README section 13.8 with `type: BOOKING`, authenticated patient `userId`, `readAt: null`, booking timestamp, and `data: { event: BOOKING_CONFIRMED, bookingId, sessionId }` (IDs are BSON ObjectIds). The display message contains the saved booking code and directs the user to current booking details.
+
+Startup creates `notification_booking_confirmed_unique` on `{ userId: 1, "data.bookingId": 1, "data.event": 1 }`, unique only for `type: BOOKING`, `data.event: BOOKING_CONFIRMED`, and ObjectId-valued `data.bookingId`. Other notification types keep their own duplicate policy. Existing duplicates are not automatically deleted. The notification collection/index is initialized before requests begin; no index creation happens inside the booking transaction.
+
+The producer neither backfills existing bookings nor implements notification list/read/read-all APIs. Member 4 must consume the same records and scope reads/updates by the authenticated user. See [failure semantics, record contract, and checks](BOOKING_NOTIFICATIONS.md).

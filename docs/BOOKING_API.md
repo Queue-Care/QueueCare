@@ -1,6 +1,6 @@
 # Booking creation — M1-10
 
-M1-09 is merged in local history (PR #17). M1-10 adds protected `POST /api/v1/bookings`, unique booking indexes, and a MongoDB transaction that reserves one place and inserts one booking together. M1-11’s [mobile confirmation action](CONFIRM_APPOINTMENT.md) now calls this endpoint. **Next: M1-12 — full Booking Confirmation screen.**
+M1-10/M1-11 are merged in local history (PR #18). M1-10 adds protected `POST /api/v1/bookings`, unique booking indexes, and a MongoDB transaction that reserves one place and inserts one booking together; M1-13 now includes its unread notification in that transaction. M1-11’s [mobile confirmation action](CONFIRM_APPOINTMENT.md) now calls this endpoint. M1-12’s [Booking Confirmation screen](BOOKING_CONFIRMATION.md) is implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. **Next: M1-14 — accessibility refinements.**
 
 ## Request and result
 
@@ -53,11 +53,11 @@ The default mobile startup still returns signed out. No demo login or token-sign
 
 Booking writes require **MongoDB Atlas or a replica set**. Existing standalone MongoDB can still serve discovery but booking returns 503 without performing writes. The code never falls back to a non-transactional increment/insert. See [MongoDB's transaction documentation](https://www.mongodb.com/docs/drivers/node/current/crud/transactions/).
 
-The transaction uses snapshot reads, majority commit, primary routing, sequential database operations, and the driver's transaction/commit retry handling within a ten-second timeout. Each attempt rechecks patient, hospital/service activity, session relationships, OPEN status, future start in Asia/Colombo, valid date/time/capacity/count, and duplicates. The conditional session update increments `bookedCount` only below capacity, followed by booking insertion. A failure rolls back both operations.
+The transaction uses snapshot reads, majority commit, primary routing, sequential database operations, and the driver's transaction/commit retry handling within a ten-second timeout. Each attempt rechecks patient, hospital/service activity, session relationships, OPEN status, future start in Asia/Colombo, valid date/time/capacity/count, and duplicates. The conditional session update increments `bookedCount` only below capacity, followed by booking and notification insertion. A failure rolls back all three operations.
 
 Private `bookingRevision` counters on the patient, hospital, and service are incremented inside the transaction to acquire write locks. These prevent eligibility checks from relying on a stale snapshot during concurrent suspension/deactivation. Failed transactions also roll back those counters. They are not public fields. This deliberately serializes concurrent bookings for a hospital; revisit the locking strategy before production-scale traffic. Future staff/account writers should update existing records, preserving unrelated fields.
 
-Startup creates unique indexes on `{ patientId: 1, sessionId: 1 }` and `{ bookingCode: 1 }`. Existing duplicates cause startup failure; no data is deleted automatically. Following the README's all-status patient/session uniqueness, cancelled bookings cannot be recreated by POST. Member 2's cancellation/rescheduling must coordinate capacity and indexes transactionally. Notifications are deferred to M1-13; no notification is emitted inside a retried callback.
+Startup creates unique indexes on `{ patientId: 1, sessionId: 1 }` and `{ bookingCode: 1 }`. Existing duplicates cause startup failure; no data is deleted automatically. Following the README's all-status patient/session uniqueness, cancelled bookings cannot be recreated by POST. Member 2's cancellation/rescheduling must coordinate capacity and indexes transactionally. M1-13 inserts the booking-confirmed notification using the same transaction/session. A partial unique index protects confirmation events; no external delivery occurs inside the retried callback. See [record contract and Member 4 handoff](BOOKING_NOTIFICATIONS.md).
 
 Session storage follows [M1-08's date/time convention](DATABASE.md#opd-sessions--m1-08-read-api). The API verifies that a session has not started immediately before its conditional capacity update; final booking eligibility is always decided by the server.
 
@@ -82,4 +82,4 @@ Set `MONGODB_URI=mongodb://127.0.0.1:27018/opd_queue?replicaSet=queuecareDev` in
 
 `npm run test:api` includes real temporary MongoDB replica-set tests for concurrent final-slot booking, simultaneous duplicate requests, transaction rollback after insertion failure, session closure/hospital deactivation during a transaction, strict payloads, and JWT/account authorization. The test helper owns a fresh temporary directory and process, and does not use `apps/api/.env` or modify development/Atlas data.
 
-All 50 API tests pass. Verification status is recorded in [the development plan](DEVELOPMENT_PLAN.md).
+All 61 API tests pass, including notification atomicity, duplicate protection, and transient-retry coverage. Verification status is recorded in [the development plan](DEVELOPMENT_PLAN.md).

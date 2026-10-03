@@ -167,9 +167,64 @@ Success returns HTTP 201:
 }
 ```
 
-The booking insert and conditional capacity increment commit together. Existing patient/session pairs return 409 `BOOKING_ALREADY_EXISTS` even if cancelled; full sessions return 409 `SESSION_FULL`; closed/started/malformed sessions or inactive parents return 409 `SESSION_UNAVAILABLE`. Missing sessions return 404. Invalid authentication returns 401, and non-patient/inactive accounts return 403. Unconfigured JWT verification or a standalone database returns 503. Unexpected failures return a generic 500 with no driver details.
+The booking insert, conditional capacity increment, and M1-13 booking-confirmed notification insert commit together. Notification storage failure aborts the transaction and returns a generic 500. Existing patient/session pairs return 409 `BOOKING_ALREADY_EXISTS` even if cancelled; full sessions return 409 `SESSION_FULL`; closed/started/malformed sessions or inactive parents return 409 `SESSION_UNAVAILABLE`. Missing sessions return 404. Invalid authentication returns 401, and non-patient/inactive accounts return 403. Unconfigured JWT verification or a standalone database returns 503. Unexpected failures return a generic 500 with no driver details.
 
-A lost response may follow a successful commit. Repeated requests prevent duplicates but do not replay the original 201; callers must handle `BOOKING_ALREADY_EXISTS` and recover the existing booking through Member 2's list/details endpoints when available. No notifications or confirmation-screen navigation are implemented in this step. See [full contract, auth handoff, and replica-set setup](BOOKING_API.md).
+A lost response may follow a successful commit. Repeated requests prevent duplicates but do not replay the original 201; callers must handle `BOOKING_ALREADY_EXISTS` and recover the existing booking through Member 2's list/details endpoints when available. M1-13 persists one unread confirmation notification using the [notification contract](BOOKING_NOTIFICATIONS.md). Repeated POSTs do not reset its read state. Member 4’s notification read APIs remain pending. See [full contract, auth handoff, and replica-set setup](BOOKING_API.md).
+
+## Read booking summary — implemented (M1-12)
+
+```http
+GET /api/v1/bookings/:bookingId
+Authorization: Bearer <JWT>
+Accept: application/json
+```
+
+Requires a verified JWT and a current ACTIVE PATIENT account. `bookingId` must be a 24-character hexadecimal MongoDB ID. Query parameters are not accepted. Identity comes from authentication; the query matches both booking ID and patient ID. Another patient's booking and a missing booking return identical 404 `NOT_FOUND` responses.
+
+HTTP 200 returns `Cache-Control: no-store` and the following joined DTO:
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "000000000000000000000401",
+    "bookingCode": "OPD-74A099F60D3B48C18409D3A835176FA0",
+    "patientId": "000000000000000000000001",
+    "sessionId": "000000000000000000000301",
+    "status": "CONFIRMED",
+    "createdAt": "2026-10-03T02:00:00.000Z",
+    "updatedAt": "2026-10-03T02:00:00.000Z",
+    "hospital": {
+      "_id": "000000000000000000000101",
+      "name": "Example Hospital",
+      "address": "Example address",
+      "city": "Colombo",
+      "isActive": true
+    },
+    "service": {
+      "_id": "000000000000000000000201",
+      "name": "General OPD",
+      "isActive": true
+    },
+    "session": {
+      "_id": "000000000000000000000301",
+      "hospitalId": "000000000000000000000101",
+      "serviceId": "000000000000000000000201",
+      "doctorOrTeam": "OPD team",
+      "status": "OPEN",
+      "sessionDate": "2026-10-03",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "startsAt": "2026-10-03T03:30:00.000Z",
+      "endsAt": "2026-10-03T04:30:00.000Z"
+    }
+  }
+}
+```
+
+All known booking and session statuses are readable, including past sessions and inactive hospitals/services. Times use the same Asia/Colombo conversion as booking creation. This is a read of current linked records, not a historical snapshot; separate queries do not guarantee a snapshot across concurrent edits. No capacity or booking fields are changed.
+
+Malformed IDs/query parameters return 400 `VALIDATION_ERROR`; invalid authentication returns 401; inactive/non-patient accounts return 403. Missing or inconsistent linked records return 409 `BOOKING_DETAILS_UNAVAILABLE`. Unconfigured authentication/repository returns 503, and unexpected database failures return generic 500 errors. No private notes, user profile, or NIC fields are returned. Member 2's list/actions/staff access remain pending; register future static `/bookings/me` before the parameter route. See [screen behavior and phone checks](BOOKING_CONFIRMATION.md).
 
 ## Patient Home — next appointment (proposed; not implemented)
 

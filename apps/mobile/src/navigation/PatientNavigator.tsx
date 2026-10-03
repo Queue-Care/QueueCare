@@ -21,6 +21,7 @@ import {
   useBookingSubmission,
   type BookingSubmission,
 } from '../features/booking/useBookingSubmission';
+import { BookingConfirmationScreen } from '../screens/BookingConfirmationScreen';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import type {
   BookingsStackParams,
@@ -46,6 +47,7 @@ function HomeNavigator({
   guest,
   accessToken,
   patient,
+  patientId,
   onSignIn,
   onExit,
   submission,
@@ -166,25 +168,20 @@ function HomeNavigator({
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
-            <NavigationPage
-              title="Booking confirmation"
-              description={`Booking reference: ${route.params.bookingId}`}
-              actions={[
-                {
-                  label: 'View booking',
-                  onPress: () =>
-                    navigation
-                      .getParent<BottomTabNavigationProp<PatientTabParams>>()
-                      .navigate('Bookings', {
-                        screen: 'BookingDetails',
-                        params: { bookingId: route.params.bookingId },
-                      }),
-                },
-                {
-                  label: 'Back to Home',
-                  onPress: () => navigation.popTo('PatientHome'),
-                },
-              ]}
+            <BookingConfirmationScreen
+              bookingId={route.params.bookingId}
+              patientId={patientId}
+              accessToken={accessToken}
+              onSessionExpired={onSessionExpired}
+              onViewBooking={bookingId =>
+                navigation
+                  .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                  .navigate('Bookings', {
+                    screen: 'BookingDetails',
+                    params: { bookingId },
+                  })
+              }
+              onHome={() => navigation.popTo('PatientHome')}
             />
           )
         }
@@ -237,6 +234,7 @@ export function PatientNavigator({
             guest={guest}
             accessToken={accessToken}
             patient={patient}
+            patientId={patientId}
             submission={submission}
             onSessionExpired={onSessionExpired}
             onSignIn={onSignIn}

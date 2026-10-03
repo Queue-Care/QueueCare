@@ -45,5 +45,37 @@ export function bookingRoutes(repository, authenticate) {
       response.status(201).json({ success: true, data: booking });
     }
   );
+  router.get(
+    '/:bookingId',
+    authenticate,
+    authorize('PATIENT'),
+    async (request, response) => {
+      const errors = Object.create(null);
+      if (!/^[a-f\d]{24}$/i.test(request.params.bookingId))
+        errors.bookingId = 'Must be a 24-character hexadecimal MongoDB ID.';
+      for (const key of Object.keys(request.query))
+        errors[key] = 'Unsupported query parameter.';
+      if (Object.keys(errors).length)
+        throw new HttpError(
+          400,
+          'VALIDATION_ERROR',
+          'Check the booking reference.',
+          errors
+        );
+      if (!repository)
+        throw new HttpError(
+          503,
+          'SERVICE_UNAVAILABLE',
+          'Booking details are unavailable.'
+        );
+      const booking = await repository.getDetails(
+        request.auth.userId,
+        new ObjectId(request.params.bookingId)
+      );
+      response
+        .set('Cache-Control', 'no-store')
+        .json({ success: true, data: booking });
+    }
+  );
   return router;
 }

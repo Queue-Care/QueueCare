@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ObjectId } from 'mongodb';
+import { MongoServerError, ObjectId } from 'mongodb';
 import { SignJWT } from 'jose';
 import { createApp } from '../app.js';
 import { authenticate } from '../middleware/auth.js';
@@ -10,6 +10,10 @@ import {
   ensureBookingIndexes,
 } from '../modules/bookings/bookingRepository.js';
 import { parseBookingBody } from '../modules/bookings/bookingRoutes.js';
+import {
+  ensureBookingNotificationIndexes,
+  insertBookingConfirmation,
+} from '../modules/bookings/bookingNotification.js';
 import { startHttp, startMongo } from './testServer.js';
 const id = (n) => new ObjectId(n.toString(16).padStart(24, '0'));
 const at = new Date('2026-10-03T02:00:00Z');
@@ -153,9 +157,12 @@ test(
     const { db, client } = await startMongo(t, { replicaSet: true });
     await ensureBookingIndexes(db);
     await ensureBookingIndexes(db);
+    await ensureBookingNotificationIndexes(db);
+    await ensureBookingNotificationIndexes(db);
     const users = db.collection('users'),
       sessions = db.collection('opdSessions'),
-      bookings = db.collection('bookings');
+      bookings = db.collection('bookings'),
+      notifications = db.collection('notifications');
     await users.insertMany(
       Array.from({ length: 16 }, (_, i) => ({
         _id: id(i + 1),
@@ -165,9 +172,13 @@ test(
     );
     const hospitalId = id(100),
       serviceId = id(200);
-    await db
-      .collection('hospitals')
-      .insertOne({ _id: hospitalId, name: 'Test hospital', isActive: true });
+    await db.collection('hospitals').insertOne({
+      _id: hospitalId,
+      name: 'Test hospital',
+      address: 'Test address',
+      city: 'Colombo',
+      isActive: true,
+    });
     await db.collection('opdServices').insertOne({
       _id: serviceId,
       hospitalId,
@@ -210,6 +221,24 @@ test(
         );
         assert.equal(result.body.data.patientId, id(1).toString());
         assert.equal(result.body.data.status, 'CONFIRMED');
+        const notification = await notifications.findOne({
+          'data.bookingId': new ObjectId(result.body.data._id),
+        });
+        assert.ok(notification._id instanceof ObjectId);
+        assert.deepEqual(notification, {
+          _id: notification._id,
+          userId: id(1),
+          type: 'BOOKING',
+          title: 'Booking confirmed',
+          message: `Your booking ${result.body.data.bookingCode} is confirmed. Open your booking for appointment details.`,
+          data: {
+            event: 'BOOKING_CONFIRMED',
+            bookingId: new ObjectId(result.body.data._id),
+            sessionId: id(301),
+          },
+          readAt: null,
+          createdAt: at,
+        });
         assert.equal(
           (
             await bookings.findOne({ _id: new ObjectId(result.body.data._id) })
@@ -217,7 +246,24 @@ test(
           id(301).toString()
         );
         assert.equal((await sessions.findOne({ _id: id(301) })).bookedCount, 1);
+        const summary = await fetch(
+          `${base}/api/v1/bookings/${result.body.data._id}`,
+          {
+            headers: { Authorization: `Bearer ${bearer}` },
+          }
+        );
+        assert.equal(summary.status, 200);
+        const savedSummary = (await summary.json()).data;
+        assert.equal(savedSummary.bookingCode, result.body.data.bookingCode);
+        assert.equal(savedSummary.hospital.name, 'Test hospital');
+        assert.equal(savedSummary.service.name, 'General OPD');
+        assert.equal(savedSummary.session.startsAt, '2026-10-03T03:30:00.000Z');
         for (const status of ['CONFIRMED', 'CANCELLED']) {
+          // Repeating a POST after losing its successful response must not reset read state.
+          await notifications.updateOne(
+            { _id: notification._id },
+            { $set: { readAt: at } }
+          );
           await bookings.updateOne(
             { patientId: id(1), sessionId: id(301) },
             { $set: { status } }
@@ -228,6 +274,16 @@ test(
           assert.equal(
             (await sessions.findOne({ _id: id(301) })).bookedCount,
             1
+          );
+          assert.equal(
+            await notifications.countDocuments({
+              'data.bookingId': notification.data.bookingId,
+            }),
+            1
+          );
+          assert.deepEqual(
+            (await notifications.findOne({ _id: notification._id })).readAt,
+            at
           );
         }
         const indexes = await bookings.indexes();
@@ -262,6 +318,16 @@ test(
         );
         assert.equal(await bookings.countDocuments({ sessionId: id(302) }), 3);
         assert.equal((await sessions.findOne({ _id: id(302) })).bookedCount, 3);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': id(302) }),
+          3
+        );
+        for (const result of results.filter((item) => item.status === 201)) {
+          const notice = await notifications.findOne({
+            'data.bookingId': new ObjectId(result.body.data._id),
+          });
+          assert.equal(notice.userId.toString(), result.body.data.patientId);
+        }
       }
     );
     await t.test(
@@ -282,12 +348,17 @@ test(
           5
         );
         assert.equal((await sessions.findOne({ _id: id(303) })).bookedCount, 1);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': id(303) }),
+          1
+        );
       }
     );
     await t.test(
       'invalid body and impersonation cannot mutate data',
       async () => {
         const before = await bookings.countDocuments();
+        const beforeNotifications = await notifications.countDocuments();
         assert.equal(
           (await post(base, id(301), bearer, { patientId: id(2).toString() }))
             .status,
@@ -307,11 +378,13 @@ test(
         });
         assert.equal(response.status, 400);
         assert.equal(await bookings.countDocuments(), before);
+        assert.equal(await notifications.countDocuments(), beforeNotifications);
       }
     );
     await t.test(
       'database role/status override JWT claims; deleted and suspended users are denied',
       async () => {
+        const before = await notifications.countDocuments();
         for (const patch of [
           { role: 'NURSE', status: 'ACTIVE' },
           { role: 'RECEPTION' },
@@ -344,11 +417,13 @@ test(
           ),
           (error) => error.status === 403
         );
+        assert.equal(await notifications.countDocuments(), before);
       }
     );
     await t.test(
       'closed, started, malformed, inactive, missing and full sessions cannot reserve capacity',
       async () => {
+        const before = await notifications.countDocuments();
         const changes = [
           { status: 'CLOSED' },
           { status: 'CANCELLED' },
@@ -403,6 +478,7 @@ test(
         await db
           .collection('opdServices')
           .updateOne({ _id: serviceId }, { $set: { hospitalId } });
+        assert.equal(await notifications.countDocuments(), before);
       }
     );
     await t.test(
@@ -427,20 +503,18 @@ test(
                     return async (...args) => {
                       if (!changed) {
                         changed = true;
-                        await db
-                          .collection(target)
-                          .updateOne(
-                            {
-                              _id:
-                                target === 'hospitals' ? hospitalId : sessionId,
-                            },
-                            {
-                              $set:
-                                target === 'hospitals'
-                                  ? { isActive: false }
-                                  : { status: 'CLOSED' },
-                            }
-                          );
+                        await db.collection(target).updateOne(
+                          {
+                            _id:
+                              target === 'hospitals' ? hospitalId : sessionId,
+                          },
+                          {
+                            $set:
+                              target === 'hospitals'
+                                ? { isActive: false }
+                                : { status: 'CLOSED' },
+                          }
+                        );
                       }
                       return object[method](...args);
                     };
@@ -459,6 +533,10 @@ test(
             (error) => error.code === 'SESSION_UNAVAILABLE'
           );
           assert.equal(await bookings.countDocuments({ sessionId }), 0);
+          assert.equal(
+            await notifications.countDocuments({ 'data.sessionId': sessionId }),
+            0
+          );
           assert.equal(
             (await sessions.findOne({ _id: sessionId })).bookedCount,
             0
@@ -494,10 +572,149 @@ test(
         assert.ok(!JSON.stringify(result.body).includes('collision'));
         assert.equal((await sessions.findOne({ _id: id(500) })).bookedCount, 0);
         assert.equal(await bookings.countDocuments({ sessionId: id(500) }), 0);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': id(500) }),
+          0
+        );
         assert.deepEqual(await users.findOne({ _id: id(1) }), beforePatient);
         assert.deepEqual(
           await db.collection('hospitals').findOne({ _id: hospitalId }),
           beforeHospital
+        );
+      }
+    );
+    function interceptNotificationInsert(afterInsert) {
+      return {
+        admin: () => db.admin(),
+        collection(name) {
+          const collection = db.collection(name);
+          if (name !== 'notifications') return collection;
+          return new Proxy(collection, {
+            get(object, key) {
+              if (key === 'insertOne')
+                return async (document, options) => {
+                  assert.ok(options.session.inTransaction());
+                  const result = await object.insertOne(document, options);
+                  await afterInsert(document, options);
+                  return result;
+                };
+              const value = object[key];
+              return typeof value === 'function' ? value.bind(object) : value;
+            },
+          });
+        },
+      };
+    }
+    await t.test(
+      'notification failure rolls back booking, capacity, notification and eligibility writes',
+      async () => {
+        await sessions.insertOne(sample(510));
+        const before = await Promise.all([
+          users.findOne({ _id: id(1) }),
+          db.collection('hospitals').findOne({ _id: hospitalId }),
+          db.collection('opdServices').findOne({ _id: serviceId }),
+          sessions.findOne({ _id: id(510) }),
+        ]);
+        const wrappedDb = interceptNotificationInsert(async (document) => {
+          // A separate read cannot see either uncommitted record.
+          assert.equal(
+            await notifications.countDocuments({ _id: document._id }),
+            0
+          );
+          assert.equal(
+            await bookings.countDocuments({ _id: document.data.bookingId }),
+            0
+          );
+          throw new Error('private-notification-storage-failure');
+        });
+        const failedBase = await startHttp(t, app(wrappedDb, client));
+        const result = await post(failedBase, id(510), bearer);
+        assert.equal(result.status, 500);
+        assert.equal(result.body.error.code, 'INTERNAL_ERROR');
+        assert.equal(
+          JSON.stringify(result.body).includes('private-notification'),
+          false
+        );
+        assert.equal(await bookings.countDocuments({ sessionId: id(510) }), 0);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': id(510) }),
+          0
+        );
+        assert.deepEqual(
+          await Promise.all([
+            users.findOne({ _id: id(1) }),
+            db.collection('hospitals').findOne({ _id: hospitalId }),
+            db.collection('opdServices').findOne({ _id: serviceId }),
+            sessions.findOne({ _id: id(510) }),
+          ]),
+          before
+        );
+        // Restoring storage permits a deliberate retry, with one committed notification.
+        assert.equal((await post(base, id(510), bearer)).status, 201);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': id(510) }),
+          1
+        );
+        assert.equal((await sessions.findOne({ _id: id(510) })).bookedCount, 1);
+      }
+    );
+    await t.test(
+      'a transient error after notification insertion retries the transaction with one committed event',
+      async () => {
+        await sessions.insertOne(sample(511));
+        let attempts = 0;
+        const wrappedDb = interceptNotificationInsert(async (document) => {
+          attempts++;
+          assert.equal(
+            await notifications.countDocuments({
+              'data.bookingId': document.data.bookingId,
+            }),
+            0
+          );
+          if (attempts === 1)
+            throw new MongoServerError({
+              message: 'simulated retry after notification write',
+              code: 112,
+              errorLabels: ['TransientTransactionError'],
+            });
+        });
+        const retryBase = await startHttp(t, app(wrappedDb, client));
+        const result = await post(retryBase, id(511), bearer);
+        assert.equal(result.status, 201);
+        assert.equal(attempts, 2);
+        assert.equal(await bookings.countDocuments({ sessionId: id(511) }), 1);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': id(511) }),
+          1
+        );
+        assert.equal((await sessions.findOne({ _id: id(511) })).bookedCount, 1);
+      }
+    );
+    await t.test(
+      'confirmation uniqueness survives read state and does not constrain other event types',
+      async () => {
+        const saved = await notifications.findOne({
+          'data.sessionId': id(301),
+        });
+        const { _id, ...copy } = saved;
+        await assert.rejects(
+          notifications.insertOne({ ...copy, readAt: null }),
+          (error) => error.code === 11000
+        );
+        for (const event of [
+          { ...copy, type: 'REMINDER' },
+          { ...copy, data: { ...copy.data, event: 'BOOKING_CANCELLED' } },
+        ]) {
+          // Repeated reminders and other event producers keep their own policy.
+          await notifications.insertMany([{ ...event }, { ...event }]);
+        }
+        assert.equal(
+          await notifications.countDocuments({
+            type: 'BOOKING',
+            'data.event': 'BOOKING_CONFIRMED',
+            'data.bookingId': saved.data.bookingId,
+          }),
+          1
         );
       }
     );
@@ -514,5 +731,22 @@ test(
     );
     assert.equal(await db.collection('bookings').countDocuments(), 0);
     assert.equal(await db.collection('opdSessions').countDocuments(), 0);
+    assert.equal(await db.collection('notifications').countDocuments(), 0);
   }
 );
+test('notification producer refuses a write outside the booking transaction', async () => {
+  let writes = 0;
+  const db = {
+    collection: () => ({
+      insertOne: async () => {
+        writes++;
+      },
+    }),
+  };
+  await assert.rejects(insertBookingConfirmation(db, {}, undefined), TypeError);
+  await assert.rejects(
+    insertBookingConfirmation(db, {}, { inTransaction: () => false }),
+    TypeError
+  );
+  assert.equal(writes, 0);
+});
