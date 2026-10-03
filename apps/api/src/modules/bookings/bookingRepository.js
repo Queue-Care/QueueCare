@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import { HttpError } from '../../utils/HttpError.js';
-import { SESSION_TIME_ZONE } from '../hospitals/sessionQuery.js';
+import { sessionTimestamp as timestamp } from './sessionTime.js';
+import { readBookingDetails } from './bookingDetails.js';
+import { insertBookingConfirmation } from './bookingNotification.js';
 
 export async function ensureBookingIndexes(db) {
   await db.collection('bookings').createIndexes([
@@ -25,28 +27,6 @@ const duplicate = () =>
     'BOOKING_ALREADY_EXISTS',
     'You already have a booking for this session.'
   );
-const timestamp = (field) => ({
-  $dateFromString: {
-    dateString: {
-      $concat: [
-        {
-          $dateToString: {
-            date: '$sessionDate',
-            format: '%Y-%m-%d',
-            timezone: 'UTC',
-          },
-        },
-        'T',
-        `$${field}`,
-        ':00',
-      ],
-    },
-    format: '%Y-%m-%dT%H:%M:%S',
-    timezone: SESSION_TIME_ZONE,
-    onError: null,
-    onNull: null,
-  },
-});
 function validSession(item) {
   return (
     item.hospitalId instanceof ObjectId &&
@@ -78,6 +58,8 @@ export function createBookingRepository(
   } = {}
 ) {
   return {
+    getDetails: (patientId, bookingId) =>
+      readBookingDetails(db, patientId, bookingId),
     async create(patientId, sessionId) {
       const topology = await db.admin().command({ hello: 1 });
       if (!topology.setName && topology.msg !== 'isdbgrid')
@@ -177,6 +159,7 @@ export function createBookingRepository(
               updatedAt: at,
             };
             await db.collection('bookings').insertOne(booking, options);
+            await insertBookingConfirmation(db, booking, transaction);
             return {
               ...booking,
               _id: bookingId.toString(),
