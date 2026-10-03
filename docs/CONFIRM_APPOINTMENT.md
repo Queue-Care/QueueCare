@@ -1,6 +1,6 @@
 # Confirm Appointment integration — M1-11
 
-M1-09 is merged (PR #17). M1-10's booking API and M1-11's mobile confirmation integration are currently local changes. **Next: M1-12 — full Booking Confirmation screen**, displaying hospital, service, date/time, and booking summary.
+M1-10's booking API and M1-11's mobile confirmation integration are merged through PR #18. M1-12's [full Booking Confirmation screen](BOOKING_CONFIRMATION.md) is now implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. **Next: M1-14 — accessibility refinements.**
 
 ## Implemented flow
 
@@ -8,7 +8,7 @@ Confirm appointment becomes available only with a selected future bookable sessi
 
 The adapter sends `POST /api/v1/bookings` with `Authorization: Bearer <token>` and a body containing only `sessionId`. Patient identity is never taken from route data or sent in the body. A response must be HTTP 201 with a valid saved booking, matching patient/session IDs, CONFIRMED status, booking code, and valid UTC timestamps. Unexpected or mismatched responses never navigate to confirmation.
 
-While submitting, the button shows progress; date/session changes and manual refresh are disabled. A synchronous request lock prevents rapid taps from creating simultaneous POSTs. Success replaces the booking form with `BookingConfirmation` using only the persisted `bookingId`. The current destination displays the booking reference, View booking, and Back to Home. M1-12 still needs the full appointment summary; Member 2's booking list/details remain placeholders.
+While submitting, the button shows progress; date/session changes and manual refresh are disabled. A synchronous request lock prevents rapid taps from creating simultaneous POSTs. Success replaces the booking form with `BookingConfirmation` using only the persisted `bookingId`. M1-12 now loads the saved appointment summary with an owner-scoped GET and displays the full booking code, hospital, service, date/time, and current status. View booking and Back to Home remain available; Member 2's booking list/details screens remain placeholders.
 
 ## Failure and recovery
 
@@ -20,7 +20,7 @@ While submitting, the button shows progress; date/session changes and manual ref
 
 Submission state lives in the patient navigator, above individual screens. Pending requests continue when navigating to another tab; a late success does not take over the visible route. On return, the saved result offers View confirmation. Errors/uncertainty are retained across date changes and navigation during that signed-in app session. Signing out, replacing credentials, or unmounting cancels the transport; late responses cannot navigate into a different account. Changing credentials preserves an interrupted request as uncertain for the same mounted account. State is not persisted across app termination; server duplicate protection remains authoritative.
 
-My bookings cannot yet retrieve an existing booking because Member 2's read API/screens are pending. An uncertain or duplicate response therefore cannot yet recover a saved booking ID through that path. The application does not manufacture a confirmation to hide this integration gap.
+My bookings cannot yet retrieve an existing booking because Member 2's list API/screens are pending (M1-12's single-booking GET requires a known ID). An uncertain or duplicate response therefore cannot yet recover a saved booking ID through that path. The application does not manufacture a confirmation to hide this integration gap.
 
 ## Authentication and setup
 
