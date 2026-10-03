@@ -54,6 +54,6 @@ S-05's initial Expo Go phone launch was confirmed by the user. The new S-12 flow
 
 ## Patient Home integration
 
-Hospital Search now opens the implemented Hospital Details screen. Its View OPD sessions action passes `{ hospitalId, serviceId }` to `BookAppointment`; `serviceId` is optional for older callers, and the existing optional `sessionId` is retained. Guests still encounter the sign-in gate. Patient session selection remains pending. See [M1-07 handoff](HOSPITAL_DETAILS.md).
+Hospital Search now opens the implemented Hospital Details screen. Its View OPD sessions action passes `{ hospitalId, serviceId }` to `BookAppointment`; `serviceId` is optional for older callers, and the existing optional `sessionId` is retained. Guests still encounter the sign-in gate. Patients now reach M1-09’s Book Appointment screen, with confirmation disabled pending M1-10/M1-11. The optional `NavigationSession.patient` field supplies `{ fullName, nic? }` from the validated account/profile response; only masked NIC text is displayed. See [M1-09 handoff](BOOK_APPOINTMENT.md). See [M1-07 handoff](HOSPITAL_DETAILS.md).
 
 Patient Home now consumes `NavigationSession.accessToken` when signed in. Its View booking action navigates to `Bookings → BookingDetails` with the returned booking ID. Quick actions navigate to Bookings or Alerts, while guests are directed to PatientAuth. Home refreshes when focused again. See [M1-03 handoff](PATIENT_HOME.md).

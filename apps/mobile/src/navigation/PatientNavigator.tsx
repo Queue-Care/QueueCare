@@ -17,10 +17,12 @@ import {
 import { PatientHomeScreen } from '../screens/PatientHomeScreen';
 import { HospitalSearchScreen } from '../screens/HospitalSearchScreen';
 import { HospitalDetailsScreen } from '../screens/HospitalDetailsScreen';
+import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import type {
   BookingsStackParams,
   HomeStackParams,
   PatientTabParams,
+  PatientSummary,
 } from './types';
 
 const Tabs = createBottomTabNavigator<PatientTabParams>();
@@ -29,11 +31,18 @@ const Bookings = createNativeStackNavigator<BookingsStackParams>();
 type Access = {
   guest: boolean;
   accessToken?: string;
+  patient?: PatientSummary;
   onSignIn: () => void;
   onExit?: () => void;
 };
 
-function HomeNavigator({ guest, accessToken, onSignIn, onExit }: Access) {
+function HomeNavigator({
+  guest,
+  accessToken,
+  patient,
+  onSignIn,
+  onExit,
+}: Access) {
   return (
     <Home.Navigator screenOptions={stackOptions}>
       <Home.Screen
@@ -110,13 +119,16 @@ function HomeNavigator({ guest, accessToken, onSignIn, onExit }: Access) {
         name="BookAppointment"
         options={{ title: 'Book appointment' }}
       >
-        {() =>
+        {({ route, navigation }) =>
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
-            <NavigationPage
-              title="OPD sessions"
-              description="Session selection is not available here yet. Please check again later."
+            <BookAppointmentScreen
+              key={`${route.params.hospitalId}:${route.params.serviceId ?? ''}`}
+              hospitalId={route.params.hospitalId}
+              serviceId={route.params.serviceId}
+              patient={patient}
+              onChooseHospital={() => navigation.navigate('HospitalSearch')}
             />
           )
         }
@@ -166,6 +178,7 @@ function BookingsNavigator() {
 export function PatientNavigator({
   guest,
   accessToken,
+  patient,
   onSignIn,
   onExit,
 }: Access) {
@@ -176,6 +189,7 @@ export function PatientNavigator({
           <HomeNavigator
             guest={guest}
             accessToken={accessToken}
+            patient={patient}
             onSignIn={onSignIn}
             onExit={onExit}
           />

@@ -104,6 +104,7 @@ export function AppNavigator({
                 <PatientNavigator
                   guest={false}
                   accessToken={session.accessToken}
+                  patient={session.patient}
                   onSignIn={() => {}}
                 />
               )}
