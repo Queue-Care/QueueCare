@@ -1,18 +1,18 @@
 # Book Appointment screen — M1-09
 
-M1-08's Available Sessions API is merged in local history (PR #16). M1-09 replaces the patient BookAppointment placeholder with a screen that loads hospital details and date/service-filtered sessions. **Next: M1-10 — transactional create-booking API**, which depends on S-17's authenticated patient middleware. M1-11 then connects Confirm appointment.
+M1-08's Available Sessions API is merged in local history (PR #16). M1-09 replaces the patient BookAppointment placeholder with a screen that loads hospital details and date/service-filtered sessions. M1-10’s [protected transactional booking API](BOOKING_API.md) is now implemented. M1-11’s [Confirm Appointment integration](CONFIRM_APPOINTMENT.md) is implemented. **Next: M1-12 — full Booking Confirmation screen.** Real login/token issuance is still pending.
 
 ## Current behavior
 
 - Hospital Details passes `hospitalId` and the selected `serviceId` into the screen. Older callers without a service ID see all active services. Existing optional `sessionId` route data is retained for compatibility but does not select or authorize a session; users explicitly choose from the loaded list.
 - The initial date is today in Asia/Colombo. Enter a real `YYYY-MM-DD` date and tap Show sessions, or use Previous day / Next day. Past dates are rejected. The heading always identifies the applied date, which can differ from an unsubmitted input draft.
 - Cards show service, doctor/team, Sri Lanka time, and remaining capacity. Exactly one available session can be selected. Full sessions stay visible and disabled. Already-started sessions are hidden; the screen checks time every 30 seconds while focused and checks again when selecting.
-- Date/hospital/service changes, refresh, screen refocus, and foregrounding reload data and clear selection. Requests time out after 15 seconds and are cancelled on blur, backgrounding, unmount, or replacement. Late responses cannot overwrite a newer selection of hospital/date.
+- Date/hospital/service changes, refresh, screen refocus, and foregrounding reload data and clear selection. Discovery requests time out after 15 seconds and are cancelled on blur, backgrounding, unmount, or replacement. Booking POST lifecycle and uncertain results follow the [M1-11 handoff](CONFIRM_APPOINTMENT.md). Late responses cannot overwrite a newer selection of hospital/date.
 - Loading, empty, failure, unavailable-hospital/service, retry, and pull-to-refresh states are implemented. A database/network failure does not become an empty list. Public response validation rejects incorrect IDs, date/time mismatches, inconsistent capacity, and duplicate sessions.
 - Patient summary displays the validated account's name and only the final four NIC characters. Missing profile data shows an explicit unavailable message. Patient data and JWTs are not sent to public discovery endpoints or put in route parameters.
-- Confirm appointment is disabled with a visible explanation until booking creation is implemented. Selecting a session does not reserve capacity, create a booking, or navigate to a fabricated confirmation.
+- Confirm appointment submits to the protected API when a token, account ID, patient name, and future bookable selection are present. It disables repeat taps, handles errors and uncertain outcomes, and opens confirmation only after validating a saved booking. Selecting a session alone never reserves a place.
 
-The design uses screen 09 in `opd-high-fidelity-screens-square.html` for the session-card, radio-selection, patient-summary, and confirmation layout, with the existing theme and system fonts. Date controls, network states, missing-profile guidance, and the disabled confirmation explanation support the live data flow. Visual acceptance on a phone remains pending.
+The design uses screen 09 in `opd-high-fidelity-screens-square.html` for the session-card, radio-selection, patient-summary, and confirmation layout, with the existing theme and system fonts. Date controls, network states, missing-profile guidance, and confirmation progress and recovery states support the live data flow. Visual acceptance on a phone remains pending.
 
 ## Authentication handoff
 
@@ -43,10 +43,10 @@ Configure `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env` using your computer's
 3. Select one card, then the other. Only one radio should be selected. Verify your profile name and masked NIC; no fabricated patient details should appear.
 4. Change the date, refresh, switch tabs and return, or background and reopen the app. Verify selection clears and availability reloads. Test invalid dates, empty dates, lost network, retry, and unavailable services.
 5. Check full sessions are disabled and session times stay in Sri Lanka time even with a different phone timezone. Check text scaling, screen-reader labels, scrolling, keyboard use, and Back navigation.
-6. Confirm appointment remains disabled and no booking is created. Enable this action only with M1-10/M1-11 and the required patient authentication.
+6. With a real patient JWT and profile loaded, confirm a booking and verify the saved ID. Without them, confirmation stays disabled. Follow the [M1-11 failure/recovery checklist](CONFIRM_APPOINTMENT.md).
 
 ## Validation
 
-All 138 mobile tests pass, including adapter validation, actual navigation, single selection, full capacity, masked/missing patient data, guest gates, date changes, cancellation/stale responses, focus/foreground refresh, and time-based expiry. TypeScript and ESLint pass. Android and iOS Metro exports pass; these are bundle checks, not physical-device acceptance or standalone native builds.
+All 181 mobile tests pass, including adapter validation, actual navigation, single selection, full capacity, masked/missing patient data, guest gates, date changes, cancellation/stale responses, focus/foreground refresh, and time-based expiry. TypeScript and ESLint pass. Android and iOS Metro exports pass; these are bundle checks, not physical-device acceptance or standalone native builds.
 
-Availability is only a read-time snapshot. M1-10 must identify the patient from verified authentication and atomically recheck duplicate booking, session status/time, hospital/service activity, and remaining capacity before creating a unique booking code. Client selection and `isBookable` are not authorization or a reservation.
+Availability is only a read-time snapshot. M1-10 identifies the patient from verified authentication and atomically rechecks duplicate booking, session status/time, hospital/service activity, and remaining capacity before creating a unique booking code. Client selection and `isBookable` are not authorization or a reservation.

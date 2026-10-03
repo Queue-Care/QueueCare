@@ -1,6 +1,6 @@
 # Available Sessions API — M1-08
 
-M1-07's Hospital Details screen is merged. M1-08 implements the public session availability endpoint, date/service validation, capacity calculation, MongoDB index, and repeatable fictional session seed. M1-09’s [Book Appointment screen](BOOK_APPOINTMENT.md) now consumes this endpoint; guests still see the sign-in gate. **Next: M1-10 — transactional create-booking API**, with authenticated patient middleware required.
+M1-07's Hospital Details screen is merged. M1-08 implements the public session availability endpoint, date/service validation, capacity calculation, MongoDB index, and repeatable fictional session seed. M1-09’s [Book Appointment screen](BOOK_APPOINTMENT.md) now consumes this endpoint; guests still see the sign-in gate. M1-10’s [protected booking API](BOOKING_API.md) is also implemented. M1-11’s [confirmation action](CONFIRM_APPOINTMENT.md) is implemented. **Next: M1-12 — full Booking Confirmation screen**, with real login/token issuance still required.
 
 ## Run and check
 
@@ -42,7 +42,7 @@ See [API response and validation](API.md#available-sessions--implemented-m1-08) 
 
 M1-09 now consumes `hospitalId` and `serviceId` already supplied by Hospital Details. Its date controls load this endpoint, and only one `isBookable` future session can be selected. It displays capacity and a patient-summary handoff with loading, empty, error, retry, and refresh states. Times display in Asia/Colombo even when the phone timezone differs.
 
-Availability is a read-time snapshot and does not reserve a place. M1-10 still needs authenticated, transactional booking creation and duplicate/full-session protection; M1-11 will connect the confirmation action. Real authentication, staff session writes, and phone acceptance testing remain separate unfinished work.
+Availability is a read-time snapshot and does not reserve a place. M1-10 now provides authenticated, transactional booking creation and duplicate/full-session protection; M1-11 now connects the confirmation action for validated patient sessions. Real authentication, staff session writes, and phone acceptance testing remain separate unfinished work.
 
 ## Verification
 
