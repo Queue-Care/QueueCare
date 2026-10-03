@@ -17,6 +17,10 @@ import {
 import { PatientHomeScreen } from '../screens/PatientHomeScreen';
 import { HospitalSearchScreen } from '../screens/HospitalSearchScreen';
 import { HospitalDetailsScreen } from '../screens/HospitalDetailsScreen';
+import {
+  useBookingSubmission,
+  type BookingSubmission,
+} from '../features/booking/useBookingSubmission';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import type {
   BookingsStackParams,
@@ -32,6 +36,8 @@ type Access = {
   guest: boolean;
   accessToken?: string;
   patient?: PatientSummary;
+  patientId?: string;
+  onSessionExpired?: () => void;
   onSignIn: () => void;
   onExit?: () => void;
 };
@@ -42,7 +48,9 @@ function HomeNavigator({
   patient,
   onSignIn,
   onExit,
-}: Access) {
+  submission,
+  onSessionExpired,
+}: Access & { submission: BookingSubmission }) {
   return (
     <Home.Navigator screenOptions={stackOptions}>
       <Home.Screen
@@ -119,7 +127,10 @@ function HomeNavigator({
         name="BookAppointment"
         options={{ title: 'Book appointment' }}
       >
-        {({ route, navigation }) =>
+        {({
+          route,
+          navigation,
+        }: NativeStackScreenProps<HomeStackParams, 'BookAppointment'>) =>
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
@@ -128,6 +139,17 @@ function HomeNavigator({
               hospitalId={route.params.hospitalId}
               serviceId={route.params.serviceId}
               patient={patient}
+              submission={submission}
+              onSessionExpired={onSessionExpired}
+              onConfirmed={bookingId =>
+                navigation.isFocused() &&
+                navigation.replace('BookingConfirmation', { bookingId })
+              }
+              onBookings={() =>
+                navigation
+                  .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                  .navigate('Bookings')
+              }
               onChooseHospital={() => navigation.navigate('HospitalSearch')}
             />
           )
@@ -137,11 +159,33 @@ function HomeNavigator({
         name="BookingConfirmation"
         options={{ title: 'Booking confirmation' }}
       >
-        {() =>
+        {({
+          route,
+          navigation,
+        }: NativeStackScreenProps<HomeStackParams, 'BookingConfirmation'>) =>
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
-            <NavigationPage title="Booking confirmation" />
+            <NavigationPage
+              title="Booking confirmation"
+              description={`Booking reference: ${route.params.bookingId}`}
+              actions={[
+                {
+                  label: 'View booking',
+                  onPress: () =>
+                    navigation
+                      .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                      .navigate('Bookings', {
+                        screen: 'BookingDetails',
+                        params: { bookingId: route.params.bookingId },
+                      }),
+                },
+                {
+                  label: 'Back to Home',
+                  onPress: () => navigation.popTo('PatientHome'),
+                },
+              ]}
+            />
           )
         }
       </Home.Screen>
@@ -179,9 +223,12 @@ export function PatientNavigator({
   guest,
   accessToken,
   patient,
+  patientId,
+  onSessionExpired,
   onSignIn,
   onExit,
 }: Access) {
+  const submission = useBookingSubmission(patientId, accessToken);
   return (
     <Tabs.Navigator screenOptions={tabOptions}>
       <Tabs.Screen name="Home">
@@ -190,6 +237,8 @@ export function PatientNavigator({
             guest={guest}
             accessToken={accessToken}
             patient={patient}
+            submission={submission}
+            onSessionExpired={onSessionExpired}
             onSignIn={onSignIn}
             onExit={onExit}
           />
