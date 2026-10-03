@@ -15,6 +15,7 @@ export default function App({
   loadSession?: SessionLoader;
 }) {
   const { state, retry, continueSignedOut } = useAppStartup(loadSession);
+
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" />
@@ -22,6 +23,7 @@ export default function App({
         <SplashScreen error onRetry={retry} onContinue={continueSignedOut} />
       ) : (
         <AppNavigator
+          onSessionExpired={continueSignedOut}
           isRestoring={state.status === 'loading'}
           session={state.status === 'ready' ? state.session : null}
         />

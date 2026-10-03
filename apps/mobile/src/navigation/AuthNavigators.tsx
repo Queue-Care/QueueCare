@@ -6,6 +6,8 @@ import {
 import { NavigationPage, stackOptions } from './NavigationPage';
 import type { PatientAuthParams, StaffAuthParams } from './types';
 import { CreateAccountScreen } from '../screens/CreateAccountScreen';
+import { StaffSignInScreen } from '../screens/StaffSignInScreen';
+import { StaffRegistrationScreen } from '../screens/StaffRegistrationScreen';
 
 const Patient = createNativeStackNavigator<PatientAuthParams>();
 const Staff = createNativeStackNavigator<StaffAuthParams>();
@@ -21,26 +23,6 @@ function PatientSignIn({
         {
           label: 'Create an account',
           onPress: () => navigation.navigate('PatientCreateAccount'),
-        },
-        {
-          label: 'Forgot password?',
-          onPress: () => navigation.navigate('ResetPassword'),
-        },
-      ]}
-    />
-  );
-}
-function StaffSignIn({
-  navigation,
-}: NativeStackScreenProps<StaffAuthParams, 'StaffSignIn'>) {
-  return (
-    <NavigationPage
-      title="Staff sign in"
-      description="Staff sign-in will be available here."
-      actions={[
-        {
-          label: 'Register as staff',
-          onPress: () => navigation.navigate('StaffRegistration'),
         },
         {
           label: 'Forgot password?',
@@ -81,15 +63,14 @@ export function StaffAuthNavigator() {
     <Staff.Navigator screenOptions={stackOptions}>
       <Staff.Screen
         name="StaffSignIn"
-        component={StaffSignIn}
-        options={{ title: 'Staff sign in' }}
+        component={StaffSignInScreen}
+        options={{ title: 'Staff sign in', headerShown: false }}
       />
       <Staff.Screen
         name="StaffRegistration"
-        options={{ title: 'Staff registration' }}
-      >
-        {() => <NavigationPage title="Staff registration" />}
-      </Staff.Screen>
+        component={StaffRegistrationScreen}
+        options={{ title: 'Staff registration', headerShown: false }}
+      />
       <Staff.Screen
         name="StaffVerification"
         options={{ title: 'Staff verification' }}

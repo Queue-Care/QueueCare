@@ -23,7 +23,19 @@ npm install
 npm run dev:mobile
 ```
 
-Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Splash and Welcome now have dedicated screens with tested startup/recovery behavior; see [Member 1 startup handoff](docs/STARTUP.md). Patient Home now has its frontend, quick actions, and next-appointment API adapter; see [Patient Home handoff](docs/PATIENT_HOME.md). Real authentication, live API data, and prototype comparison remain pending. The API is not initialized yet.
+Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Splash and Welcome now have dedicated screens with tested startup/recovery behavior; see [Member 1 startup handoff](docs/STARTUP.md). Patient Home now has its frontend, quick actions, and next-appointment API adapter; see [Patient Home handoff](docs/PATIENT_HOME.md). Real authentication, live booking data, and prototype comparison remain pending.
+
+## Local API Setup — M1-04
+
+Express startup, MongoDB connectivity, hospital search, and standard errors are implemented. With MongoDB running locally, execute these commands from the **QueueCare repository root** (copy the environment example only on first setup):
+
+```bash
+cp apps/api/.env.example apps/api/.env
+npm run db:seed:hospitals
+npm run dev:api
+```
+
+The seed adds three fictional demo hospitals without replacing existing data. The search endpoint is `http://localhost:4000/api/v1/hospitals`; `http://localhost:4000/health` checks database connectivity. See [API prerequisites, configuration, and tests](apps/api/README.md). M1-05's Hospital Search screen and M1-07's Hospital Details screen now consume the public discovery APIs. Configure the mobile API URL and follow [Hospital Search phone checks](docs/HOSPITAL_SEARCH.md). M1-06 provides `/api/v1/hospitals/:hospitalId` and `/api/v1/hospitals/:hospitalId/services`. Run `npm run db:seed:discovery` to add demo hospitals and services; see [Hospital Details setup and phone checks](docs/HOSPITAL_DETAILS.md). M1-08 provides `/api/v1/hospitals/:hospitalId/sessions` with date/service filters and remaining capacity. Run `npm run db:seed:sessions` for tomorrow’s demo sessions; see [session setup and handoff](docs/SESSIONS.md). M1-09’s [Book Appointment screen](docs/BOOK_APPOINTMENT.md) now supports date selection, capacity, single-session selection, and a patient-summary handoff. M1-10’s [protected booking API](docs/BOOKING_API.md) now creates a booking and reserves capacity in one MongoDB transaction, with JWT verification and duplicate protection. M1-11’s [Confirm Appointment action](docs/CONFIRM_APPOINTMENT.md) now submits authenticated bookings, handles failures/uncertain outcomes, and opens confirmation with the persisted booking ID. M1-12’s [Booking Confirmation screen](docs/BOOKING_CONFIRMATION.md) now reads the saved booking and shows its code, hospital, service, date/time, and current status. M1-13’s [booking notification producer](docs/BOOKING_NOTIFICATIONS.md) now saves one unread notification in the booking transaction. Member 4’s notification API/screen integration remains pending. Member 1’s next independent task is **M1-14, accessibility refinements**. Real login/token issuance, profile loading, Member 2’s booking list/details screens, and actual opening hours remain pending. See [current project progress](docs/DEVELOPMENT_PLAN.md).
 
 ## 1. Project Overview
 

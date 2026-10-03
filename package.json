@@ -10,7 +10,14 @@
     "typecheck:mobile": "npm --workspace apps/mobile run typecheck",
     "test:mobile": "npm --workspace apps/mobile run test -- --runInBand",
     "android:mobile": "npm --workspace apps/mobile run android",
-    "check:mobile": "npm --workspace apps/mobile run check:dependencies"
+    "check:mobile": "npm --workspace apps/mobile run check:dependencies",
+    "dev:api": "npm --workspace apps/api run dev",
+    "start:api": "npm --workspace apps/api run start",
+    "test:api": "npm --workspace apps/api run test",
+    "db:seed:hospitals": "npm --workspace apps/api run seed:hospitals",
+    "db:seed:discovery": "npm --workspace apps/api run seed:discovery",
+    "db:seed:sessions": "npm --workspace apps/api run seed:sessions --",
+    "check:db": "npm --workspace apps/api run check:db"
   },
   "workspaces": [
     "apps/mobile",

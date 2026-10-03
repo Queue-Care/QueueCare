@@ -23,14 +23,14 @@ export function ActionButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={onPress}
-      disabled={disabled}
       accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         styles[variant],
         pressed && styles.pressed,
-        disabled && styles.pressed,
+        disabled && styles.disabled,
       ]}
     >
       <Text
@@ -72,4 +72,5 @@ const styles = StyleSheet.create({
   },
   darkLabel: { color: colors.tealDark },
   pressed: { opacity: 0.78 },
+  disabled: { opacity: 0.5 },
 });
