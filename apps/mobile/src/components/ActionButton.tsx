@@ -7,6 +7,8 @@ export function ActionButton({
   onPress,
   variant = 'primary',
   disabled = false,
+  busy = false,
+  accessibilityHint,
 }: {
   label: string;
   onPress: () => void;
@@ -18,19 +20,22 @@ export function ActionButton({
     | 'secondary'
     | 'danger';
   disabled?: boolean;
+  busy?: boolean;
+  accessibilityHint?: string;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      disabled={disabled || busy}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         styles[variant],
-        pressed && styles.pressed,
-        disabled && styles.disabled,
+        pressed && !disabled && !busy && styles.pressed,
+        (disabled || busy) && styles.disabled,
       ]}
     >
       <Text
@@ -38,7 +43,8 @@ export function ActionButton({
           styles.label,
           ['outline', 'onDark', 'secondary'].includes(variant) &&
             styles.darkLabel,
-          variant === 'danger' && { color: colors.coral },
+          variant === 'danger' && { color: colors.coralStrong },
+          (disabled || busy) && styles.disabledLabel,
         ]}
       >
         {label}
@@ -49,6 +55,7 @@ export function ActionButton({
 const styles = StyleSheet.create({
   button: {
     minHeight: 52,
+    minWidth: 48,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderRadius: radii.sm,
@@ -57,11 +64,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   primary: { backgroundColor: colors.teal, borderColor: colors.teal },
-  outline: { backgroundColor: colors.panel, borderColor: colors.sage },
+  outline: { backgroundColor: colors.panel, borderColor: colors.controlBorder },
   onDark: { backgroundColor: colors.panel, borderColor: colors.panel },
-  secondary: { backgroundColor: colors.tealTint, borderColor: colors.tealTint },
-  urgent: { backgroundColor: colors.coral, borderColor: colors.coral },
-  danger: { backgroundColor: colors.coralTint, borderColor: colors.coralTint },
+  secondary: {
+    backgroundColor: colors.tealTint,
+    borderColor: colors.controlBorder,
+  },
+  urgent: {
+    backgroundColor: colors.coralStrong,
+    borderColor: colors.coralStrong,
+  },
+  danger: {
+    backgroundColor: colors.coralTint,
+    borderColor: colors.coralStrong,
+  },
   label: {
     fontFamily: fonts.body,
     fontSize: 16,
@@ -71,6 +87,10 @@ const styles = StyleSheet.create({
     color: colors.panel,
   },
   darkLabel: { color: colors.tealDark },
-  pressed: { opacity: 0.78 },
-  disabled: { opacity: 0.5 },
+  pressed: { borderColor: colors.ink, borderWidth: 2 },
+  disabled: {
+    backgroundColor: colors.canvas,
+    borderColor: colors.controlBorder,
+  },
+  disabledLabel: { color: colors.inkSoft },
 });
