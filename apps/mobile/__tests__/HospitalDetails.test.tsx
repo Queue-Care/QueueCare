@@ -11,6 +11,7 @@ import {
   HospitalDetailsError,
   type HospitalDetails,
 } from '../src/features/hospitals/hospitalDetails';
+import { getAvailableSessions } from '../src/features/booking/availableSessions';
 import { ActionButton } from '../src/components/ActionButton';
 
 jest.mock(
@@ -21,6 +22,10 @@ jest.mock('../src/features/hospitals/hospitalDetails', () => ({
   ...jest.requireActual('../src/features/hospitals/hospitalDetails'),
   getHospitalDetails: jest.fn(),
   getHospitalServices: jest.fn(),
+}));
+jest.mock('../src/features/booking/availableSessions', () => ({
+  ...jest.requireActual('../src/features/booking/availableSessions'),
+  getAvailableSessions: jest.fn(),
 }));
 const details = jest.mocked(getHospitalDetails);
 const services = jest.mocked(getHospitalServices);
@@ -101,6 +106,7 @@ function deferred() {
   return { promise, resolve };
 }
 beforeEach(() => {
+  jest.mocked(getAvailableSessions).mockResolvedValue([]);
   details.mockReset();
   services.mockReset();
   details.mockResolvedValue(hospital);
@@ -149,12 +155,7 @@ test.each([false, true])(
     if (!patient) {
       await press('Patient sign in');
       expect(ref.getCurrentRoute()?.name).toBe('PatientSignIn');
-    } else
-      expect(
-        hasText(
-          'Session selection is not available here yet. Please check again later.',
-        ),
-      ).toBe(true);
+    } else expect(hasText('Choose a session')).toBe(true);
   },
 );
 test('loading hides actions until both endpoints settle', async () => {
@@ -220,13 +221,11 @@ test('refresh clears selection and cannot continue with a removed service', asyn
 });
 test('hospital ID changes cancel both requests and ignore late responses', async () => {
   const old = deferred();
-  details
-    .mockReturnValueOnce(old.promise)
-    .mockResolvedValueOnce({
-      ...hospital,
-      id: '000000000000000000000102',
-      name: 'New Hospital',
-    });
+  details.mockReturnValueOnce(old.promise).mockResolvedValueOnce({
+    ...hospital,
+    id: '000000000000000000000102',
+    name: 'New Hospital',
+  });
   services.mockResolvedValueOnce(catalog).mockResolvedValueOnce([]);
   await mount();
   const oldSignal = details.mock.calls[0][1];

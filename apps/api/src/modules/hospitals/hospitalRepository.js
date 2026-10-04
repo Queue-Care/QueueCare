@@ -1,5 +1,9 @@
 import { buildHospitalFilter } from './hospitalQuery.js';
 import { HttpError } from '../../utils/HttpError.js';
+import {
+  ensureSessionIndexes,
+  readHospitalSessions,
+} from './hospitalSessions.js';
 
 const collation = { locale: 'en', strength: 2 };
 const projection = {
@@ -30,9 +34,10 @@ export async function ensureHospitalIndexes(db) {
       { hospitalId: 1, isActive: 1, name: 1, _id: 1 },
       { name: 'service_hospital_active_name', collation }
     );
+  await ensureSessionIndexes(db);
 }
 
-export function createHospitalRepository(db) {
+export function createHospitalRepository(db, { now = () => new Date() } = {}) {
   const collection = db.collection('hospitals');
   async function findActiveHospital(hospitalId) {
     const hospital = await collection.findOne(
@@ -45,6 +50,11 @@ export function createHospitalRepository(db) {
   }
   return {
     getDetails: findActiveHospital,
+    async getSessions(hospitalId, query) {
+      const at = now();
+      await findActiveHospital(hospitalId);
+      return readHospitalSessions(db, hospitalId, query, at);
+    },
     async getServices(hospitalId) {
       await findActiveHospital(hospitalId);
       const services = await db

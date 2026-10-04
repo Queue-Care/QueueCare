@@ -1,6 +1,19 @@
 # API contracts
 
-The root README section 15 defines the overall API routes. Hospital search, details, OPD services, and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
+## Patient account, bookings, and priority pages
+
+These frontend contracts follow the supplied project plan. Registration, booking lists, cancellation, and priority endpoints remain pending; booking details is implemented with the nested DTO documented below. All responses use `{ "success": true, "data": ... }`; errors use an appropriate non-2xx status. Protected endpoints require a patient JWT and must enforce patient ownership on the server.
+
+- `POST /api/v1/auth/patient/register`: body `{ fullName, nic, mobile, email?, password }`; data `{ verificationId }`. Never return the password. The client opens the existing mobile-verification route after success.
+- `GET /api/v1/bookings/me?status=upcoming|past`: data is an array of joined booking summaries, with the same fields as the Home summary below. The list accepts CONFIRMED, CANCELLED, COMPLETED, SKIPPED, and RESCHEDULED. Filter/sort on the server according to the requested category.
+- `GET /api/v1/bookings/:bookingId`: the implemented endpoint returns nested `hospital`, `service`, and `session` records, as documented below. Patient pages normalize their names and start time into a booking summary. Flat list summaries are also supported. Optional `patientName`, `maskedNic`, and `priorityRequestId` are only shown if supplied; the current details endpoint does not return patient profile or NIC fields. The ID must match the route.
+- `PATCH /api/v1/bookings/:bookingId/cancel`: successful data may be null or the updated booking. Enforce allowed cancellation transitions and release capacity atomically. The client refetches details after success.
+- `POST /api/v1/bookings/:bookingId/priority-requests`: body `{ reason, note }`, where reason is ELDERLY, MOBILITY, PREGNANT, or OTHER and note is at most 500 characters. Data is a priority request `{ _id, bookingId, reason, status, createdAt, note?, decisionNote? }`. Only CONFIRMED bookings are eligible; prevent duplicate active requests on the server.
+- `GET /api/v1/priority-requests/me`: data is an array of those priority requests. The status page finds its requestId, then reads its associated booking. Status is PENDING, ACCEPTED, or DECLINED. Only staff may make a decision; return the actual decision and optional decisionNote.
+
+All dates must be valid ISO timestamps with Z or an explicit offset. All identifier and display-name fields must be nonempty strings. The registration endpoint normalizes and validates NIC/mobile and hashes passwords on the server; client validation is not a substitute for server validation. Use 409 for duplicate registration, conflicting cancellation, or an existing active priority request.
+
+The root README section 15 defines the overall API routes. Hospital search, details, OPD services, available sessions, protected booking creation, and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
 
 ## Hospital search — implemented (M1-04)
 
@@ -88,7 +101,143 @@ A valid active hospital with no active services returns `{ "success": true, "dat
 { "success": false, "error": { "code": "NOT_FOUND", "message": "Hospital not found.", "fieldErrors": {} } }
 ```
 
-Database failures return HTTP 500 `INTERNAL_ERROR`, never a successful empty catalog or false 404. Hospital and service reads are separate operations, not a transactional snapshot. Service availability, session counts, and capacity belong to M1-08 and are not inferred from the catalog. Opening hours are not present in the README's current hospital schema and are not invented by this API. See [M1-06 handoff and M1-07 integration](HOSPITAL_DETAILS.md).
+Database failures return HTTP 500 `INTERNAL_ERROR`, never a successful empty catalog or false 404. Hospital and service reads are separate operations, not a transactional snapshot. Session availability and capacity are returned by the M1-08 endpoint below, not inferred from the service catalog. Opening hours are not present in the README's current hospital schema and are not invented by this API. See [M1-06 handoff and M1-07 integration](HOSPITAL_DETAILS.md).
+
+## Available sessions — implemented (M1-08)
+
+```http
+GET /api/v1/hospitals/000000000000000000000101/sessions?date=2026-10-03&serviceId=000000000000000000000201
+Accept: application/json
+```
+
+Public endpoint for active hospitals and their active services. The example date is illustrative; use a future date containing sessions when testing.
+
+| Parameter | Default | Validation |
+| --- | --- | --- |
+| `date` | Today's calendar date in `Asia/Colombo` | One real `YYYY-MM-DD` date, years 1000–9999 |
+| `serviceId` | All active services of this hospital | One 24-character hexadecimal ObjectId |
+
+Malformed hospital IDs, blank/invalid filters, repeated parameters, and unknown parameters return HTTP 400 `VALIDATION_ERROR` with field errors. Missing/inactive hospitals return 404 `NOT_FOUND`. A specified service that is missing, inactive, or belongs to another hospital also returns 404. Valid filters with no sessions return a successful empty list.
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "000000000000000000000301",
+      "hospitalId": "000000000000000000000101",
+      "serviceId": "000000000000000000000201",
+      "serviceName": "General OPD",
+      "doctorOrTeam": "Demo OPD team",
+      "sessionDate": "2026-10-03",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "startsAt": "2026-10-03T03:30:00.000Z",
+      "endsAt": "2026-10-03T04:30:00.000Z",
+      "status": "OPEN",
+      "capacity": 20,
+      "bookedCount": 8,
+      "remainingCapacity": 12,
+      "isBookable": true
+    }
+  ],
+  "meta": { "date": "2026-10-03", "timeZone": "Asia/Colombo", "total": 1, "bookableCount": 1 }
+}
+```
+
+Returns only `OPEN` sessions whose start instant is strictly later than the server's captured request time. Sessions already started, including exactly at the cutoff, are excluded. Dates/times describe Sri Lanka local time; ISO timestamps carry UTC `Z`. Results are ordered by start time, then ID. This is an unpaginated daily hospital catalog intended for the small academic dataset.
+
+Full sessions remain visible with `remainingCapacity: 0` and `isBookable: false`; overbooked legacy records also clamp remaining capacity to zero. `meta.total` counts returned sessions and `bookableCount` counts sessions with spare capacity. Invalid times, end times at/before the start, invalid capacity/counts, and missing display data are excluded. Staff/internal fields are omitted.
+
+Availability reads do not reserve capacity or guarantee a booking. Hospital, service, and session reads are separate; the M1-10 booking transaction revalidates status, parent/service activity, duplicate bookings, and capacity atomically. Database failures return HTTP 500 `INTERNAL_ERROR`, never successful empty availability. See [storage conventions, demo seeding, and M1-09 handoff](SESSIONS.md).
+
+## Create booking — implemented (M1-10)
+
+```http
+POST /api/v1/bookings
+Authorization: Bearer <JWT>
+Content-Type: application/json
+
+{"sessionId":"000000000000000000000301"}
+```
+
+Requires a verified JWT and a current ACTIVE PATIENT account. The only accepted field is a 24-character hexadecimal `sessionId`; query parameters and additional fields (including `patientId`) return 400. Patient identity comes from the verified token subject and current database account.
+
+Success returns HTTP 201:
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "000000000000000000000401",
+    "bookingCode": "OPD-74A099F60D3B48C18409D3A835176FA0",
+    "patientId": "000000000000000000000001",
+    "sessionId": "000000000000000000000301",
+    "status": "CONFIRMED",
+    "createdAt": "2026-10-03T02:00:00.000Z",
+    "updatedAt": "2026-10-03T02:00:00.000Z"
+  }
+}
+```
+
+The booking insert, conditional capacity increment, and M1-13 booking-confirmed notification insert commit together. Notification storage failure aborts the transaction and returns a generic 500. Existing patient/session pairs return 409 `BOOKING_ALREADY_EXISTS` even if cancelled; full sessions return 409 `SESSION_FULL`; closed/started/malformed sessions or inactive parents return 409 `SESSION_UNAVAILABLE`. Missing sessions return 404. Invalid authentication returns 401, and non-patient/inactive accounts return 403. Unconfigured JWT verification or a standalone database returns 503. Unexpected failures return a generic 500 with no driver details.
+
+A lost response may follow a successful commit. Repeated requests prevent duplicates but do not replay the original 201; callers must handle `BOOKING_ALREADY_EXISTS` and recover the existing booking through Member 2's list/details endpoints when available. M1-13 persists one unread confirmation notification using the [notification contract](BOOKING_NOTIFICATIONS.md). Repeated POSTs do not reset its read state. Member 4’s notification read APIs remain pending. See [full contract, auth handoff, and replica-set setup](BOOKING_API.md).
+
+## Read booking summary — implemented (M1-12)
+
+```http
+GET /api/v1/bookings/:bookingId
+Authorization: Bearer <JWT>
+Accept: application/json
+```
+
+Requires a verified JWT and a current ACTIVE PATIENT account. `bookingId` must be a 24-character hexadecimal MongoDB ID. Query parameters are not accepted. Identity comes from authentication; the query matches both booking ID and patient ID. Another patient's booking and a missing booking return identical 404 `NOT_FOUND` responses.
+
+HTTP 200 returns `Cache-Control: no-store` and the following joined DTO:
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "000000000000000000000401",
+    "bookingCode": "OPD-74A099F60D3B48C18409D3A835176FA0",
+    "patientId": "000000000000000000000001",
+    "sessionId": "000000000000000000000301",
+    "status": "CONFIRMED",
+    "createdAt": "2026-10-03T02:00:00.000Z",
+    "updatedAt": "2026-10-03T02:00:00.000Z",
+    "hospital": {
+      "_id": "000000000000000000000101",
+      "name": "Example Hospital",
+      "address": "Example address",
+      "city": "Colombo",
+      "isActive": true
+    },
+    "service": {
+      "_id": "000000000000000000000201",
+      "name": "General OPD",
+      "isActive": true
+    },
+    "session": {
+      "_id": "000000000000000000000301",
+      "hospitalId": "000000000000000000000101",
+      "serviceId": "000000000000000000000201",
+      "doctorOrTeam": "OPD team",
+      "status": "OPEN",
+      "sessionDate": "2026-10-03",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "startsAt": "2026-10-03T03:30:00.000Z",
+      "endsAt": "2026-10-03T04:30:00.000Z"
+    }
+  }
+}
+```
+
+All known booking and session statuses are readable, including past sessions and inactive hospitals/services. Times use the same Asia/Colombo conversion as booking creation. This is a read of current linked records, not a historical snapshot; separate queries do not guarantee a snapshot across concurrent edits. No capacity or booking fields are changed.
+
+Malformed IDs/query parameters return 400 `VALIDATION_ERROR`; invalid authentication returns 401; inactive/non-patient accounts return 403. Missing or inconsistent linked records return 409 `BOOKING_DETAILS_UNAVAILABLE`. Unconfigured authentication/repository returns 503, and unexpected database failures return generic 500 errors. No private notes, user profile, or NIC fields are returned. Member 2's list/actions/staff access remain pending; register future static `/bookings/me` before the parameter route. See [screen behavior and phone checks](BOOKING_CONFIRMATION.md).
 
 ## Patient Home — next appointment (proposed; not implemented)
 

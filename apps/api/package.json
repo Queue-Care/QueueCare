@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "express": "^5.2.1",
-    "mongodb": "^7.7.0",
     "cors": "^2.8.6",
-    "dotenv": "^18.0.5"
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "jose": "https://github.com/panva/jose/releases/download/v6.2.12/jose-6.2.12.tgz",
+    "mongodb": "^7.7.0"
   },
   "type": "module",
   "scripts": {
@@ -14,6 +15,7 @@
     "start": "node --env-file-if-exists=.env src/server.js",
     "seed:hospitals": "node --env-file-if-exists=.env src/seeds/run.js",
     "seed:discovery": "node --env-file-if-exists=.env src/seeds/run.js --services",
+    "seed:sessions": "node --env-file-if-exists=.env src/seeds/run.js --services --sessions",
     "test": "node --test src/tests/*.test.js",
     "check:db": "node --env-file-if-exists=.env src/config/checkDatabase.js"
   },

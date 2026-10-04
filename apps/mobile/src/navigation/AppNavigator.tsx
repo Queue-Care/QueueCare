@@ -81,6 +81,7 @@ function Guest({
 export type AppNavigatorProps = {
   session?: NavigationSession | null;
   isRestoring?: boolean;
+  onSessionExpired?: () => void;
   navigationRef?: React.Ref<NavigationContainerRef<RootStackParams>>;
 };
 
@@ -88,6 +89,7 @@ export function AppNavigator({
   session = null,
   isRestoring = false,
   navigationRef,
+  onSessionExpired,
 }: AppNavigatorProps) {
   // S-13 will supply the restored, validated session. Selecting a role is not login.
   if (isRestoring) return <SplashScreen />;
@@ -104,6 +106,9 @@ export function AppNavigator({
                 <PatientNavigator
                   guest={false}
                   accessToken={session.accessToken}
+                  patient={session.patient}
+                  patientId={session.userId}
+                  onSessionExpired={onSessionExpired}
                   onSignIn={() => {}}
                 />
               )}
