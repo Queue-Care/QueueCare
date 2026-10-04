@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { StatusText } from '../components/StatusText';
 import { NextAppointmentCard } from '../components/NextAppointmentCard';
 import { useNextAppointment } from '../features/home/useNextAppointment';
 import { colors, fonts, radii, spacing } from '../theme/tokens';
@@ -73,26 +74,28 @@ export function PatientHomeScreen({
               />
             </View>
           ) : state.status === 'loading' ? (
-            <View
-              style={styles.card}
-              accessible
-              accessibilityLabel="Loading next appointment"
-              accessibilityState={{ busy: true }}
-            >
-              <ActivityIndicator color={colors.teal} />
-              <Text style={styles.description}>
+            <View style={styles.card}>
+              <ActivityIndicator
+                color={colors.teal}
+                accessible={false}
+                importantForAccessibility="no"
+              />
+              <StatusText
+                style={styles.description}
+                accessibilityState={{ busy: true }}
+              >
                 Loading your next appointment…
-              </Text>
+              </StatusText>
             </View>
           ) : state.status === 'error' ? (
             <View style={styles.card}>
-              <Text
+              <StatusText
                 accessibilityRole="alert"
                 accessibilityLiveRegion="polite"
                 style={styles.cardTitle}
               >
                 We couldn’t load your appointment
-              </Text>
+              </StatusText>
               <Text style={styles.description}>
                 Please try again. You can still explore hospitals below.
               </Text>
@@ -109,7 +112,9 @@ export function PatientHomeScreen({
             />
           ) : (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>No upcoming appointments</Text>
+              <StatusText style={styles.cardTitle}>
+                No upcoming appointments
+              </StatusText>
               <Text style={styles.description}>
                 When you book an OPD visit, its details will appear here.
               </Text>
@@ -125,17 +130,30 @@ export function PatientHomeScreen({
           </Text>
           <ActionButton label="Search hospitals" onPress={onSearch} />
         </View>
+        {!guest && state.status !== 'loading' && (
+          <ActionButton
+            label="Refresh appointment"
+            variant="outline"
+            onPress={reload}
+          />
+        )}
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.heading}>
             Quick actions
           </Text>
           <ActionButton
             label="My bookings"
+            accessibilityHint={
+              guest ? 'Sign in to view your bookings' : undefined
+            }
             onPress={guest ? onSignIn : onBookings}
             variant="outline"
           />
           <ActionButton
             label="Notifications"
+            accessibilityHint={
+              guest ? 'Sign in to view your notifications' : undefined
+            }
             onPress={guest ? onSignIn : onAlerts}
             variant="outline"
           />
