@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { StatusText } from '../components/StatusText';
 import { useBookingDetails } from '../features/booking/useBookingDetails';
 import {
   bookingDateLabel,
@@ -69,12 +70,18 @@ export function BookingConfirmationScreen({
       >
         {state.status === 'loading' ? (
           <View style={styles.panel} accessibilityState={{ busy: true }}>
-            <ActivityIndicator color={colors.teal} />
-            <Text style={styles.body}>Loading your booking…</Text>
+            <ActivityIndicator
+              color={colors.teal}
+              accessible={false}
+              importantForAccessibility="no"
+            />
+            <StatusText style={styles.body} accessibilityState={{ busy: true }}>
+              Loading your booking…
+            </StatusText>
           </View>
         ) : state.status === 'error' ? (
           <View style={styles.panel}>
-            <Text accessibilityRole="alert" style={styles.heading}>
+            <StatusText accessibilityRole="alert" style={styles.heading}>
               {state.kind === 'authentication'
                 ? 'Sign in to view your booking'
                 : state.kind === 'forbidden'
@@ -84,7 +91,7 @@ export function BookingConfirmationScreen({
                 : state.kind === 'incomplete'
                 ? 'Booking summary unavailable'
                 : 'We couldn’t load your booking'}
-            </Text>
+            </StatusText>
             <Text style={styles.body}>
               {state.kind === 'unavailable'
                 ? 'This booking could not be found for your account.'
@@ -113,15 +120,19 @@ export function BookingConfirmationScreen({
           <>
             <View style={styles.hero}>
               {confirmed && (
-                <View style={styles.mark}>
+                <View
+                  style={styles.mark}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                >
                   <Text style={styles.check} accessible={false}>
                     ✓
                   </Text>
                 </View>
               )}
-              <Text accessibilityRole="header" style={styles.title}>
+              <StatusText accessibilityRole="header" style={styles.title}>
                 {heading}
-              </Text>
+              </StatusText>
               <Text style={styles.body}>
                 {confirmed
                   ? 'Show this booking ID at the hospital reception desk.'
@@ -179,6 +190,11 @@ export function BookingConfirmationScreen({
             <ActionButton
               label="View booking"
               onPress={() => onViewBooking(booking.id)}
+            />
+            <ActionButton
+              label="Refresh booking"
+              variant="outline"
+              onPress={reload}
             />
           </>
         ) : null}
