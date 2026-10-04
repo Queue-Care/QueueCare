@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { NextAppointment } from '../features/home/nextAppointment';
 import { colors, fonts, radii, spacing } from '../theme/tokens';
 import { ActionButton } from './ActionButton';
+import { StatusText } from './StatusText';
 
 export function NextAppointmentCard({
   appointment,
@@ -26,7 +27,7 @@ export function NextAppointmentCard({
   });
   return (
     <View style={styles.card}>
-      <Text style={styles.badge}>Confirmed</Text>
+      <StatusText style={styles.badge}>Next appointment confirmed</StatusText>
       <Text style={styles.hospital}>{appointment.hospitalName}</Text>
       <Text style={styles.detail}>{appointment.serviceName}</Text>
       <View style={styles.schedule}>

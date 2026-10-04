@@ -10,11 +10,13 @@ export const colors = {
   tealDark: '#0A4F45',
   tealTint: '#E4F0EC',
   coral: '#E2624C',
+  coralStrong: '#A53727',
   coralTint: '#FBE7E2',
   amber: '#C68A1F',
   amberTint: '#FBF0DA',
   sage: '#CFDDD7',
   sageLine: '#DFE9E5',
+  controlBorder: '#6C827A',
   canvas: '#E8EDEB',
 } as const;
 

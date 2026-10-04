@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { StatusText } from '../components/StatusText';
 import { useHospitalSearch } from '../features/hospitals/useHospitalSearch';
 import { colors, fonts, radii, spacing } from '../theme/tokens';
 
@@ -66,6 +67,7 @@ export function HospitalSearchScreen({
               <Text style={styles.label}>Hospital name or city</Text>
               <TextInput
                 accessibilityLabel="Hospital name or city"
+                accessibilityHint="Enter a name or city, then choose Find hospitals"
                 placeholder="Search hospitals"
                 placeholderTextColor={colors.inkSoft}
                 style={styles.input}
@@ -99,7 +101,7 @@ export function HospitalSearchScreen({
               ) : null}
             </View>
             {state.status === 'ready' && (
-              <View accessibilityLiveRegion="polite" style={styles.section}>
+              <View style={styles.section}>
                 <Text accessibilityRole="header" style={styles.heading}>
                   {filtered ? 'Search results' : 'All hospitals'}
                 </Text>
@@ -113,10 +115,16 @@ export function HospitalSearchScreen({
                       .join(' · ')}
                   </Text>
                 )}
-                <Text style={styles.description}>
-                  {state.total} {state.total === 1 ? 'hospital' : 'hospitals'}{' '}
-                  found
-                </Text>
+                <StatusText style={styles.description}>
+                  {`${state.total} ${
+                    state.total === 1 ? 'hospital' : 'hospitals'
+                  } found. ${state.hospitals.length} shown.`}
+                </StatusText>
+                <ActionButton
+                  label="Refresh hospitals"
+                  variant="outline"
+                  onPress={reload}
+                />
               </View>
             )}
           </View>
@@ -138,20 +146,24 @@ export function HospitalSearchScreen({
         ListEmptyComponent={
           <View style={styles.card}>
             {state.status === 'loading' ? (
-              <View
-                accessible
-                accessibilityLabel="Loading hospitals"
-                accessibilityState={{ busy: true }}
-                style={styles.section}
-              >
-                <ActivityIndicator color={colors.teal} />
-                <Text style={styles.description}>Loading hospitals…</Text>
+              <View style={styles.section}>
+                <ActivityIndicator
+                  color={colors.teal}
+                  accessible={false}
+                  importantForAccessibility="no"
+                />
+                <StatusText
+                  style={styles.description}
+                  accessibilityState={{ busy: true }}
+                >
+                  Loading hospitals…
+                </StatusText>
               </View>
             ) : state.status === 'error' ? (
               <>
-                <Text accessibilityRole="alert" style={styles.heading}>
+                <StatusText accessibilityRole="alert" style={styles.heading}>
                   We couldn’t load hospitals
-                </Text>
+                </StatusText>
                 <Text style={styles.description}>
                   Please check your connection and try again.
                 </Text>
@@ -163,11 +175,11 @@ export function HospitalSearchScreen({
               </>
             ) : (
               <>
-                <Text style={styles.heading}>
+                <StatusText style={styles.heading}>
                   {filtered
                     ? 'No hospitals match your search'
                     : 'No hospitals available yet'}
-                </Text>
+                </StatusText>
                 <Text style={styles.description}>
                   {filtered
                     ? 'Try another name or city, or clear the filters.'
@@ -181,12 +193,18 @@ export function HospitalSearchScreen({
           state.status === 'ready' && state.hasNextPage ? (
             <View style={styles.section}>
               {state.loadingMore ? (
-                <View
-                  accessible
-                  accessibilityLabel="Loading more hospitals"
-                  accessibilityState={{ busy: true }}
-                >
-                  <ActivityIndicator color={colors.teal} />
+                <View>
+                  <ActivityIndicator
+                    color={colors.teal}
+                    accessible={false}
+                    importantForAccessibility="no"
+                  />
+                  <StatusText
+                    style={styles.description}
+                    accessibilityState={{ busy: true }}
+                  >
+                    Loading more hospitals
+                  </StatusText>
                 </View>
               ) : state.page >= 1000 ? (
                 <Text style={styles.description}>
@@ -195,10 +213,13 @@ export function HospitalSearchScreen({
               ) : (
                 <>
                   {state.moreError && (
-                    <Text accessibilityRole="alert" style={styles.description}>
+                    <StatusText
+                      accessibilityRole="alert"
+                      style={styles.description}
+                    >
                       We couldn’t load more hospitals. Your results are still
                       here.
-                    </Text>
+                    </StatusText>
                   )}
                   <ActionButton
                     label={
@@ -259,7 +280,7 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 52,
     borderWidth: 1,
-    borderColor: colors.sage,
+    borderColor: colors.controlBorder,
     borderRadius: radii.sm,
     backgroundColor: colors.panel,
     color: colors.ink,
@@ -289,5 +310,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: spacing.sm,
   },
-  pressed: { opacity: 0.78 },
+  pressed: { borderColor: colors.tealDark, borderWidth: 2 },
 });

@@ -583,6 +583,39 @@ test(
         );
       }
     );
+    await t.test(
+      'session starting between eligibility read and capacity write rolls back every write',
+      async () => {
+        const sessionId = id(512);
+        await sessions.insertOne(sample(512));
+        const beforePatient = await users.findOne({ _id: id(1) });
+        const beforeSession = await sessions.findOne({ _id: sessionId });
+        let clockReads = 0;
+        const cutoffBase = await startHttp(
+          t,
+          app(db, client, {
+            now: () =>
+              ++clockReads === 1
+                ? new Date('2026-10-03T03:29:59.999Z')
+                : new Date('2026-10-03T03:30:00.000Z'),
+          })
+        );
+        const result = await post(cutoffBase, sessionId, bearer);
+        assert.equal(clockReads, 2);
+        assert.equal(result.status, 409);
+        assert.equal(result.body.error.code, 'SESSION_UNAVAILABLE');
+        assert.equal(await bookings.countDocuments({ sessionId }), 0);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': sessionId }),
+          0
+        );
+        assert.deepEqual(
+          await sessions.findOne({ _id: sessionId }),
+          beforeSession
+        );
+        assert.deepEqual(await users.findOne({ _id: id(1) }), beforePatient);
+      }
+    );
     function interceptNotificationInsert(afterInsert) {
       return {
         admin: () => db.admin(),
