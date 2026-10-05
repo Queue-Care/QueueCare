@@ -6,6 +6,14 @@ export const SESSION_STATUSES = ['OPEN', 'CLOSED', 'RUNNING', 'COMPLETED', 'CANC
 const objectId = (value) => typeof value === 'string' && /^[a-f\d]{24}$/i.test(value);
 
 export function parseCreateSessionBody(body, query = {}) {
+  return parseSessionBody(body, query, false);
+}
+
+export function parseEditSessionBody(body, query = {}) {
+  return parseSessionBody(body, query, true);
+}
+
+function parseSessionBody(body, query, partial) {
   const errors = Object.create(null);
   for (const key of Object.keys(query)) errors[key] = 'Unsupported query parameter.';
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -14,31 +22,34 @@ export function parseCreateSessionBody(body, query = {}) {
     const allowed = ['serviceId', 'sessionDate', 'startTime', 'endTime', 'capacity', 'doctorOrTeam'];
     for (const key of Object.keys(body))
       if (!allowed.includes(key)) errors[key] = 'Unsupported session field.';
-    if (!objectId(body.serviceId))
+    if (partial && !Object.keys(body).some((key) => allowed.includes(key)))
+      errors.body = 'Supply at least one editable session field.';
+    if ((!partial || Object.hasOwn(body, 'serviceId')) && !objectId(body.serviceId))
       errors.serviceId = 'Must be a 24-character hexadecimal MongoDB ID.';
-    if (!isSessionDate(body.sessionDate))
+    if ((!partial || Object.hasOwn(body, 'sessionDate')) && !isSessionDate(body.sessionDate))
       errors.sessionDate = 'Must be a real calendar date in YYYY-MM-DD format.';
     for (const key of ['startTime', 'endTime']) {
+      if (partial && !Object.hasOwn(body, key)) continue;
       if (typeof body[key] !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(body[key]))
         errors[key] = 'Use zero-padded 24-hour HH:mm format.';
     }
-    if (!errors.startTime && !errors.endTime && body.endTime <= body.startTime)
+    if (!errors.startTime && !errors.endTime && body.startTime !== undefined &&
+        body.endTime !== undefined && body.endTime <= body.startTime)
       errors.endTime = 'End time must be after start time on the same day.';
-    if (!Number.isSafeInteger(body.capacity) || body.capacity <= 0)
+    if ((!partial || Object.hasOwn(body, 'capacity')) &&
+        (!Number.isSafeInteger(body.capacity) || body.capacity <= 0))
       errors.capacity = 'Capacity must be a positive safe integer.';
-    if (typeof body.doctorOrTeam !== 'string' || !body.doctorOrTeam.trim())
+    if ((!partial || Object.hasOwn(body, 'doctorOrTeam')) &&
+        (typeof body.doctorOrTeam !== 'string' || !body.doctorOrTeam.trim()))
       errors.doctorOrTeam = 'Enter the doctor or clinic team.';
   }
   if (Object.keys(errors).length)
     throw new HttpError(400, 'VALIDATION_ERROR', 'Check the session details.', errors);
-  return {
-    serviceId: new ObjectId(body.serviceId),
-    sessionDate: new Date(`${body.sessionDate}T00:00:00.000Z`),
-    startTime: body.startTime,
-    endTime: body.endTime,
-    capacity: body.capacity,
-    doctorOrTeam: body.doctorOrTeam.trim(),
-  };
+  const input = { ...body };
+  if (Object.hasOwn(body, 'serviceId')) input.serviceId = new ObjectId(body.serviceId);
+  if (Object.hasOwn(body, 'sessionDate')) input.sessionDate = new Date(`${body.sessionDate}T00:00:00.000Z`);
+  if (Object.hasOwn(body, 'doctorOrTeam')) input.doctorOrTeam = body.doctorOrTeam.trim();
+  return input;
 }
 
 export function parseStaffSessionQuery(query) {

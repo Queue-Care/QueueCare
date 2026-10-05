@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { colomboDate, SESSION_TIME_ZONE } from '../hospitals/sessionQuery.js';
 import { readStaffHospitalScope } from '../staff/k_staffHospitalScope.js';
 import { writeAuditLog } from '../audit/g_auditLog.js';
+import { parseCreateSessionBody } from './k_sessionValidation.js';
 
 // Only public management fields are projected. Queue metrics can be added later
 // without changing identity/date fields or exposing the underlying document.
@@ -50,6 +51,61 @@ function toPublic(item) {
 
 export function createStaffSessionRepository(db, { now = () => new Date() } = {}) {
   return {
+    async edit(staffUserId, sessionId, input) {
+      const hospitalId = await readStaffHospitalScope(db, staffUserId);
+      const topology = await db.admin().command({ hello: 1 });
+      if (!topology.setName && topology.msg !== 'isdbgrid')
+        throw new HttpError(503, 'SESSION_UPDATE_UNAVAILABLE',
+          'Session editing requires a transaction-capable database.');
+      const transaction = db.client.startSession();
+      try {
+        return await transaction.withTransaction(async () => {
+          const options = { session: transaction, maxTimeMS: 3000 };
+          const item = await db.collection('opdSessions').findOne({ _id: sessionId, hospitalId }, options);
+          if (!item) throw new HttpError(404, 'NOT_FOUND', 'OPD session not found.');
+          const hospital = await db.collection('hospitals').findOne({ _id: hospitalId, isActive: true }, options);
+          if (!hospital)
+            throw new HttpError(403, 'FORBIDDEN', 'An active linked hospital is required to edit sessions.');
+          const merged = { ...item, ...input };
+          // Preserve the BSON day marker; never normalize malformed stored dates.
+          const publicItem = toPublic(merged);
+          const final = parseCreateSessionBody({
+            serviceId: publicItem.serviceId, sessionDate: publicItem.sessionDate,
+            startTime: merged.startTime, endTime: merged.endTime,
+            capacity: merged.capacity, doctorOrTeam: merged.doctorOrTeam,
+          });
+          if (!Number.isSafeInteger(item.bookedCount) || item.bookedCount < 0)
+            throw new HttpError(409, 'SESSION_DETAILS_UNAVAILABLE', 'The saved booking count is unavailable.');
+          if (final.capacity < item.bookedCount)
+            throw new HttpError(400, 'VALIDATION_ERROR', 'Check the session details.',
+              { capacity: 'Capacity must not be below the existing booked count.' });
+          const service = await db.collection('opdServices').findOne(
+            { _id: final.serviceId, hospitalId, isActive: true }, options
+          );
+          if (!service || typeof service.name !== 'string' || !service.name.trim())
+            throw new HttpError(400, 'VALIDATION_ERROR', 'Check the session details.',
+              { serviceId: 'Choose an active service in your hospital.' });
+          const at = now();
+          const changes = Object.fromEntries(Object.keys(input).map((key) => [key, final[key]]));
+          // Booking writes touch this document too. Transaction conflicts retry
+          // the read and capacity check against the latest bookedCount.
+          await db.collection('opdSessions').updateOne(
+            { _id: sessionId, hospitalId }, { $set: { ...changes, updatedAt: at } }, options
+          );
+          await writeAuditLog(db, {
+            actorUserId: staffUserId, action: 'SESSION_UPDATED', entityType: 'opdSession',
+            entityId: sessionId, metadata: { hospitalId, serviceId: final.serviceId,
+              fields: Object.keys(changes) }, createdAt: at,
+          }, options);
+          return toPublic({ ...item, ...changes, updatedAt: at, serviceName: service.name });
+        }, {
+          readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' },
+          readPreference: 'primary', maxCommitTimeMS: 5000, timeoutMS: 10000,
+        });
+      } finally {
+        await transaction.endSession();
+      }
+    },
     async create(staffUserId, input) {
       const hospitalId = await readStaffHospitalScope(db, staffUserId);
       const topology = await db.admin().command({ hello: 1 });

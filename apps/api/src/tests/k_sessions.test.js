@@ -157,6 +157,16 @@ test('staff session list/detail use verified identity and hospital scope with re
       return { status: response.status, cache: response.headers.get('cache-control'),
         body: await response.json() };
     }
+    async function edit(sessionId, body, accessToken = staffToken, query = '') {
+      const response = await fetch(`${base}/api/v1/staff/sessions/${sessionId}${query}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+        body: JSON.stringify(body),
+      });
+      return { status: response.status, cache: response.headers.get('cache-control'),
+        body: await response.json() };
+    }
 
     await t.test('authentication and current account roles/status protect both endpoints', async () => {
       for (const path of ['', `/${id(101)}`]) {
@@ -421,5 +431,181 @@ test('staff session list/detail use verified identity and hospital scope with re
         assert.equal(result.body.error.code, 'SESSION_CREATION_UNAVAILABLE');
       } finally { mocked.mock.restore(); }
       assert.equal(await db.collection('opdSessions').countDocuments(), before);
+    });
+    await t.test('edit authentication, current roles and hospital linkage reject unauthorized writes', async () => {
+      const before = await db.collection('opdSessions').findOne({ _id: id(101) });
+      assert.equal((await edit(id(101), { capacity: 60 }, null)).status, 401);
+      assert.equal((await edit(id(101), { capacity: 60 }, 'invalid-token')).status, 401);
+      for (const userId of [patient, id(23), id(24), id(25), id(26), id(29), id(30)]) {
+        assert.equal((await edit(id(101), { capacity: 60 },
+          await token(userId, { role: 'ADMIN', hospitalId }))).status, 403);
+      }
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(101) }), before);
+    });
+    await t.test('edit validates session IDs and conceals unknown/cross-hospital sessions', async () => {
+      assert.equal((await edit('invalid', { capacity: 60 })).status, 400);
+      const foreignBefore = await db.collection('opdSessions').findOne({ _id: id(106) });
+      const foreign = await edit(id(106), { capacity: 60 });
+      const missing = await edit(id(999), { capacity: 60 });
+      assert.equal(foreign.status, 404);
+      assert.deepEqual(foreign.body, missing.body);
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(106) }), foreignBefore);
+    });
+    await t.test('empty, protected, unknown and invalid edit fields are rejected without writes', async () => {
+      const before = await db.collection('opdSessions').findOne({ _id: id(101) });
+      const auditCount = await db.collection('auditLogs').countDocuments();
+      const invalid = [null, [], {},
+        ...['bad', { $ne: null }, [serviceId.toString()]].map((serviceId) => ({ serviceId })),
+        ...['2026-02-29', '2026-04-31', '2026-10-6', '2026-10-06T00:00:00Z', null]
+          .map((sessionDate) => ({ sessionDate })),
+        ...['8:30', '24:00', '12:60', null, ['08:30']]
+          .flatMap((time) => [{ startTime: time }, { endTime: time }]),
+        { startTime: '13:00' }, { endTime: '08:30' },
+        { startTime: '15:00', endTime: '14:00' },
+        ...[0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, '50', null, [50]]
+          .map((capacity) => ({ capacity })),
+        { doctorOrTeam: '   ' }, { doctorOrTeam: ['team'] },
+        ...Object.entries({ _id: id(999).toString(), hospitalId: otherHospitalId.toString(),
+          bookedCount: 0, status: 'CLOSED', createdById: patient.toString(),
+          createdAt: '2020-01-01', updatedAt: '2020-01-01', serviceName: 'fake',
+          waitingCount: 1, $set: { capacity: 1 } }).map(([field, value]) => ({ [field]: value })),
+      ];
+      for (const body of invalid) {
+        const result = await edit(id(101), body);
+        assert.equal(result.status, 400, JSON.stringify(body));
+        assert.equal(result.body.error.code, 'VALIDATION_ERROR');
+      }
+      assert.equal((await edit(id(101), { capacity: 60 }, staffToken, '?hospitalId=bad')).status, 400);
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(101) }), before);
+      assert.equal(await db.collection('auditLogs').countDocuments(), auditCount);
+    });
+    await t.test('edit checks the final active same-hospital service and active hospital', async () => {
+      let expected;
+      for (const service of [id(12), id(13), id(14), id(999)]) {
+        const result = await edit(id(101), { serviceId: service.toString() });
+        assert.equal(result.status, 400);
+        expected ??= result.body;
+        assert.deepEqual(result.body, expected);
+      }
+      assert.equal((await edit(id(103), { doctorOrTeam: 'New team' })).status, 400);
+      await db.collection('hospitals').updateOne({ _id: hospitalId }, { $set: { isActive: false } });
+      try { assert.equal((await edit(id(101), { capacity: 60 })).status, 403); }
+      finally { await db.collection('hospitals').updateOne({ _id: hospitalId }, { $set: { isActive: true } }); }
+    });
+    await t.test('edit prevents capacity below bookings and permits capacity equal to bookings', async () => {
+      await db.collection('opdSessions').insertOne(session(201));
+      assert.equal((await edit(id(201), { capacity: 3 })).status, 400);
+      assert.equal((await edit(id(201), { capacity: 4 })).status, 200);
+      const stored = await db.collection('opdSessions').findOne({ _id: id(201) });
+      assert.equal(stored.capacity, 4);
+      assert.equal(stored.bookedCount, 4);
+      await db.collection('opdSessions').insertOne(session(202, { bookedCount: '4' }));
+      assert.equal((await edit(id(202), { capacity: 60 })).status, 409);
+      assert.equal((await edit(id(110), { capacity: 60 })).status, 409);
+    });
+    for (const [role, userId] of [['RECEPTION', reception], ['NURSE', id(27)], ['ADMIN', id(28)]]) {
+      await t.test(`${role} edits a partial session, preserves server-owned fields and creates one audit`, async () => {
+        const created = await create();
+        assert.equal(created.status, 201);
+        const sessionId = new ObjectId(created.body.data._id);
+        const before = await db.collection('opdSessions').findOne({ _id: sessionId });
+        now = new Date(now.getTime() + 1000);
+        const result = await edit(sessionId, { doctorOrTeam: '  Updated team  ', endTime: '13:00' },
+          await token(userId, { hospitalId: otherHospitalId.toString() }));
+        assert.equal(result.status, 200);
+        assert.equal(result.cache, 'no-store');
+        assert.equal(result.body.success, true);
+        assert.equal(result.body.data.doctorOrTeam, 'Updated team');
+        assert.equal(result.body.data.endTime, '13:00');
+        assert.deepEqual((await call(`/${sessionId}`)).body.data, result.body.data);
+        assert.ok((await call('?date=2026-10-06')).body.data.some((s) =>
+          s._id === sessionId.toString() && s.endTime === '13:00'));
+        const after = await db.collection('opdSessions').findOne({ _id: sessionId });
+        assert.deepEqual(after, { ...before, doctorOrTeam: 'Updated team', endTime: '13:00', updatedAt: now });
+        assert.ok(after.updatedAt > before.updatedAt);
+        const logs = await db.collection('auditLogs').find({ entityId: sessionId.toString(),
+          action: 'SESSION_UPDATED' }).toArray();
+        assert.equal(logs.length, 1);
+        assert.equal(logs[0].entityType, 'opdSession');
+        assert.ok(logs[0].actorUserId.equals(userId));
+        assert.ok(logs[0].metadata.hospitalId.equals(hospitalId));
+        assert.deepEqual(logs[0].metadata.fields.sort(), ['doctorOrTeam', 'endTime']);
+        assert.deepEqual(logs[0].createdAt, after.updatedAt);
+      });
+    }
+    await t.test('all six editable fields update with an active same-hospital service and UTC day', async () => {
+      await db.collection('opdServices').insertOne({ _id: id(15), hospitalId, name: 'New clinic', isActive: true });
+      const result = await edit(id(101), { ...createBody(), serviceId: id(15).toString(),
+        sessionDate: '2026-10-07', startTime: '09:00', endTime: '14:00', capacity: 40 });
+      assert.equal(result.status, 200);
+      assert.equal(result.body.data.serviceName, 'New clinic');
+      const stored = await db.collection('opdSessions').findOne({ _id: id(101) });
+      assert.equal(stored.sessionDate.toISOString(), '2026-10-07T00:00:00.000Z');
+      assert.equal(stored.startTime, '09:00');
+      assert.equal(stored.capacity, 40);
+      assert.equal(stored.bookedCount, 4);
+    });
+    await t.test('edit introduces no unsupported past/date/status restrictions or status changes', async () => {
+      for (const [n, status] of [[210, 'OPEN'], [211, 'CLOSED'], [212, 'RUNNING'],
+        [213, 'COMPLETED'], [214, 'CANCELLED']]) {
+        await db.collection('opdSessions').insertOne(session(n, { status }));
+        const result = await edit(id(n), { sessionDate: '2026-10-01', startTime: '00:01' });
+        assert.equal(result.status, 200);
+        assert.equal(result.body.data.status, status);
+        assert.equal(result.body.data.sessionDate, '2026-10-01');
+      }
+    });
+    await t.test('audit failure rolls back editing and never exposes internal errors', async () => {
+      const before = await db.collection('opdSessions').findOne({ _id: id(101) });
+      const auditCount = await db.collection('auditLogs').countDocuments();
+      const originalCollection = db.collection.bind(db);
+      const mocked = t.mock.method(db, 'collection', (name, ...args) => name === 'auditLogs'
+        ? { insertOne: async () => { throw new Error('private audit failure details'); } }
+        : originalCollection(name, ...args));
+      try {
+        const result = await edit(id(101), { capacity: 60 });
+        assert.equal(result.status, 500);
+        assert.equal(result.body.error.code, 'INTERNAL_ERROR');
+        assert.ok(!JSON.stringify(result.body).includes('private audit failure'));
+      } finally { mocked.mock.restore(); }
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(101) }), before);
+      assert.equal(await db.collection('auditLogs').countDocuments(), auditCount);
+    });
+    await t.test('a standalone database rejects editing without partial writes', async () => {
+      const before = await db.collection('opdSessions').findOne({ _id: id(101) });
+      const mocked = t.mock.method(db, 'admin', () => ({ command: async () => ({}) }));
+      try { assert.equal((await edit(id(101), { capacity: 60 })).status, 503); }
+      finally { mocked.mock.restore(); }
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(101) }), before);
+    });
+    await t.test('a concurrent booking forces edit to retry and recheck capacity', async () => {
+      await db.collection('opdSessions').insertOne(session(220, { capacity: 10, bookedCount: 4 }));
+      const auditCount = await db.collection('auditLogs').countDocuments();
+      const originalCollection = db.collection.bind(db);
+      let bookingAdded = false;
+      const mocked = t.mock.method(db, 'collection', (name, ...args) => {
+        const collection = originalCollection(name, ...args);
+        if (name === 'opdSessions') {
+          const update = collection.updateOne.bind(collection);
+          collection.updateOne = async (filter, changes, options) => {
+            if (!bookingAdded && filter._id.equals(id(220)) && options?.session) {
+              bookingAdded = true;
+              await update({ _id: id(220) }, { $inc: { bookedCount: 1 } });
+            }
+            return update(filter, changes, options);
+          };
+        }
+        return collection;
+      });
+      try {
+        const result = await edit(id(220), { capacity: 4 });
+        assert.equal(result.status, 400);
+        assert.ok(result.body.error.fieldErrors.capacity);
+      } finally { mocked.mock.restore(); }
+      assert.equal(bookingAdded, true);
+      const stored = await db.collection('opdSessions').findOne({ _id: id(220) });
+      assert.equal(stored.bookedCount, 5);
+      assert.equal(stored.capacity, 10);
+      assert.equal(await db.collection('auditLogs').countDocuments(), auditCount);
     });
   });
