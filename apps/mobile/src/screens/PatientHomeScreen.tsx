@@ -125,6 +125,7 @@ export function PatientHomeScreen({
             </Pressable>
           </View>
         </View>
+<<<<<<< HEAD
         <Text style={[styles.greeting, { fontFamily: homeFonts.body }]}>
           Good morning,
         </Text>
@@ -146,6 +147,31 @@ export function PatientHomeScreen({
           </View>
           <Text style={[styles.searchLabel, { fontFamily: homeFonts.body }]}>
             Search hospitals or clinics
+=======
+        <View style={styles.searchCard}>
+          <Text accessibilityRole="header" style={styles.heading}>
+            Find a hospital
+          </Text>
+          <Text style={styles.description}>
+            Search by hospital name or city, then explore OPD services and
+            sessions.
+          </Text>
+          {guest && (
+            <Text style={styles.description}>
+              Browse hospitals without signing in. Sign in when you’re ready to
+              book.
+            </Text>
+          )}
+          <ActionButton
+            label="Search hospitals"
+            accessibilityHint="Opens hospital search with name and city filters"
+            onPress={onSearch}
+          />
+        </View>
+        <View style={styles.section}>
+          <Text accessibilityRole="header" style={styles.heading}>
+            Your next appointment
+>>>>>>> origin/develop
           </Text>
         </Pressable>
         <View>
@@ -205,10 +231,15 @@ export function PatientHomeScreen({
               >
                 We couldn’t load your appointment
               </StatusText>
+<<<<<<< HEAD
               <Text
                 style={[styles.description, { fontFamily: homeFonts.body }]}
               >
                 Please try again. You can still explore hospitals below.
+=======
+              <Text style={styles.description}>
+                Please try again. Hospital search is still available.
+>>>>>>> origin/develop
               </Text>
               <ActionButton
                 label="Try again"
@@ -240,7 +271,15 @@ export function PatientHomeScreen({
               </Text>
             </View>
           )}
+          {!guest && state.status !== 'loading' && (
+            <ActionButton
+              label="Refresh appointment"
+              variant="outline"
+              onPress={reload}
+            />
+          )}
         </View>
+<<<<<<< HEAD
         <Text
           accessibilityRole="header"
           style={[styles.heading, { fontFamily: homeFonts.bold }]}
@@ -253,6 +292,16 @@ export function PatientHomeScreen({
               key={tile.label}
               accessibilityRole="button"
               accessibilityLabel={tile.label}
+=======
+        <View style={styles.section}>
+          <Text accessibilityRole="header" style={styles.heading}>
+            Quick actions
+          </Text>
+          <View style={styles.tiles}>
+            <ActionButton
+              label="My bookings"
+              icon="Bookings"
+>>>>>>> origin/develop
               accessibilityHint={
                 guest && tile.icon !== 'Location'
                   ? 'Sign in to continue'

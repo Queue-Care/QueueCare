@@ -1,6 +1,6 @@
 # Confirm Appointment integration — M1-11
 
-M1-10's booking API and M1-11's mobile confirmation integration are merged through PR #18. M1-12's [full Booking Confirmation screen](BOOKING_CONFIRMATION.md) is now implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. **Next: M1-16 — clarify Hospital Search entry points.**
+M1-10's booking API and M1-11's mobile confirmation integration are merged through PR #18. M1-12's [full Booking Confirmation screen](BOOKING_CONFIRMATION.md) is now implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. M1-16’s [Home search clarification](PATIENT_HOME.md) is implemented. M1-17’s [session-action refinement](HOSPITAL_DETAILS.md#m1-17-session-action-refinement) is implemented. **Next: patient-flow integration and phone acceptance (I-01 / T-04).**
 
 ## Implemented flow
 
