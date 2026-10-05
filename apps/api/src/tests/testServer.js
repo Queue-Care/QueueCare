@@ -17,7 +17,7 @@ export async function startHttp(t, app) {
   return `http://127.0.0.1:${server.address().port}`;
 }
 
-export async function startMongo(t) {
+export async function startMongo(t, { replicaSet = false } = {}) {
   // Never connect to a developer's configured database. Each run owns a new directory and process.
   const directory = await mkdtemp(join(tmpdir(), 'queuecare-api-test-'));
   let child;
@@ -55,6 +55,7 @@ export async function startMongo(t) {
       String(port),
       '--nounixsocket',
       '--quiet',
+      ...(replicaSet ? ['--replSet', 'queuecareTest'] : []),
     ],
     { stdio: ['ignore', 'pipe', 'pipe'] }
   );
@@ -100,9 +101,27 @@ export async function startMongo(t) {
   child.stdout.resume();
   child.stderr.resume();
   const config = {
-    mongoUri: `mongodb://127.0.0.1:${port}`,
+    mongoUri: `mongodb://127.0.0.1:${port}${
+      replicaSet ? '/?directConnection=true' : ''
+    }`,
     dbName: 'queuecare_test',
   };
   connection = await connectMongo(config);
-  return { db: connection.db, config };
+  if (replicaSet) {
+    await connection.db.admin().command({
+      replSetInitiate: {
+        _id: 'queuecareTest',
+        members: [{ _id: 0, host: `127.0.0.1:${port}` }],
+      },
+    });
+    const deadline = Date.now() + 20000;
+    while (
+      !(await connection.db.admin().command({ hello: 1 })).isWritablePrimary
+    ) {
+      if (Date.now() > deadline)
+        throw new Error('Temporary replica set did not elect a primary.');
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+  return { db: connection.db, client: connection.client, config };
 }

@@ -1,17 +1,20 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
+// Display fields from the validated account/profile response, never route params.
+export type PatientSummary = { fullName: string; nic?: string };
+
 // The authentication owner supplies this only after validating the session.
 export type NavigationSession = {
   userId: string;
   // Supplied in memory by S-13; never read from a public environment variable.
   accessToken?: string;
+  patient?: PatientSummary;
   role: 'PATIENT' | 'RECEPTION' | 'NURSE';
 };
 
 export type PatientAuthParams = {
-  PatientSignIn: undefined;
+  PatientSignIn: { registered?: boolean } | undefined;
   PatientCreateAccount: undefined;
-  VerifyMobile: { verificationId: string };
   ResetPassword: undefined;
 };
 export type StaffAuthParams = {

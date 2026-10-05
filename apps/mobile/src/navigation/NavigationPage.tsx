@@ -2,7 +2,8 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors } from '../theme/tokens';
+import { colors, fonts, surfaces, radii } from '../theme/tokens';
+import { InterfaceIcon } from '../components/InterfaceIcon';
 
 // Navigation and entry screens use the same README-derived palette.
 export const navigationColors = {
@@ -32,7 +33,7 @@ export function NavigationPage({
           {title}
         </Text>
         <Text style={styles.description}>{description}</Text>
-        {actions.map(action => (
+        {actions.map((action) => (
           <Pressable
             key={action.label}
             accessibilityRole="button"
@@ -59,39 +60,71 @@ export function SignInGate({ onSignIn }: { onSignIn: () => void }) {
 }
 
 export const stackOptions = {
+  headerShadowVisible: false,
   headerTintColor: navigationColors.primary,
-  headerStyle: { backgroundColor: navigationColors.panel },
+  headerStyle: { backgroundColor: navigationColors.background },
+  headerTitleStyle: {
+    fontFamily: fonts.display,
+    fontSize: 18,
+    fontWeight: '600' as const,
+  },
   contentStyle: { backgroundColor: navigationColors.background },
 };
 
-export const tabOptions = {
+export const tabOptions = ({ route }: { route: { name: string } }) => ({
   headerShown: false,
   tabBarActiveTintColor: navigationColors.primary,
   tabBarInactiveTintColor: navigationColors.muted,
-  tabBarStyle: { backgroundColor: navigationColors.panel },
-  tabBarIcon: () => null,
-  tabBarIconStyle: { display: 'none' as const },
-};
+  tabBarStyle: {
+    backgroundColor: navigationColors.panel,
+    borderTopColor: colors.sageLine,
+    borderTopWidth: 1,
+    elevation: 0,
+  },
+  tabBarLabelStyle: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    fontWeight: '600' as const,
+  },
+  tabBarItemStyle: { paddingVertical: 4 },
+  tabBarIcon: ({ color }: { color: string }) => (
+    <InterfaceIcon name={route.name} color={color} />
+  ),
+});
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: navigationColors.background },
-  content: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 16 },
-  title: { fontSize: 30, fontWeight: '700', color: navigationColors.text },
+  content: {
+    ...surfaces.content,
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 22,
+    gap: 16,
+  },
+  title: {
+    fontFamily: fonts.display,
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '600',
+    color: colors.tealDark,
+  },
   description: {
-    fontSize: 17,
-    lineHeight: 26,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    lineHeight: 23,
     color: navigationColors.muted,
     marginBottom: 8,
   },
   button: {
     minHeight: 48,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: radii.pill,
     backgroundColor: navigationColors.primary,
     justifyContent: 'center',
   },
   pressed: { opacity: 0.8 },
   buttonLabel: {
+    fontFamily: fonts.body,
     color: navigationColors.panel,
     fontSize: 16,
     fontWeight: '600',

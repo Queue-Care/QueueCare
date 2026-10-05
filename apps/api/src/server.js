@@ -4,6 +4,14 @@ import { createApp } from './app.js';
 import { readConfig } from './config/env.js';
 import { connectMongo } from './config/mongodb.js';
 import { connectionDiagnostic } from './config/connectionDiagnostic.js';
+import { readAuthConfig } from './config/auth.js';
+import { authenticate } from './middleware/auth.js';
+import { createPatientRegistrationRepository, ensurePatientRegistrationIndexes } from './modules/auth/patientRegistration.js';
+import { ensureBookingNotificationIndexes } from './modules/bookings/bookingNotification.js';
+import {
+  createBookingRepository,
+  ensureBookingIndexes,
+} from './modules/bookings/bookingRepository.js';
 import {
   createHospitalRepository,
   ensureHospitalIndexes,
@@ -12,11 +20,22 @@ import {
 let connection;
 try {
   const config = readConfig();
+  const authConfig = readAuthConfig();
   connection = await connectMongo(config);
+  await ensurePatientRegistrationIndexes(connection.db);
   await ensureHospitalIndexes(connection.db);
+  await ensureBookingIndexes(connection.db);
+  await ensureBookingNotificationIndexes(connection.db);
   const server = createServer(
     createApp({
+      patientRegistrationRepository: createPatientRegistrationRepository(connection.db),
+      authConfig,
       hospitalRepository: createHospitalRepository(connection.db),
+      bookingRepository: createBookingRepository(
+        connection.db,
+        connection.client
+      ),
+      authenticate: authenticate(connection.db, authConfig),
       checkDatabase: () => connection.db.command({ ping: 1 }),
     })
   );

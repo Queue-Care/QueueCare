@@ -1,6 +1,6 @@
 # QueueCare API
 
-Member 1's M1-04 implements public hospital search using Express and MongoDB. M1-06 adds hospital details and active OPD service catalogs. The supporting server, database connection, discovery indexes, and shared error handler are available. M1-08 adds available sessions with date/service filters and remaining capacity. Authentication, bookings, and staff session writes are still pending.
+Member 1's M1-04 implements public hospital search using Express and MongoDB. M1-06 adds hospital details and active OPD service catalogs. The supporting server, database connection, discovery indexes, and shared error handler are available. M1-08 adds available sessions with date/service filters and remaining capacity. M1-10 adds protected booking creation with JWT verification, role/account checks, and MongoDB transactions. M1-12 adds a patient-owned booking-summary GET for the confirmation screen. M1-13 adds an unread booking notification in the same transaction as booking/capacity, with a scoped unique index at startup. Login/token issuance, booking-list/edit APIs, and staff session writes are still pending.
 
 ## Run locally
 
@@ -14,7 +14,7 @@ npm run dev:api
 
 Copy the example only on first setup; keep existing local settings if `.env` already exists. The default database is `opd_queue` on `127.0.0.1:27017`. For another MongoDB instance, set `MONGODB_URI` and `MONGODB_DB_NAME` in `apps/api/.env`. Never commit credentials. The API loads this workspace's `.env` even when started with the root npm scripts.
 
-MongoDB must already be running before starting the API. Startup checks the database connection and creates the hospital, service, and session indexes. The server listens on port 4000 by default. `npm run start:api` runs without the development file watcher. Ctrl+C stops the API and closes its MongoDB connection.
+MongoDB must already be running before starting the API. Startup checks the database connection and creates hospital, service, session, and unique booking indexes. The server listens on port 4000 by default. `npm run start:api` runs without the development file watcher. Ctrl+C stops the API and closes its MongoDB connection.
 
 In another terminal at the repository root, optionally add **three fictional demo hospitals**:
 
@@ -38,6 +38,12 @@ curl http://localhost:4000/api/v1/hospitals/000000000000000000000101/services
 ```
 
 An empty database returns a successful empty hospital list. Database failures return errors, not demo data. The complete search contract is in [docs/API.md](../../docs/API.md).
+
+## Booking creation
+
+`POST /api/v1/bookings` is implemented. Install dependencies from the root, configure server-only `JWT_SECRET`, `JWT_ISSUER`, and `JWT_AUDIENCE` in the existing API `.env`, and use Atlas or a replica set for writes. Missing JWT configuration leaves protected requests unavailable; standalone MongoDB returns 503 for booking without partial writes. A real login-issued token for an ACTIVE PATIENT is required. See [the contract, Member 2 auth handoff, and local replica-set setup](../../docs/BOOKING_API.md).
+
+The `jose` dependency is pinned to its publisher’s official GitHub v6.2.12 release because this network presented an untrusted Fortinet certificate for the npm registry. The release checksum was verified; TLS verification stayed enabled. The manifest and lockfile record the HTTPS release URL. No global npm trust settings were changed.
 
 ## Expo Go connection
 
@@ -74,4 +80,10 @@ npm run test:api
 
 Integration tests require `mongod` on PATH (or set `MONGOD_BINARY` to its executable path) and permission to listen on localhost. Each run launches its own MongoDB process with a fresh temporary directory and an ephemeral HTTP port, then cleans them up. Tests never use `MONGODB_URI` or modify your development database.
 
-All 38 API tests pass as of M1-08. Coverage includes real MongoDB name/city filtering, hospital details, parent-scoped active services, inactive hospital exclusion, literal regex characters, pagination, public response fields, ID/query validation, health/error responses, shared connections, and safe repeatable seeding. Session tests additionally cover Sri Lanka date boundaries, future-start filtering, active service scope, full/overfull capacity, malformed records, and non-destructive session seeds.
+All 64 API tests pass as of M1-15. Coverage includes real MongoDB name/city filtering, hospital details, parent-scoped active services, inactive hospital exclusion, literal regex characters, pagination, public response fields, ID/query validation, health/error responses, shared connections, and safe repeatable seeding. Session tests additionally cover Sri Lanka date boundaries, future-start filtering, active service scope, full/overfull capacity, malformed records, and non-destructive session seeds. Booking tests launch a temporary single-node replica set and verify simultaneous final-slot/duplicate requests, rollback, concurrent eligibility changes, JWT validation, role/status enforcement, strict request bodies, and safe standalone rejection.
+
+Booking-summary tests also verify owner isolation, role/status checks, public projection, status changes, inactive parents, malformed linked data, and reading a transactionally created booking. See [M1-12 screen/API handoff](../../docs/BOOKING_CONFIRMATION.md).
+
+Notification tests verify the recipient/record contract, no duplicates on concurrent requests or transaction retry, preservation of read state, partial-index scope, and rollback of booking/capacity when notification insertion fails. Notification list/read/read-all APIs remain Member 4’s pending work; see [booking notification handoff](../../docs/BOOKING_NOTIFICATIONS.md).
+
+M1-15 adds the connected discovery-to-booking HTTP journey, the session-start boundary between eligibility and write, and safe booking-summary storage-failure handling. See [test results and requirements evidence](../../docs/TESTING.md).

@@ -1,33 +1,62 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { InterfaceIcon } from './InterfaceIcon';
 
 export function ActionButton({
   label,
   onPress,
   variant = 'primary',
   disabled = false,
+  busy = false,
+  accessibilityHint,
+  icon,
 }: {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'outline' | 'onDark';
+  variant?:
+    | 'primary'
+    | 'outline'
+    | 'onDark'
+    | 'urgent'
+    | 'secondary'
+    | 'danger'
+    | 'tile';
   disabled?: boolean;
+  busy?: boolean;
+  accessibilityHint?: string;
+  icon?: string;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      disabled={disabled || busy}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         styles[variant],
-        pressed && styles.pressed,
-        disabled && styles.disabled,
+        pressed && !disabled && !busy && styles.pressed,
+        (disabled || busy) && styles.disabled,
       ]}
     >
-      <Text style={[styles.label, variant !== 'primary' && styles.darkLabel]}>
+      {icon ? (
+        <View style={styles.icon}>
+          <InterfaceIcon name={icon} color={colors.tealDark} />
+        </View>
+      ) : null}
+      <Text
+        style={[
+          styles.label,
+          ['outline', 'onDark', 'secondary', 'tile'].includes(variant) &&
+            styles.darkLabel,
+          variant === 'danger' && { color: colors.coralStrong },
+          variant === 'tile' && styles.tileLabel,
+          (disabled || busy) && styles.disabledLabel,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -36,25 +65,61 @@ export function ActionButton({
 const styles = StyleSheet.create({
   button: {
     minHeight: 52,
+    minWidth: 48,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radii.sm,
+    paddingVertical: 14,
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
   primary: { backgroundColor: colors.teal, borderColor: colors.teal },
+  tile: {
+    borderRadius: radii.md,
+    backgroundColor: colors.panel,
+    borderColor: colors.sageLine,
+    alignItems: 'flex-start',
+    padding: 15,
+    gap: 10,
+    flex: 1,
+    minWidth: 130,
+  },
+  tileLabel: { fontSize: 14, textAlign: 'left' },
+  icon: {
+    borderRadius: radii.icon,
+    width: 38,
+    height: 38,
+    backgroundColor: colors.tealTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   outline: { backgroundColor: colors.panel, borderColor: colors.sage },
   onDark: { backgroundColor: colors.panel, borderColor: colors.panel },
+  secondary: {
+    backgroundColor: colors.tealTint,
+    borderColor: colors.tealTint,
+  },
+  urgent: {
+    backgroundColor: colors.coralStrong,
+    borderColor: colors.coralStrong,
+  },
+  danger: {
+    backgroundColor: colors.panel,
+    borderColor: colors.coralTint,
+  },
   label: {
     fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
     fontWeight: '600',
     textAlign: 'center',
     color: colors.panel,
   },
   darkLabel: { color: colors.tealDark },
-  pressed: { opacity: 0.78 },
-  disabled: { opacity: 0.5 },
+  pressed: { borderColor: colors.ink },
+  disabled: {
+    backgroundColor: colors.canvas,
+    borderColor: colors.controlBorder,
+  },
+  disabledLabel: { color: colors.inkSoft },
 });

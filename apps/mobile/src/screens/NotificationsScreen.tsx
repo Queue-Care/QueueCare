@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 
 interface NotificationItem {
   id: string;
@@ -130,11 +130,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.mist,
   },
   navTitle: {
+    fontFamily: fonts.display,
     fontSize: 20,
     fontWeight: '700',
     color: colors.tealDark,
   },
   iconBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -144,14 +146,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconBtnCheck: {
+    fontFamily: fonts.body,
     fontSize: 16,
     color: colors.tealDark,
     fontWeight: 'bold',
   },
   scrollContent: {
+    ...surfaces.content,
     paddingBottom: 24,
   },
   list: {
+    overflow: 'hidden',
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -169,6 +175,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4FAF8',
   },
   avatar: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     alignItems: 'center',
@@ -195,22 +202,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: colors.ink,
   },
   subText: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: colors.inkSoft,
     lineHeight: 18,
     marginTop: 2,
   },
   timestampText: {
+    fontFamily: fonts.body,
     fontSize: 11,
     color: colors.inkSoft,
     marginTop: 4,
   },
   priorityBadge: {
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.coralTint,
@@ -218,12 +229,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeDot: {
+    borderRadius: radii.circle,
     width: 6,
     height: 6,
     backgroundColor: colors.coral,
     marginRight: 5,
   },
   priorityBadgeText: {
+    fontFamily: fonts.body,
     fontSize: 11,
     fontWeight: '600',
     color: '#A7402C',

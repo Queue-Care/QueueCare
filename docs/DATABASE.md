@@ -1,6 +1,6 @@
 # Database implementation status
 
-The root README section 13 defines the planned MongoDB schemas. Hospital discovery, OPD service catalogs, and session availability now have working read repositories/indexes and seeds; other collections remain pending.
+The root README section 13 defines the planned MongoDB schemas. Hospital discovery, OPD service catalogs, and session availability now have working read repositories/indexes and seeds; booking creation/read and booking-confirmed notification writes are also implemented; other collection APIs remain pending.
 
 ## Hospitals
 
@@ -34,3 +34,19 @@ Startup/seed index setup also creates `service_hospital_active_name` on `{ hospi
 Startup and seeds create `session_hospital_status_date_service` on `{ hospitalId: 1, status: 1, sessionDate: 1, serviceId: 1, startTime: 1, _id: 1 }`. The query selects an active hospital's active services and `OPEN` sessions on the chosen date, then calculates timestamps, filters already-started sessions, and sorts by start/ID. The computed timestamp sort is not supplied by the index. Reads have a three-second execution limit.
 
 `npm run db:seed:sessions` inserts missing demo hospitals/services plus two fictional sessions per active demo service for tomorrow in Sri Lanka (up to 12). `-- --date=YYYY-MM-DD` selects another day. IDs are stable per service/date/time, and `$setOnInsert` preserves existing session edits, counts, status, and other data. New dates intentionally create additional records. System demo seeds use `seedSource: "queuecare-demo"` and omit `createdById`; future authenticated staff writes must provide their real creator ID. No fictitious staff accounts are created. See [session setup and handoff](SESSIONS.md).
+
+## Bookings — M1-10
+
+`POST /api/v1/bookings` persists the README's ObjectId `patientId`/`sessionId`, unique `bookingCode`, `CONFIRMED` status, and BSON `createdAt`/`updatedAt`. Startup creates unique `booking_patient_session_unique` on `{ patientId: 1, sessionId: 1 }` and `booking_code_unique` on `{ bookingCode: 1 }`. The patient/session constraint applies to every status; cancellation does not allow another POST for that pair. Existing duplicate records are not deleted automatically when indexes fail to build.
+
+Creation requires a replica set or sharded deployment and uses a transaction with the conditional capacity increment. Standalone MongoDB returns 503 without a partial write. Snapshot reads, majority commit, conditional updates, and unique indexes protect capacity and duplicates. `bookingRevision` fields on users/hospitals/services are internal lock counters updated in the same transaction to force fresh eligibility checks during concurrent suspension/deactivation; rollback restores those counters too. No public response exposes them.
+
+Patient registration stores users with normalized `fullName`, `nic`, `mobile`, optional `email`, salted scrypt `passwordHash`, `role: PATIENT`, `status: ACTIVE`, and creation/update timestamps. Unique partial indexes apply to string NIC, mobile, email, and verification ID fields, allowing legacy users without those fields. Startup fails if existing duplicates conflict with these indexes; resolve duplicates before restarting. Patient login verifies the scrypt hash and issues a 24-hour JWT. Legacy pending patient registrations become ACTIVE only after successful password verification, removing their obsolete verification ID. User seed data and profile APIs remain pending. JWT authorization requires an ACTIVE account. Cancellation/rescheduling owners must update bookings and capacity together and preserve the all-status uniqueness rule. See [transaction details and local replica-set setup](BOOKING_API.md).
+
+## Booking-confirmed notifications — M1-13
+
+New bookings insert one notification using the same MongoDB transaction/session as booking creation and capacity increment. The document follows README section 13.8 with `type: BOOKING`, authenticated patient `userId`, `readAt: null`, booking timestamp, and `data: { event: BOOKING_CONFIRMED, bookingId, sessionId }` (IDs are BSON ObjectIds). The display message contains the saved booking code and directs the user to current booking details.
+
+Startup creates `notification_booking_confirmed_unique` on `{ userId: 1, "data.bookingId": 1, "data.event": 1 }`, unique only for `type: BOOKING`, `data.event: BOOKING_CONFIRMED`, and ObjectId-valued `data.bookingId`. Other notification types keep their own duplicate policy. Existing duplicates are not automatically deleted. The notification collection/index is initialized before requests begin; no index creation happens inside the booking transaction.
+
+The producer neither backfills existing bookings nor implements notification list/read/read-all APIs. Member 4 must consume the same records and scope reads/updates by the authenticated user. See [failure semantics, record contract, and checks](BOOKING_NOTIFICATIONS.md).

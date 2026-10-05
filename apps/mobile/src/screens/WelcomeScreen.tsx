@@ -10,9 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParams } from '../navigation/types';
-import { BrandMark } from '../components/BrandMark';
 import { ActionButton } from '../components/ActionButton';
-import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { colors, radii, fonts } from '../theme/tokens';
 
 export function WelcomeScreen({
   navigation,
@@ -21,34 +20,29 @@ export function WelcomeScreen({
     <SafeAreaView style={styles.page}>
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.brand}>
-          <BrandMark />
-          <View style={styles.wordmark}>
-            <Text style={styles.name}>QueueCare</Text>
-            <Text style={styles.eyebrow}>HOSPITAL OPD CARE</Text>
-          </View>
-        </View>
+        <View style={{ flex: 1, minHeight: 28 }} />
         <View style={styles.introduction}>
+          <View
+            style={styles.mark}
+            accessible={false}
+            accessibilityElementsHidden
+          >
+            <View style={styles.calendar}>
+              <View style={styles.calendarLine} />
+              <View style={[styles.ring, { left: 8 }]} />
+              <View style={[styles.ring, { right: 8 }]} />
+              <Text style={styles.cross}>+</Text>
+            </View>
+          </View>
           <Text accessibilityRole="header" style={styles.title}>
-            Your visit,{'\n'}made simpler.
+            Book your OPD visit{'\n'}without the queue
           </Text>
           <Text style={styles.description}>
-            Plan your hospital visit with care. Find an OPD session, book an
-            appointment, and keep track of your queue.
+            Find a government hospital, pick an available session, and track
+            your place in line from your phone.
           </Text>
         </View>
-        <View style={styles.benefits}>
-          <Text style={styles.benefitTitle}>
-            Care starts before you arrive.
-          </Text>
-          <Text style={styles.benefit}>
-            Find a hospital that works for you.
-          </Text>
-          <View style={styles.divider} />
-          <Text style={styles.benefit}>
-            Keep your appointment details together.
-          </Text>
-        </View>
+        <View style={{ flex: 1, minHeight: 40 }} />
         <View style={styles.actions}>
           <ActionButton
             label="Get Started"
@@ -68,16 +62,10 @@ export function WelcomeScreen({
             accessibilityLabel="Continue as guest"
             accessibilityHint="Browse hospitals without signing in"
             onPress={() => navigation.navigate('Guest')}
-            style={({ pressed }) => [
-              styles.guestButton,
-              pressed && styles.pressed,
-            ]}
+            style={({ pressed }) => [styles.guest, pressed && { opacity: 0.7 }]}
           >
-            <Text style={styles.guestLabel}>Continue as guest</Text>
+            <Text style={styles.link}>Continue without signing in</Text>
           </Pressable>
-          <Text style={styles.note}>
-            You can explore hospitals first. Sign in when you’re ready to book.
-          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -87,78 +75,66 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
     flexGrow: 1,
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-    gap: spacing.xl,
-    maxWidth: 560,
+    padding: 22,
     width: '100%',
+    maxWidth: 560,
     alignSelf: 'center',
   },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  wordmark: { flex: 1, gap: spacing.xs },
-  name: { fontFamily: fonts.display, fontSize: 28, color: colors.ink },
-  eyebrow: {
-    fontFamily: fonts.body,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    lineHeight: 18,
-    color: colors.inkSoft,
+  introduction: { alignItems: 'center', gap: 22 },
+  mark: {
+    width: 84,
+    height: 84,
+    backgroundColor: colors.tealTint,
+    borderRadius: radii.mark,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  introduction: { gap: spacing.md },
+  calendar: {
+    width: 40,
+    height: 37,
+    borderWidth: 2,
+    borderColor: colors.teal,
+    borderRadius: radii.sm,
+  },
+  calendarLine: {
+    position: 'absolute',
+    top: 9,
+    height: 2,
+    backgroundColor: colors.teal,
+    width: '100%',
+  },
+  ring: {
+    position: 'absolute',
+    top: -7,
+    height: 12,
+    width: 3,
+    borderRadius: radii.sm,
+    backgroundColor: colors.teal,
+  },
+  cross: {
+    position: 'absolute',
+    top: 7,
+    alignSelf: 'center',
+    color: colors.teal,
+    fontSize: 27,
+    lineHeight: 30,
+  },
   title: {
     fontFamily: fonts.display,
-    fontSize: 42,
-    lineHeight: 50,
-    color: colors.ink,
+    fontSize: 30,
+    lineHeight: 36,
+    color: colors.tealDark,
+    textAlign: 'center',
   },
   description: {
-    fontFamily: fonts.body,
-    fontSize: 17,
-    lineHeight: 27,
-    color: colors.inkSoft,
-  },
-  benefits: {
-    backgroundColor: colors.tealTint,
-    borderRadius: radii.md,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  benefitTitle: {
-    fontFamily: fonts.body,
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.tealDark,
-    lineHeight: 25,
-  },
-  benefit: {
     fontFamily: fonts.body,
     fontSize: 15,
     lineHeight: 23,
     color: colors.inkSoft,
-  },
-  divider: { height: 1, backgroundColor: colors.sage },
-  actions: { gap: spacing.sm },
-  guestButton: {
-    minHeight: 48,
-    padding: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guestLabel: {
-    fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.teal,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
     textAlign: 'center',
+    maxWidth: 320,
   },
-  note: {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.inkSoft,
-    textAlign: 'center',
-  },
-  pressed: { opacity: 0.78 },
+  actions: { gap: 12 },
+  guest: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  link: { fontSize: 14, fontWeight: '600', color: colors.teal },
 });
