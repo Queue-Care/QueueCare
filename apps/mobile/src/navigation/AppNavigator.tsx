@@ -82,6 +82,7 @@ export type AppNavigatorProps = {
   session?: NavigationSession | null;
   isRestoring?: boolean;
   onSessionExpired?: () => void;
+  onSignedIn?: (session: NavigationSession) => void;
   navigationRef?: React.Ref<NavigationContainerRef<RootStackParams>>;
 };
 
@@ -90,6 +91,7 @@ export function AppNavigator({
   isRestoring = false,
   navigationRef,
   onSessionExpired,
+  onSignedIn,
 }: AppNavigatorProps) {
   // S-13 will supply the restored, validated session. Selecting a role is not login.
   if (isRestoring) return <SplashScreen />;
@@ -134,11 +136,9 @@ export function AppNavigator({
               component={ChooseRole}
               options={{ title: 'Choose role' }}
             />
-            <Root.Screen
-              name="PatientAuth"
-              component={PatientAuthNavigator}
-              options={{ headerShown: false }}
-            />
+            <Root.Screen name="PatientAuth" options={{ headerShown: false }}>
+              {() => <PatientAuthNavigator onSignedIn={onSignedIn} />}
+            </Root.Screen>
             <Root.Screen
               name="StaffAuth"
               component={StaffAuthNavigator}

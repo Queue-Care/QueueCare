@@ -3,17 +3,21 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { hospitalRoutes } from './modules/hospitals/hospitalRoutes.js';
 import { HttpError } from './utils/HttpError.js';
 import { bookingRoutes } from './modules/bookings/bookingRoutes.js';
+import { patientAuthRoutes } from './modules/auth/patientAuthRoutes.js';
 
 export function createApp({
   hospitalRepository,
   checkDatabase,
   bookingRepository,
   authenticate,
+  patientRegistrationRepository,
+  authConfig,
 }) {
   const app = express();
   app.disable('x-powered-by');
   app.set('query parser', 'simple');
   app.use(express.json({ limit: '100kb' }));
+  app.use('/api/v1/auth/patient', patientAuthRoutes(patientRegistrationRepository, authConfig));
   app.get('/health', async (_request, response) => {
     try {
       await checkDatabase();

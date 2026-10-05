@@ -19,6 +19,7 @@ import { bookingDetailsPayload } from '../test-utils/bookingFixtures';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from '../src/navigation/AppNavigator';
+import type { NavigationSession } from '../src/navigation/types';
 
 jest.mock(
   'react-native-safe-area-context',
@@ -108,12 +109,12 @@ test('invalid registration shows field errors without sending an API request', a
   ).toBe(true);
 });
 
-test('registration sends trimmed values and opens verification only after server success', async () => {
-  const navigation = { navigate: jest.fn() };
+test('registration sends trimmed values and opens login only after server success', async () => {
+  const navigation = { navigate: jest.fn(), reset: jest.fn() };
   fetchMock.mockResolvedValue({
     ok: true,
     status: 201,
-    json: async () => ({ success: true, data: { verificationId: 'verify-1' } }),
+    json: async () => ({ success: true, data: { registered: true } }),
   });
   await act(async () => {
     renderer = ReactTestRenderer.create(
@@ -155,8 +156,9 @@ test('registration sends trimmed values and opens verification only after server
       .pop()!
       .props.onPress();
   });
-  expect(navigation.navigate).toHaveBeenCalledWith('VerifyMobile', {
-    verificationId: 'verify-1',
+  expect(navigation.reset).toHaveBeenCalledWith({
+    index: 0,
+    routes: [{ name: 'PatientSignIn', params: { registered: true } }],
   });
   expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
     fullName: values.fullName,
@@ -164,6 +166,73 @@ test('registration sends trimmed values and opens verification only after server
     mobile: '+94771234567',
     password: values.password,
   });
+});
+
+test('successful patient login changes the root navigation to patient home', async () => {
+  const ref = createNavigationContainerRef<RootStackParams>();
+  function Harness() {
+    const [session, setSession] = React.useState<NavigationSession | null>(
+      null,
+    );
+    return (
+      <SafeAreaProvider>
+        <AppNavigator
+          session={session}
+          onSignedIn={setSession}
+          navigationRef={ref}
+        />
+      </SafeAreaProvider>
+    );
+  }
+  fetchMock.mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        userId: '000000000000000000000001',
+        accessToken: 'server-token',
+        role: 'PATIENT',
+        patient: { fullName: 'Kasun Perera' },
+      },
+    }),
+  });
+  await act(async () => {
+    renderer = ReactTestRenderer.create(<Harness />);
+  });
+  await act(async () => {
+    ref.navigate('PatientAuth', { screen: 'PatientSignIn' });
+  });
+  for (const [label, value] of [
+    ['NIC number', values.nic],
+    ['Password', values.password],
+  ]) {
+    await act(async () => {
+      renderer!.root
+        .findAll(
+          item =>
+            item.props.accessibilityLabel === label &&
+            typeof item.props.onChangeText === 'function',
+        )
+        .pop()!
+        .props.onChangeText(value);
+    });
+  }
+  await act(async () => {
+    await renderer!.root
+      .findAll(
+        item =>
+          item.props.accessibilityLabel === 'Sign in' &&
+          typeof item.props.onPress === 'function',
+      )
+      .pop()!
+      .props.onPress();
+  });
+  expect(ref.getCurrentRoute()?.name).toBe('PatientHome');
+  expect(ref.getRootState()?.routeNames).not.toContain('PatientAuth');
+  expect(fetchMock.mock.calls[0][0]).toBe(
+    'http://localhost:3000/api/v1/auth/patient/login',
+  );
 });
 
 test('protected requests require a token and do not expose raw server errors', async () => {
