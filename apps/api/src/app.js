@@ -10,6 +10,7 @@ import { notificationRoutes } from './modules/notifications/g_notificationRoutes
 import { profileRoutes } from './modules/users/g_profileRoutes.js';
 import { mediaRoutes } from './modules/media/g_mongoMediaStore.js';
 import { patientAuthRoutes } from './modules/auth/patientAuthRoutes.js';
+import { staffSessionRoutes } from './modules/sessions/k_sessionRoutes.js';
 
 export function createApp({
   hospitalRepository,
@@ -17,6 +18,7 @@ export function createApp({
   bookingRepository,
   staffAuthRepository,
   staffDashboardRepository,
+  staffSessionRepository,
   priorityRepository,
   notificationRepository,
   profileRepository,
@@ -52,6 +54,7 @@ export function createApp({
   });
   app.use('/api/v1/hospitals', hospitalRoutes(hospitalRepository));
   app.use('/api/v1/staff/auth', staffAuthRoutes(staffAuthRepository));
+  app.use('/api/v1/staff/sessions', staffSessionRoutes(staffSessionRepository, requireSignIn));
   app.use(
     '/api/v1/staff/dashboard',
     staffDashboardRoutes(staffDashboardRepository, requireSignIn)

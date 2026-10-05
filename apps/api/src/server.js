@@ -25,6 +25,7 @@ import {
   ensureStaffAuthIndexes,
 } from './modules/staff/g_staffAuthRepository.js';
 import { createStaffDashboardRepository } from './modules/staff/g_staffDashboard.js';
+import { createStaffSessionRepository } from './modules/sessions/k_sessionRepository.js';
 import {
   createPriorityRepository,
   ensurePriorityIndexes,
@@ -69,6 +70,7 @@ try {
         connection.client
       ),
       staffAuthRepository: createStaffAuthRepository(connection.db, authConfig),
+      staffSessionRepository: createStaffSessionRepository(connection.db),
       staffDashboardRepository: createStaffDashboardRepository(connection.db, {
         priorityRepository,
         notificationRepository,
