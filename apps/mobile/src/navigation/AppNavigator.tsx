@@ -82,6 +82,8 @@ export type AppNavigatorProps = {
   session?: NavigationSession | null;
   isRestoring?: boolean;
   onSessionExpired?: () => void;
+  onSignOut?: () => void;
+  onStaffAuthenticated?: (session: NavigationSession) => void;
   navigationRef?: React.Ref<NavigationContainerRef<RootStackParams>>;
 };
 
@@ -90,6 +92,8 @@ export function AppNavigator({
   isRestoring = false,
   navigationRef,
   onSessionExpired,
+  onSignOut,
+  onStaffAuthenticated = () => {},
 }: AppNavigatorProps) {
   // S-13 will supply the restored, validated session. Selecting a role is not login.
   if (isRestoring) return <SplashScreen />;
@@ -111,16 +115,22 @@ export function AppNavigator({
                   patient={session.patient}
                   patientId={session.userId}
                   onSessionExpired={onSessionExpired}
+                  onSignOut={onSignOut}
                   onSignIn={() => {}}
                 />
               )}
             </Root.Screen>
           ) : (
-            <Root.Screen
-              name="StaffApp"
-              component={StaffNavigator}
-              options={{ headerShown: false }}
-            />
+            <Root.Screen name="StaffApp" options={{ headerShown: false }}>
+              {() => (
+                <StaffNavigator
+                  accessToken={session.accessToken}
+                  staff={session.staff}
+                  onSessionExpired={onSessionExpired}
+                  onSignOut={onSignOut}
+                />
+              )}
+            </Root.Screen>
           )
         ) : (
           <>
@@ -141,9 +151,14 @@ export function AppNavigator({
             />
             <Root.Screen
               name="StaffAuth"
-              component={StaffAuthNavigator}
               options={{ headerShown: false }}
-            />
+            >
+              {() => (
+                <StaffAuthNavigator
+                  onStaffAuthenticated={onStaffAuthenticated}
+                />
+              )}
+            </Root.Screen>
             <Root.Screen
               name="Guest"
               component={Guest}

@@ -8,12 +8,7 @@ import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import {
-  NavigationPage,
-  SignInGate,
-  stackOptions,
-  tabOptions,
-} from './NavigationPage';
+import { SignInGate, stackOptions, tabOptions } from './NavigationPage';
 import { PatientHomeScreen } from '../screens/PatientHomeScreen';
 import { MyBookingsScreen } from '../screens/MyBookingsScreen';
 import { BookingDetailsScreen } from '../screens/BookingDetailsScreen';
@@ -27,6 +22,8 @@ import {
 } from '../features/booking/useBookingSubmission';
 import { BookingConfirmationScreen } from '../screens/BookingConfirmationScreen';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 import type {
   BookingsStackParams,
   HomeStackParams,
@@ -43,6 +40,7 @@ type Access = {
   patient?: PatientSummary;
   patientId?: string;
   onSessionExpired?: () => void;
+  onSignOut?: () => void;
   onSignIn: () => void;
   onExit?: () => void;
 };
@@ -228,6 +226,7 @@ export function PatientNavigator({
   patient,
   patientId,
   onSessionExpired,
+  onSignOut,
   onSignIn,
   onExit,
 }: Access) {
@@ -262,7 +261,10 @@ export function PatientNavigator({
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
-            <NavigationPage title="Notifications" />
+            <NotificationsScreen
+              accessToken={accessToken}
+              onSessionExpired={onSessionExpired}
+            />
           )
         }
       </Tabs.Screen>
@@ -271,7 +273,11 @@ export function PatientNavigator({
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
-            <NavigationPage title="Profile" />
+            <ProfileScreen
+              accessToken={accessToken}
+              onSignOut={onSignOut}
+              onSessionExpired={onSessionExpired}
+            />
           )
         }
       </Tabs.Screen>

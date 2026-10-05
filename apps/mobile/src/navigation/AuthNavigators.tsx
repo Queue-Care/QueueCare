@@ -58,14 +58,24 @@ export function PatientAuthNavigator() {
     </Patient.Navigator>
   );
 }
-export function StaffAuthNavigator() {
+export function StaffAuthNavigator({
+  onStaffAuthenticated,
+}: {
+  onStaffAuthenticated: (session: import('./types').NavigationSession) => void;
+}) {
   return (
     <Staff.Navigator screenOptions={stackOptions}>
       <Staff.Screen
         name="StaffSignIn"
-        component={StaffSignInScreen}
         options={{ title: 'Staff sign in', headerShown: false }}
-      />
+      >
+        {props => (
+          <StaffSignInScreen
+            {...props}
+            onAuthenticated={onStaffAuthenticated}
+          />
+        )}
+      </Staff.Screen>
       <Staff.Screen
         name="StaffRegistration"
         component={StaffRegistrationScreen}

@@ -17,6 +17,8 @@
     "db:seed:hospitals": "npm --workspace apps/api run seed:hospitals",
     "db:seed:discovery": "npm --workspace apps/api run seed:discovery",
     "db:seed:sessions": "npm --workspace apps/api run seed:sessions --",
+    "db:seed:priority": "npm --workspace apps/api run seed:priority",
+    "db:seed:priority:reset": "npm --workspace apps/api run seed:priority:reset",
     "check:db": "npm --workspace apps/api run check:db"
   },
   "workspaces": [
