@@ -72,15 +72,15 @@ export function CreateAccountScreen({
       if (
         typeof result !== 'object' ||
         result === null ||
-        !('verificationId' in result) ||
-        typeof result.verificationId !== 'string' ||
-        !result.verificationId.trim()
+        !('registered' in result) ||
+        result.registered !== true
       )
         throw new PatientApiError(
-          'We could not start verification. Please try again.',
+          'We could not create your account. Please try again.',
         );
-      navigation.navigate('VerifyMobile', {
-        verificationId: result.verificationId,
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'PatientSignIn', params: { registered: true } }],
       });
     } catch (err) {
       setError(message(err));
@@ -124,7 +124,7 @@ export function CreateAccountScreen({
         placeholder="+94 77 123 4567"
         keyboardType="phone-pad"
         autoComplete="tel"
-        hint="We send your queue alerts to this number."
+        hint="Your contact number for hospital services."
         editable={!busy}
       />
       <Field

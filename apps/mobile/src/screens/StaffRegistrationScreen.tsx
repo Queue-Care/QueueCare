@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 import { PasswordField } from '../components/g_PasswordField';
 import {
   registerStaff,
@@ -368,6 +368,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.sageLine,
   },
   backBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -378,21 +379,25 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   backBtnArrow: {
+    fontFamily: fonts.body,
     fontSize: 24,
     color: colors.tealDark,
     lineHeight: 28,
   },
   navTitle: {
+    fontFamily: fonts.display,
     fontSize: 18,
     fontWeight: '700',
     color: colors.tealDark,
   },
   container: {
+    ...surfaces.content,
     paddingHorizontal: 22,
     paddingTop: 16,
     paddingBottom: 24,
   },
   lede: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.inkSoft,
     lineHeight: 20,
@@ -402,12 +407,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: {
+    fontFamily: fonts.body,
     fontSize: 12,
     fontWeight: '600',
     color: colors.ink,
     marginBottom: 6,
   },
   control: {
+    borderRadius: radii.sm,
+    fontFamily: fonts.body,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -421,14 +429,16 @@ const styles = StyleSheet.create({
     borderColor: colors.coral,
   },
   errorText: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: '#A7402C',
     marginTop: 5,
   },
   monoText: {
-    fontFamily: 'monospace',
+    fontFamily: fonts.mono,
   },
   selectControl: {
+    borderRadius: radii.sm,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -440,14 +450,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   selectValue: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.ink,
   },
   placeholder: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: '#9CB0AA',
   },
   chev: {
+    fontFamily: fonts.body,
     fontSize: 10,
     color: colors.inkSoft,
   },
@@ -455,12 +468,14 @@ const styles = StyleSheet.create({
     height: 20,
   },
   primaryBtn: {
+    borderRadius: radii.pill,
     backgroundColor: colors.teal,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryBtnText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -474,6 +489,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(23, 48, 42, 0.45)',
   },
   sheet: {
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
     maxHeight: '70%',
     backgroundColor: colors.mist,
     paddingHorizontal: 22,
@@ -481,12 +498,15 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   sheetTitle: {
+    fontFamily: fonts.display,
     fontSize: 18,
     fontWeight: '700',
     color: colors.tealDark,
     marginBottom: 16,
   },
   options: {
+    borderRadius: radii.md,
+    overflow: 'hidden',
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -504,11 +524,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionName: {
+    fontFamily: fonts.body,
     fontSize: 14,
     fontWeight: '500',
     color: colors.ink,
   },
   optionSub: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: colors.inkSoft,
     marginTop: 2,
@@ -519,6 +541,7 @@ const styles = StyleSheet.create({
     color: colors.teal,
   },
   outlineBtn: {
+    borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.sage,
     paddingVertical: 14,
@@ -526,6 +549,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   outlineBtnText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: colors.tealDark,

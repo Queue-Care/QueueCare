@@ -1,6 +1,6 @@
 # Booking Confirmation — M1-12
 
-M1-10/M1-11 are merged in local history through PR #18. M1-12 replaces the confirmation placeholder with a saved booking summary. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is now implemented; Member 4’s read API/screen integration is pending. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. The next Member 1 task is **M1-16: clarify Hospital Search entry points**.
+M1-10/M1-11 are merged in local history through PR #18. M1-12 replaces the confirmation placeholder with a saved booking summary. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is now implemented; Member 4’s read API/screen integration is pending. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. M1-16’s [Home search clarification](PATIENT_HOME.md) is implemented. M1-17’s [session-action refinement](HOSPITAL_DETAILS.md#m1-17-session-action-refinement) is implemented. Next is patient-flow integration and phone acceptance (I-01 / T-04).
 
 ## Implemented behavior
 

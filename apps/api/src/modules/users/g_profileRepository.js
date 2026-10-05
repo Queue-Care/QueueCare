@@ -19,7 +19,7 @@ function toProfile(user) {
     staffId: text(user.staffId),
     hospital: text(user.hospital),
     maskedNic: maskNic(user.nic),
-    phone: text(user.phone) ?? text(user.mobile),
+    phone: text(user.mobile) ?? text(user.phone),
     email: text(user.email),
     preferredLanguage: LANGUAGES.includes(user.preferredLanguage)
       ? user.preferredLanguage
@@ -88,8 +88,8 @@ export function createProfileRepository(
       const isStaff = typeof user.staffId === 'string';
       const changes = {};
       if (fullName !== undefined) changes.fullName = fullName;
-      // Staff registration stores the number as `mobile`; patients use `phone`.
-      if (phone !== undefined) changes[isStaff ? 'mobile' : 'phone'] = phone;
+      // Patient and staff registration both store the number as `mobile`.
+      if (phone !== undefined) changes.mobile = phone;
       if (email !== undefined) {
         changes.email = email;
         if (isStaff) changes.staffEmail = email;

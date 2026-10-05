@@ -20,7 +20,7 @@ import {
   type PriorityRequest,
 } from '../features/patient/api';
 import { usePatientResource } from '../features/patient/usePatientResource';
-import { colors } from '../theme/tokens';
+import { colors, radii, surfaces } from '../theme/tokens';
 
 export function RequestPriorityScreen({
   route,
@@ -118,10 +118,7 @@ export function RequestPriorityScreen({
                       style={[
                         s.card,
                         s.row,
-                        reason === value && {
-                          borderColor: colors.teal,
-                          backgroundColor: colors.tealTint,
-                        },
+                        reason === value && surfaces.selected,
                       ]}
                     >
                       <View style={{ flex: 1 }}>
@@ -138,7 +135,7 @@ export function RequestPriorityScreen({
                         style={{
                           width: 22,
                           height: 22,
-                          borderRadius: 11,
+                          borderRadius: radii.circle,
                           borderWidth: 2,
                           borderColor:
                             reason === value ? colors.teal : colors.sage,
@@ -151,7 +148,7 @@ export function RequestPriorityScreen({
                             style={{
                               width: 10,
                               height: 10,
-                              borderRadius: 5,
+                              borderRadius: radii.circle,
                               backgroundColor: colors.teal,
                             }}
                           />

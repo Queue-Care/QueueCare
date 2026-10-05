@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from 'react-native';
 import {
   createBottomTabNavigator,
   type BottomTabNavigationProp,
@@ -24,6 +23,7 @@ import { BookingConfirmationScreen } from '../screens/BookingConfirmationScreen'
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { useHomeFonts } from '../theme/homeFonts';
 import type {
   BookingsStackParams,
   HomeStackParams,
@@ -60,16 +60,7 @@ function HomeNavigator({
       <Home.Screen
         name="PatientHome"
         options={{
-          title: 'QueueCare',
-          headerLeft: onExit
-            ? () => (
-                <Button
-                  title="Welcome"
-                  accessibilityLabel="Back to welcome"
-                  onPress={onExit}
-                />
-              )
-            : undefined,
+          headerShown: false,
         }}
       >
         {({
@@ -78,6 +69,18 @@ function HomeNavigator({
           <PatientHomeScreen
             guest={guest}
             accessToken={accessToken}
+            patient={patient}
+            onExit={onExit}
+            onProfile={() =>
+              navigation
+                .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                .navigate('Profile')
+            }
+            onPriority={() =>
+              navigation
+                .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                .navigate('Bookings')
+            }
             onSignIn={onSignIn}
             onSearch={() => navigation.navigate('HospitalSearch')}
             onBookings={() =>
@@ -231,8 +234,20 @@ export function PatientNavigator({
   onExit,
 }: Access) {
   const submission = useBookingSubmission(patientId, accessToken);
+  const homeFonts = useHomeFonts();
   return (
-    <Tabs.Navigator screenOptions={tabOptions}>
+    <Tabs.Navigator
+      screenOptions={({ route }) => ({
+        ...tabOptions({ route }),
+        tabBarInactiveTintColor: '#93A8A2',
+        tabBarLabelStyle: {
+          fontFamily: homeFonts.semibold,
+          fontSize: 10.88,
+          fontWeight: '600',
+        },
+        tabBarItemStyle: { paddingTop: 6, paddingBottom: 4 },
+      })}
+    >
       <Tabs.Screen name="Home">
         {() => (
           <HomeNavigator

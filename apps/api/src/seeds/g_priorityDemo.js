@@ -91,7 +91,7 @@ export async function seedPriorityDemo(
           role: 'PATIENT',
           fullName: demo.fullName,
           nic: demo.nic,
-          phone: `+94 77 000 00${String(index + 1).padStart(2, '0')}`,
+          mobile: `+947700000${String(index + 1).padStart(2, '0')}`,
           email: `${demo.key}.demo@queuecare.invalid`,
           status: 'ACTIVE',
           preferredLanguage: 'en',

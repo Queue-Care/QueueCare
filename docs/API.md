@@ -2,9 +2,14 @@
 
 ## Patient account, bookings, and priority pages
 
-These frontend contracts follow the supplied project plan. Registration, booking lists, cancellation, and priority endpoints remain pending; booking details is implemented with the nested DTO documented below. All responses use `{ "success": true, "data": ... }`; errors use an appropriate non-2xx status. Protected endpoints require a patient JWT and must enforce patient ownership on the server.
+These frontend contracts follow the supplied project plan. Patient registration and booking details are implemented. Booking lists, cancellation, and priority endpoints remain pending. All responses use `{ "success": true, "data": ... }`; errors use an appropriate non-2xx status. Protected endpoints require a patient JWT and must enforce patient ownership on the server.
 
-- `POST /api/v1/auth/patient/register`: body `{ fullName, nic, mobile, email?, password }`; data `{ verificationId }`. Never return the password. The client opens the existing mobile-verification route after success.
+- `POST /api/v1/auth/patient/register`: body `{ fullName, nic, mobile, email?, password }`; data `{ registered: true }`. Never return the password. After success the client opens patient login.
+
+Registration returns HTTP 201 and saves an ACTIVE PATIENT account. Passwords use salted scrypt hashes. NIC is uppercase, mobile is normalized to `+947XXXXXXXX`, and optional email is lowercase. Unique indexes enforce NIC, mobile, and supplied email; duplicates return 409 ACCOUNT_EXISTS. Unknown fields and invalid values return 400 VALIDATION_ERROR. No mobile verification or OTP is required.
+
+- `POST /api/v1/auth/patient/login`: body `{ nic, password }`; data `{ accessToken, userId, role: "PATIENT", patient: { fullName, nic } }`. Checks the password hash and ACTIVE account status, then issues a 24-hour HS256 JWT using the configured issuer/audience. Wrong credentials return 401; inactive accounts return 403; missing JWT configuration returns 503. Previously registered PENDING_VERIFICATION patients become ACTIVE only after their password is verified. Suspended accounts cannot log in. Successful login opens patient home. Sessions are held in memory; reopening the app requires login.
+
 - `GET /api/v1/bookings/me?status=upcoming|past`: data is an array of joined booking summaries, with the same fields as the Home summary below. The list accepts CONFIRMED, CANCELLED, COMPLETED, SKIPPED, and RESCHEDULED. Filter/sort on the server according to the requested category.
 - `GET /api/v1/bookings/:bookingId`: the implemented endpoint returns nested `hospital`, `service`, and `session` records, as documented below. Patient pages normalize their names and start time into a booking summary. Flat list summaries are also supported. Optional `patientName`, `maskedNic`, and `priorityRequestId` are only shown if supplied; the current details endpoint does not return patient profile or NIC fields. The ID must match the route.
 - `PATCH /api/v1/bookings/:bookingId/cancel`: successful data may be null or the updated booking. Enforce allowed cancellation transitions and release capacity atomically. The client refetches details after success.

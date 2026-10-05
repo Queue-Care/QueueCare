@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 import { ApiError, errorMessage } from '../api/g_apiClient';
 import { useApiResource } from '../api/g_useApiResource';
 import {
@@ -246,11 +246,13 @@ const styles = StyleSheet.create({
   },
   navTitle: {
     flex: 1,
+    fontFamily: fonts.display,
     fontSize: 20,
     fontWeight: '700',
     color: colors.tealDark,
   },
   iconBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -263,11 +265,13 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   backBtnArrow: {
+    fontFamily: fonts.body,
     fontSize: 24,
     color: colors.tealDark,
     lineHeight: 28,
   },
   iconBtnCheck: {
+    fontFamily: fonts.body,
     fontSize: 16,
     color: colors.tealDark,
     fontWeight: 'bold',
@@ -276,6 +280,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   scrollContent: {
+    ...surfaces.content,
     paddingBottom: 24,
   },
   state: {
@@ -285,17 +290,21 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   stateText: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.inkSoft,
     textAlign: 'center',
     lineHeight: 20,
   },
   stateLink: {
+    fontFamily: fonts.body,
     fontSize: 14,
     fontWeight: '600',
     color: colors.teal,
   },
   list: {
+    overflow: 'hidden',
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderBottomWidth: 1,
     borderColor: colors.sageLine,
@@ -312,6 +321,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4FAF8',
   },
   avatar: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     alignItems: 'center',
@@ -338,22 +348,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: colors.ink,
   },
   subText: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: colors.inkSoft,
     lineHeight: 18,
     marginTop: 2,
   },
   timestampText: {
+    fontFamily: fonts.body,
     fontSize: 11,
     color: colors.inkSoft,
     marginTop: 4,
   },
   priorityBadge: {
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.coralTint,
@@ -361,12 +375,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeDot: {
+    borderRadius: radii.circle,
     width: 6,
     height: 6,
     backgroundColor: colors.coral,
     marginRight: 5,
   },
   priorityBadgeText: {
+    fontFamily: fonts.body,
     fontSize: 11,
     fontWeight: '600',
     color: '#A7402C',

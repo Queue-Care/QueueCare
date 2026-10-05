@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
 import { StatusText } from '../components/StatusText';
 import { useHospitalSearch } from '../features/hospitals/useHospitalSearch';
-import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { colors, fonts, surfaces, typography, radii, spacing } from '../theme/tokens';
 
 export function HospitalSearchScreen({
   onSelectHospital,
@@ -243,57 +243,39 @@ export function HospitalSearchScreen({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
+    ...surfaces.content,
     padding: spacing.lg,
     gap: spacing.md,
     width: '100%',
-    maxWidth: 640,
+    maxWidth: 560,
     alignSelf: 'center',
     flexGrow: 1,
   },
   section: { gap: spacing.md },
-  title: {
-    color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: 32,
-    lineHeight: 40,
-  },
-  heading: {
-    color: colors.ink,
-    fontFamily: fonts.body,
-    fontSize: 19,
-    lineHeight: 28,
-    fontWeight: '600',
-  },
-  description: {
-    color: colors.inkSoft,
-    fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 25,
-  },
-  label: {
-    color: colors.ink,
-    fontFamily: fonts.body,
-    fontSize: 15,
-    fontWeight: '600',
-  },
+  title: typography.title,
+  heading: typography.heading,
+  description: typography.body,
+  label: typography.label,
   filters: { gap: spacing.sm, paddingVertical: spacing.sm },
   input: {
+    fontFamily: fonts.body,
     minHeight: 52,
     borderWidth: 1,
     borderColor: colors.controlBorder,
-    borderRadius: radii.sm,
+    borderRadius: radii.pill,
     backgroundColor: colors.panel,
     color: colors.ink,
-    fontFamily: fonts.body,
-    fontSize: 16,
-    padding: spacing.md,
+    fontSize: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
   },
   card: {
+    ...surfaces.card,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
     borderRadius: radii.md,
-    padding: spacing.lg,
+    padding: 16,
     gap: spacing.sm,
   },
   city: {

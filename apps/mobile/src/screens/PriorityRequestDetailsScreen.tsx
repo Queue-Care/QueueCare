@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 import { ApiError, errorMessage } from '../api/g_apiClient';
 import { useApiResource } from '../api/g_useApiResource';
 import {
@@ -261,6 +261,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.sageLine,
   },
   backBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -271,16 +272,19 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   backBtnArrow: {
+    fontFamily: fonts.body,
     fontSize: 24,
     color: colors.tealDark,
     lineHeight: 28,
   },
   navTitle: {
+    fontFamily: fonts.display,
     fontSize: 18,
     fontWeight: '700',
     color: colors.tealDark,
   },
   container: {
+    ...surfaces.content,
     flexGrow: 1,
     paddingHorizontal: 22,
     paddingTop: 16,
@@ -292,17 +296,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   stateText: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.inkSoft,
     textAlign: 'center',
     lineHeight: 20,
   },
   stateLink: {
+    fontFamily: fonts.body,
     fontSize: 14,
     fontWeight: '600',
     color: colors.teal,
   },
   card: {
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -314,6 +321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
+    borderRadius: radii.circle,
     width: 46,
     height: 46,
     backgroundColor: colors.coralTint,
@@ -324,6 +332,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tealTint,
   },
   avatarText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '700',
     color: '#A7402C',
@@ -336,16 +345,19 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   patientName: {
+    fontFamily: fonts.body,
     fontSize: 16,
     fontWeight: '700',
     color: colors.ink,
   },
   patientSub: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: colors.inkSoft,
     marginTop: 2,
   },
   badgePriority: {
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.coralTint,
@@ -353,6 +365,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeDone: {
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.doneBg,
@@ -360,6 +373,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeDot: {
+    borderRadius: radii.circle,
     width: 6,
     height: 6,
     backgroundColor: colors.coral,
@@ -369,11 +383,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#3C8558',
   },
   badgePriorityText: {
+    fontFamily: fonts.body,
     fontSize: 11,
     fontWeight: '600',
     color: '#A7402C',
   },
   badgeDoneText: {
+    fontFamily: fonts.body,
     fontSize: 11,
     fontWeight: '600',
     color: colors.doneText,
@@ -390,37 +406,43 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   k: {
+    fontFamily: fonts.body,
     fontSize: 11,
     fontWeight: '600',
     color: colors.inkSoft,
     marginBottom: 2,
   },
   v: {
+    fontFamily: fonts.body,
     fontSize: 14,
     fontWeight: '500',
     color: colors.ink,
   },
   mono: {
-    fontFamily: 'monospace',
+    fontFamily: fonts.mono,
   },
   cardHeading: {
+    fontFamily: fonts.body,
     fontSize: 14,
     fontWeight: '700',
     color: colors.ink,
   },
   reasonMain: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.ink,
     marginTop: 6,
     fontWeight: '500',
   },
   reasonQuote: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: colors.inkSoft,
     marginTop: 8,
     lineHeight: 18,
   },
   note: {
+    borderRadius: radii.note,
     backgroundColor: colors.tealTint,
     padding: 13,
     flexDirection: 'row',
@@ -428,11 +450,13 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   infoIcon: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.tealDark,
     marginRight: 8,
   },
   noteText: {
+    fontFamily: fonts.body,
     flex: 1,
     fontSize: 12,
     color: colors.tealDark,
@@ -443,6 +467,7 @@ const styles = StyleSheet.create({
     minHeight: 24,
   },
   btnPrimary: {
+    borderRadius: radii.pill,
     backgroundColor: colors.teal,
     paddingVertical: 14,
     alignItems: 'center',
@@ -450,11 +475,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   btnPrimaryText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
   },
   btnDangerGhost: {
+    borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.coralTint,
     backgroundColor: 'transparent',
@@ -463,6 +490,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnDangerGhostText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: '#A7402C',

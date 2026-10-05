@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 import { useApiResource } from '../api/g_useApiResource';
 import {
   fetchDashboard,
@@ -239,6 +239,7 @@ const styles = StyleSheet.create({
   },
   grow: { flex: 1 },
   iconBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -249,6 +250,7 @@ const styles = StyleSheet.create({
   },
   bell: { fontSize: 15 },
   dotAlert: {
+    borderRadius: radii.circle,
     position: 'absolute',
     top: 7,
     right: 8,
@@ -259,6 +261,8 @@ const styles = StyleSheet.create({
     borderColor: colors.panel,
   },
   avatar: {
+    borderRadius: radii.circle,
+    overflow: 'hidden',
     width: 38,
     height: 38,
     backgroundColor: colors.tealTint,
@@ -267,18 +271,25 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 13, fontWeight: '700', color: colors.tealDark },
   avatarImage: { width: 38, height: 38 },
-  content: { flexGrow: 1, paddingHorizontal: 22, paddingBottom: 24 },
-  greet: { fontSize: 14, color: colors.inkSoft },
+  content: {
+    ...surfaces.content,
+    flexGrow: 1,
+    paddingHorizontal: 22,
+    paddingBottom: 24,
+  },
+  greet: { fontFamily: fonts.body, fontSize: 14, color: colors.inkSoft },
   title: {
+    fontFamily: fonts.display,
     fontSize: 28,
     fontWeight: '700',
     color: colors.tealDark,
     letterSpacing: -0.3,
     marginBottom: 2,
   },
-  sub: { fontSize: 13, color: colors.inkSoft },
+  sub: { fontFamily: fonts.body, fontSize: 13, color: colors.inkSoft },
   loader: { marginTop: 32 },
   noteWarn: {
+    borderRadius: radii.note,
     backgroundColor: colors.amberTint,
     padding: 13,
     marginTop: 16,
@@ -289,6 +300,7 @@ const styles = StyleSheet.create({
   kpiRow: { flexDirection: 'row', gap: 12, marginTop: 16, marginBottom: 4 },
   kpiRowSecond: { marginTop: 12 },
   kpi: {
+    borderRadius: radii.md,
     flex: 1,
     backgroundColor: colors.panel,
     borderWidth: 1,
@@ -296,8 +308,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 15,
   },
-  kpiLabel: { fontSize: 12, fontWeight: '600', color: colors.inkSoft },
+  kpiLabel: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.inkSoft,
+  },
   kpiNumber: {
+    fontFamily: fonts.display,
     fontSize: 32,
     fontWeight: '600',
     color: colors.tealDark,
@@ -311,8 +329,15 @@ const styles = StyleSheet.create({
     marginTop: 22,
     marginBottom: 10,
   },
-  group: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  group: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.ink,
+  },
   list: {
+    borderRadius: radii.md,
+    overflow: 'hidden',
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -326,21 +351,33 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.sageLine,
   },
   lastRow: { borderBottomWidth: 0 },
-  rowName: { fontSize: 15, fontWeight: '600', color: colors.ink },
-  rowSub: { fontSize: 13, color: colors.inkSoft, marginTop: 2 },
+  rowName: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.ink,
+  },
+  rowSub: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.inkSoft,
+    marginTop: 2,
+  },
   empty: {
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
     padding: 16,
   },
   badge: {
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  badgeDot: { width: 6, height: 6, marginRight: 5 },
+  badgeDot: { borderRadius: radii.circle, width: 6, height: 6, marginRight: 5 },
   badgeText: { fontSize: 11, fontWeight: '600' },
   badgeCalled: { backgroundColor: colors.tealTint },
   dotCalled: { backgroundColor: colors.teal },
@@ -353,6 +390,7 @@ const styles = StyleSheet.create({
   textDone: { color: colors.doneText },
   spacer: { flex: 1, minHeight: 20 },
   btnUrgent: {
+    borderRadius: radii.pill,
     backgroundColor: colors.coral,
     paddingVertical: 14,
     alignItems: 'center',
@@ -360,6 +398,7 @@ const styles = StyleSheet.create({
   },
   btnUrgentText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
   btnOutline: {
+    borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.sage,
     paddingVertical: 14,

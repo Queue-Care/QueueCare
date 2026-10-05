@@ -2,6 +2,7 @@
   "name": "queuecare",
   "version": "0.1.0",
   "private": true,
+  "main": "apps/mobile/index.js",
   "scripts": {
     "start:mobile": "npm --workspace apps/mobile run start",
     "dev:mobile": "npm --workspace apps/mobile run start",

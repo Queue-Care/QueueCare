@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshControl, Text } from 'react-native';
+import { RefreshControl, StyleSheet, Text } from 'react-native';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -13,6 +13,8 @@ import {
 } from '../src/features/hospitals/hospitalDetails';
 import { getAvailableSessions } from '../src/features/booking/availableSessions';
 import { ActionButton } from '../src/components/ActionButton';
+import { HospitalDetailsScreen } from '../src/screens/HospitalDetailsScreen';
+import { colors } from '../src/theme/tokens';
 
 jest.mock(
   'react-native-safe-area-context',
@@ -133,6 +135,9 @@ test.each([false, true])(
       ),
     ).toBe(true);
     expect(cta()?.props.disabled).toBe(true);
+    expect(hasText('Select an OPD service above to view its sessions.')).toBe(
+      true,
+    );
     expect(button('View OPD sessions').props.accessibilityState.disabled).toBe(
       true,
     );
@@ -141,12 +146,18 @@ test.each([false, true])(
     });
     expect(ref.getCurrentRoute()?.name).toBe('HospitalDetails');
     await press('General OPD');
+    expect(hasText('Selected service: General OPD')).toBe(true);
     await press('Medical clinic');
+    expect(hasText('Selected service: Medical clinic')).toBe(true);
+    expect(hasText('Selected service: General OPD')).toBe(false);
     expect(button('General OPD').props.accessibilityState.checked).toBe(false);
     expect(button('Medical clinic').props.accessibilityState.checked).toBe(
       true,
     );
     expect(cta()?.props.disabled).toBe(false);
+    expect(button('View OPD sessions').props.accessibilityHint).toBe(
+      'Shows sessions for Medical clinic',
+    );
     await press('View OPD sessions');
     expect(ref.getCurrentRoute()).toMatchObject({
       name: 'BookAppointment',
@@ -158,6 +169,56 @@ test.each([false, true])(
     } else expect(hasText('Choose a session')).toBe(true);
   },
 );
+test('session action precedes opening hours and refresh, with a large scalable primary touch target', async () => {
+  await mount();
+  await press('General OPD');
+  const screen = renderer.root.findByType(HospitalDetailsScreen);
+  const actions = screen.findAllByType(ActionButton);
+  expect(actions.map(node => node.props.label)).toEqual([
+    'View OPD sessions',
+    'Refresh hospital details',
+  ]);
+  expect(actions[1].props.variant).toBe('outline');
+  const labels = screen.findAllByType(Text).map(node => node.props.children);
+  expect(labels.indexOf('View OPD sessions')).toBeLessThan(
+    labels.indexOf('Opening hours'),
+  );
+  const control = cta()!.findAll(
+    node =>
+      node.props.accessibilityRole === 'button' &&
+      typeof node.props.style === 'function',
+  )[0];
+  const style = StyleSheet.flatten(control.props.style({ pressed: false }));
+  expect(style.backgroundColor).toBe(colors.teal);
+  expect(style.minHeight).toBeGreaterThanOrEqual(52);
+  expect(style.minWidth).toBeGreaterThanOrEqual(48);
+  const label = cta()!.findByType(Text);
+  expect(label.props.allowFontScaling).not.toBe(false);
+  expect(label.props.numberOfLines).toBeUndefined();
+  expect(StyleSheet.flatten(label.props.style).color).toBe(colors.panel);
+});
+
+test('visible refresh removes selected-service guidance and prevents continuing during reload', async () => {
+  await mount();
+  await press('General OPD');
+  const pending = deferred();
+  details.mockReturnValueOnce(pending.promise);
+  await press('Refresh hospital details');
+  expect(hasText('Selected service: General OPD')).toBe(false);
+  expect(cta()).toBeUndefined();
+  await act(async () => {
+    pending.resolve(hospital);
+  });
+  expect(cta()?.props.disabled).toBe(true);
+  expect(hasText('Select an OPD service above to view its sessions.')).toBe(
+    true,
+  );
+  await act(async () => {
+    cta()!.props.onPress();
+  });
+  expect(ref.getCurrentRoute()?.name).toBe('HospitalDetails');
+});
+
 test('loading hides actions until both endpoints settle', async () => {
   const pending = deferred();
   details.mockReturnValueOnce(pending.promise);
@@ -174,6 +235,9 @@ test('empty services disable the next step and offer hospital search', async () 
   await mount();
   expect(hasText('No OPD services listed yet.')).toBe(true);
   expect(cta()?.props.disabled).toBe(true);
+  expect(
+    hasText('There is no OPD service to select at this hospital yet.'),
+  ).toBe(true);
   await press('Search hospitals');
   expect(ref.getCurrentRoute()?.name).toBe('HospitalSearch');
 });
@@ -184,8 +248,10 @@ test('partial service failure retains details, offers retry, and never looks emp
   expect(hasText('We couldn’t load OPD services.')).toBe(true);
   expect(hasText('No OPD services listed yet.')).toBe(false);
   expect(cta()?.props.disabled).toBe(true);
+  expect(hasText('Retry loading OPD services to continue.')).toBe(true);
   await press('Retry services');
   expect(hasText('General OPD')).toBe(true);
+  expect(hasText('Retry loading OPD services to continue.')).toBe(false);
   expect(details).toHaveBeenCalledTimes(2);
 });
 test('hospital failure offers retry without rendering unrelated services', async () => {

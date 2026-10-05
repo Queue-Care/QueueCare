@@ -10,13 +10,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
 import { StatusText } from '../components/StatusText';
+import { TicketAccent } from '../components/TicketAccent';
 import { useBookingDetails } from '../features/booking/useBookingDetails';
 import {
   bookingDateLabel,
   type BookingDetails,
 } from '../features/booking/bookingDetails';
 import { sessionTimeLabel } from '../features/booking/availableSessions';
-import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { colors, fonts, surfaces, radii, spacing, ticketStyles, typography } from '../theme/tokens';
 
 function title(booking: BookingDetails) {
   const labels = {
@@ -140,6 +141,7 @@ export function BookingConfirmationScreen({
               </Text>
             </View>
             <View style={styles.ticket}>
+              <TicketAccent />
               <Text style={styles.ticketLabel}>Booking ID</Text>
               <Text
                 selectable
@@ -206,6 +208,7 @@ export function BookingConfirmationScreen({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
+    ...surfaces.content,
     padding: spacing.lg,
     gap: spacing.md,
     paddingBottom: spacing.xl,
@@ -214,7 +217,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   mark: {
     backgroundColor: colors.tealTint,
-    borderRadius: 40,
+    borderRadius: radii.mark,
     width: 72,
     height: 72,
     alignItems: 'center',
@@ -224,51 +227,48 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.display,
     fontSize: 30,
-    lineHeight: 38,
-    color: colors.ink,
+    lineHeight: 36,
+    color: colors.tealDark,
     textAlign: 'center',
   },
   heading: {
     fontFamily: fonts.body,
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 24,
     color: colors.ink,
     fontWeight: '600',
   },
-  body: {
-    fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.inkSoft,
-  },
+  body: typography.body,
   panel: {
+    ...surfaces.card,
     backgroundColor: colors.panel,
     padding: spacing.md,
     gap: spacing.md,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.sageLine,
   },
   ticket: {
-    backgroundColor: colors.tealDark,
-    borderRadius: radii.md,
-    padding: spacing.lg,
+    ...ticketStyles.panel,
+    borderRadius: radii.lg,
     gap: spacing.sm,
   },
-  ticketLabel: { color: colors.sage, fontSize: 14, lineHeight: 22 },
+  ticketLabel: ticketStyles.label,
   code: {
+    ...ticketStyles.identifier,
     color: colors.panel,
-    fontSize: 22,
+    fontSize: 20,
     lineHeight: 30,
     fontWeight: '700',
     flexShrink: 1,
   },
   ticketHeading: {
+    fontFamily: fonts.body,
     color: colors.panel,
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 26,
     fontWeight: '600',
   },
-  ticketText: { color: colors.panel, fontSize: 16, lineHeight: 24 },
-  line: { height: 1, backgroundColor: colors.teal, marginVertical: spacing.sm },
+  ticketText: ticketStyles.text,
+  line: { ...ticketStyles.divider, marginVertical: spacing.sm },
 });

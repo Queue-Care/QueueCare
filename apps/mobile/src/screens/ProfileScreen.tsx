@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 import { ApiError, errorMessage } from '../api/g_apiClient';
 import { useApiResource } from '../api/g_useApiResource';
 import {
@@ -485,11 +485,13 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.sageLine,
   },
   navTitle: {
+    fontFamily: fonts.display,
     fontSize: 20,
     fontWeight: '700',
     color: colors.tealDark,
   },
   iconBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -499,10 +501,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   gearIcon: {
+    fontFamily: fonts.body,
     fontSize: 18,
     color: colors.tealDark,
   },
   container: {
+    ...surfaces.content,
     paddingHorizontal: 22,
     paddingTop: 16,
     paddingBottom: 24,
@@ -514,17 +518,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   stateText: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.inkSoft,
     textAlign: 'center',
     lineHeight: 20,
   },
   stateLink: {
+    fontFamily: fonts.body,
     fontSize: 14,
     fontWeight: '600',
     color: colors.teal,
   },
   cardHeader: {
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -534,6 +541,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatarLg: {
+    borderRadius: radii.circle,
     width: 76,
     height: 76,
     backgroundColor: colors.tealTint,
@@ -542,10 +550,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   avatarImage: {
+    borderRadius: radii.circle,
     width: 76,
     height: 76,
   },
   avatarBusy: {
+    borderRadius: radii.circle,
     position: 'absolute',
     top: 0,
     right: 0,
@@ -556,6 +566,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(23, 48, 42, 0.45)',
   },
   avatarBadge: {
+    borderRadius: radii.circle,
     position: 'absolute',
     right: -6,
     bottom: -6,
@@ -572,6 +583,7 @@ const styles = StyleSheet.create({
     color: colors.panel,
   },
   editBtn: {
+    borderRadius: radii.pill,
     marginTop: 14,
     minHeight: 40,
     paddingHorizontal: 18,
@@ -581,26 +593,32 @@ const styles = StyleSheet.create({
     borderColor: colors.sage,
   },
   editBtnText: {
+    fontFamily: fonts.body,
     fontSize: 14,
     fontWeight: '600',
     color: colors.tealDark,
   },
   avatarLgText: {
+    fontFamily: fonts.display,
     fontSize: 24,
     fontWeight: '700',
     color: colors.tealDark,
   },
   nameText: {
+    fontFamily: fonts.body,
     fontSize: 18,
     fontWeight: '700',
     color: colors.ink,
     marginBottom: 4,
   },
   subText: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: colors.inkSoft,
   },
   list: {
+    overflow: 'hidden',
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -617,17 +635,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   rowLabel: {
+    fontFamily: fonts.body,
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
     color: colors.ink,
   },
   rightValueText: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: colors.inkSoft,
     marginRight: 8,
   },
   chev: {
+    fontFamily: fonts.body,
     fontSize: 18,
     color: colors.sage,
   },
@@ -641,6 +662,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   outlineBtn: {
+    borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.sage,
     backgroundColor: 'transparent',
@@ -649,6 +671,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   outlineBtnText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: colors.tealDark,
@@ -659,12 +682,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(23, 48, 42, 0.45)',
   },
   sheet: {
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
     backgroundColor: colors.mist,
     paddingHorizontal: 22,
     paddingTop: 20,
     paddingBottom: 28,
   },
   sheetTitle: {
+    fontFamily: fonts.display,
     fontSize: 18,
     fontWeight: '700',
     color: colors.tealDark,
@@ -677,12 +703,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: {
+    fontFamily: fonts.body,
     fontSize: 12,
     fontWeight: '600',
     color: colors.ink,
     marginBottom: 6,
   },
   control: {
+    borderRadius: radii.sm,
+    fontFamily: fonts.body,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -696,11 +725,13 @@ const styles = StyleSheet.create({
     borderColor: colors.coral,
   },
   errorText: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: '#A7402C',
     marginTop: 5,
   },
   primaryBtn: {
+    borderRadius: radii.pill,
     backgroundColor: colors.teal,
     paddingVertical: 14,
     alignItems: 'center',
@@ -708,6 +739,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryBtnText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',

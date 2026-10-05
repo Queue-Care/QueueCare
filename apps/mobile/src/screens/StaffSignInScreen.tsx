@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 import { PasswordField } from '../components/g_PasswordField';
 import { signInStaff, StaffAuthError } from '../features/staff/g_staffAuth';
 import type { StaffSession } from '../features/staff/g_staffAuth';
@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backBtnArrow: {
+    fontFamily: fonts.body,
     fontSize: 24,
     color: colors.tealDark,
     lineHeight: 28,
@@ -186,12 +188,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
+    ...surfaces.content,
     paddingHorizontal: 22,
     paddingTop: 6,
     paddingBottom: 28,
     flexGrow: 1,
   },
   markTint: {
+    borderRadius: radii.mark,
     width: 70,
     height: 70,
     backgroundColor: colors.tealTint,
@@ -202,10 +206,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   markIcon: {
+    fontFamily: fonts.body,
     fontSize: 28,
     color: colors.tealDark,
   },
   screenTitle: {
+    fontFamily: fonts.display,
     fontSize: 28,
     fontWeight: '700',
     color: colors.tealDark,
@@ -213,6 +219,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   lede: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.inkSoft,
     lineHeight: 20,
@@ -225,12 +232,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: {
+    fontFamily: fonts.body,
     fontSize: 12,
     fontWeight: '600',
     color: colors.ink,
     marginBottom: 6,
   },
   control: {
+    borderRadius: radii.sm,
+    fontFamily: fonts.body,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -244,6 +254,7 @@ const styles = StyleSheet.create({
     borderColor: colors.teal,
   },
   controlDropdown: {
+    borderRadius: radii.sm,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -255,17 +266,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   dropdownValue: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.ink,
   },
   chev: {
+    fontFamily: fonts.body,
     fontSize: 10,
     color: colors.inkSoft,
   },
   mono: {
-    fontFamily: 'monospace',
+    fontFamily: fonts.mono,
   },
   btnPrimary: {
+    borderRadius: radii.pill,
     backgroundColor: colors.teal,
     paddingVertical: 14,
     alignItems: 'center',
@@ -273,6 +287,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   btnPrimaryText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -289,6 +304,7 @@ const styles = StyleSheet.create({
     minHeight: 24,
   },
   noteWarn: {
+    borderRadius: radii.note,
     backgroundColor: colors.amberTint,
     padding: 13,
     flexDirection: 'row',
@@ -296,6 +312,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   warnIcon: {
+    fontFamily: fonts.body,
     fontSize: 15,
     color: colors.amber,
     marginRight: 8,
@@ -308,6 +325,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   btnOutline: {
+    borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.sage,
     backgroundColor: 'transparent',
@@ -316,6 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnOutlineText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: colors.tealDark,

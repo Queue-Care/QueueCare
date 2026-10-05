@@ -23,6 +23,7 @@ import {
   createMongoMediaStore,
   ensureProfileImageIndexes,
 } from '../modules/media/g_mongoMediaStore.js';
+import { ensurePatientRegistrationIndexes } from '../modules/auth/patientRegistration.js';
 import { demoHospitals } from '../seeds/hospitals.js';
 import { seedPriorityDemo } from '../seeds/g_priorityDemo.js';
 import { startHttp, startMongo } from './testServer.js';
@@ -32,6 +33,8 @@ const authConfig = readAuthConfig({ JWT_SECRET: 'm4-test-secret-'.repeat(4) });
 async function setup(t, { mediaStore } = {}) {
   const { db } = await startMongo(t);
   await ensureStaffAuthIndexes(db);
+  // The patient account indexes share the users collection with staff.
+  await ensurePatientRegistrationIndexes(db);
   await ensureNotificationIndexes(db);
   await ensurePriorityIndexes(db);
   await ensureProfileImageIndexes(db);
@@ -66,13 +69,15 @@ async function setup(t, { mediaStore } = {}) {
     });
     return { status: response.status, ...(await response.json()) };
   }
+  let staffCount = 0;
   async function staff(staffId, hospital) {
     const account = {
       fullName: 'Nimasha Fernando',
       staffId,
       ...hospital,
       role: 'RECEPTION',
-      mobile: '+94 71 998 2210',
+      // Mobile numbers are unique across all accounts.
+      mobile: `+94 71 998 22${10 + staffCount++}`,
       email: `${staffId.toLowerCase()}@example.org`,
       password: 'correct-horse-battery',
     };
@@ -138,11 +143,22 @@ test(
       body: reception.account,
     });
     assert.equal(duplicate.status, 409);
+    const sameMobile = await call('POST', '/staff/auth/register', {
+      body: {
+        ...reception.account,
+        staffId: 'CNH-RC-0998',
+        email: 'another@example.org',
+      },
+    });
+    assert.equal(sameMobile.status, 409);
+    assert.equal(sameMobile.error.code, 'MOBILE_IN_USE');
+    assert.ok(sameMobile.error.fieldErrors.mobile);
     const unknownHospital = await call('POST', '/staff/auth/register', {
       body: {
         ...reception.account,
         staffId: 'CNH-RC-0999',
         email: 'other@example.org',
+        mobile: '+94 71 000 0999',
         hospitalId: new ObjectId().toString(),
       },
     });

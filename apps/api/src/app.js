@@ -9,6 +9,7 @@ import { staffPriorityRoutes } from './modules/priority/g_priorityRoutes.js';
 import { notificationRoutes } from './modules/notifications/g_notificationRoutes.js';
 import { profileRoutes } from './modules/users/g_profileRoutes.js';
 import { mediaRoutes } from './modules/media/g_mongoMediaStore.js';
+import { patientAuthRoutes } from './modules/auth/patientAuthRoutes.js';
 
 export function createApp({
   hospitalRepository,
@@ -21,6 +22,8 @@ export function createApp({
   profileRepository,
   profileImageStore,
   authenticate,
+  patientRegistrationRepository,
+  authConfig,
 }) {
   const requireSignIn =
     authenticate ??
@@ -31,6 +34,7 @@ export function createApp({
   app.disable('x-powered-by');
   app.set('query parser', 'simple');
   app.use(express.json({ limit: '100kb' }));
+  app.use('/api/v1/auth/patient', patientAuthRoutes(patientRegistrationRepository, authConfig));
   app.get('/health', async (_request, response) => {
     try {
       await checkDatabase();

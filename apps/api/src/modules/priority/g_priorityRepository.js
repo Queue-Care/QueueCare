@@ -118,7 +118,10 @@ function toPublic(request, { detailed = false } = {}) {
       fullName: text(patient.fullName) ?? 'Patient',
       // Contact details are returned only when one request is opened.
       ...(detailed
-        ? { maskedNic: maskNic(patient.nic), phone: text(patient.phone) }
+        ? {
+            maskedNic: maskNic(patient.nic),
+            phone: text(patient.mobile) ?? text(patient.phone),
+          }
         : {}),
     },
     booking: {

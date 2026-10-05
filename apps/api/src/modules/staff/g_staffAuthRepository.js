@@ -58,11 +58,14 @@ export function createStaffAuthRepository(db, authConfig, { now = () => new Date
         throw new HttpError(503, 'SERVICE_UNAVAILABLE', 'Staff account setup is not configured.');
       const staffId = input.staffId.trim().toUpperCase();
       const email = input.email.trim().toLowerCase();
+      const mobile = input.mobile.trim();
+      // Email and mobile are unique across patients and staff (users_unique_* indexes).
       const existing = await db.collection('users').findOne({
-        $or: [{ staffId }, { staffEmail: email }],
+        $or: [{ staffId }, { staffEmail: email }, { email }, { mobile }],
       });
-      if (existing)
+      if (existing?.staffId === staffId || existing?.email === email || existing?.staffEmail === email)
         throw new HttpError(409, 'STAFF_ACCOUNT_EXISTS', 'A staff account with this Staff ID or email already exists.');
+      if (existing) throw mobileInUse();
 
       const hospital = await resolveHospital(input);
       const salt = randomBytes(16).toString('hex');
@@ -77,7 +80,7 @@ export function createStaffAuthRepository(db, authConfig, { now = () => new Date
         hospital: hospital?.name ?? input.hospital.trim(),
         hospitalId: hospital?._id ?? null,
         role: input.role,
-        mobile: input.mobile.trim(),
+        mobile,
         passwordHash: hash.toString('hex'),
         passwordSalt: salt,
         status: 'ACTIVE',
@@ -87,6 +90,7 @@ export function createStaffAuthRepository(db, authConfig, { now = () => new Date
       try {
         await db.collection('users').insertOne(user);
       } catch (error) {
+        if (error?.code === 11000 && error.keyPattern?.mobile) throw mobileInUse();
         if (error?.code === 11000)
           throw new HttpError(409, 'STAFF_ACCOUNT_EXISTS', 'A staff account with this Staff ID or email already exists.');
         throw error;
@@ -146,6 +150,11 @@ function publicUser(user) {
     hospital: user.hospital,
     role: user.role,
   };
+}
+
+function mobileInUse() {
+  const message = 'This mobile number is already used by another account.';
+  return new HttpError(409, 'MOBILE_IN_USE', message, { mobile: message });
 }
 
 function invalidCredentials() {

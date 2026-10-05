@@ -18,7 +18,7 @@ import {
   PatientApiError,
 } from '../features/patient/api';
 import { usePatientResource } from '../features/patient/usePatientResource';
-import { colors } from '../theme/tokens';
+import { TicketAccent } from '../components/TicketAccent';
 
 export function BookingDetailsScreen({
   route,
@@ -72,10 +72,11 @@ export function BookingDetailsScreen({
       {booking ? (
         <>
           <View style={s.ticket}>
-            <Text style={{ color: colors.tealTint }}>Booking ID</Text>
+            <TicketAccent />
+            <Text style={s.ticketLabel}>Booking ID</Text>
             <Text style={s.ticketCode}>{booking.bookingCode}</Text>
-            <View style={[s.divider, { alignSelf: 'stretch', opacity: 0.3 }]} />
-            <Text style={{ color: colors.panel, textAlign: 'center' }}>
+            <View style={[s.ticketLine, { alignSelf: 'stretch' }]} />
+            <Text style={s.ticketText}>
               {formatVisit(booking.startsAt)}
             </Text>
           </View>

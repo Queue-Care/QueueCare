@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii } from '../theme/tokens';
 
 type Props = {
   label: string;
@@ -73,12 +73,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: {
+    fontFamily: fonts.body,
     fontSize: 12,
     fontWeight: '600',
     color: colors.ink,
     marginBottom: 6,
   },
   control: {
+    borderRadius: radii.sm,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.panel,
@@ -93,6 +95,7 @@ const styles = StyleSheet.create({
     borderColor: colors.coral,
   },
   input: {
+    fontFamily: fonts.body,
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -106,6 +109,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: '#A7402C',
     marginTop: 5,
