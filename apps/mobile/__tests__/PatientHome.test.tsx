@@ -108,7 +108,7 @@ test('loads the next appointment, displays Sri Lanka time, and opens its booking
     .findAllByType(Text)
     .map(node => node.props.children);
   expect(
-    labels.some(label => Array.isArray(label) && label.includes('09:00')),
+    labels.some(label => Array.isArray(label) && label.includes('9:00 AM')),
   ).toBe(true);
   await press('View booking');
   expect(ref.getCurrentRoute()).toMatchObject({
