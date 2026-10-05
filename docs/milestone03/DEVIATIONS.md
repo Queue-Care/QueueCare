@@ -6,6 +6,10 @@
 
 This changes the development workflow. It does not remove the assignment's standalone installable-build requirement or approve any changes to the high-fidelity screens.
 
+## M1-16 — Home search hierarchy
+
+On 2026-10-05, the current prototype is `opd-high-fidelity-screens .html` (PR #23). Its Home has a search-shaped entry and a Find a hospital quick-action tile. Following the README's explicit M1-16 usability feedback, the app keeps one Search hospitals button and now places it before appointment content, explains name/city and guest browsing, and groups appointment refresh with its section. Existing design tokens are retained. Five automated navigation regressions pass; the [Home checklist](../PATIENT_HOME.md) still requires phone and first-time user acceptance. Historical prototype references below describe the earlier implementation stage.
+
 ## Entry-screen design awaiting prototype comparison
 
 The high-fidelity HTML was absent when the entry screens were built and is now present as `opd-high-fidelity-screens-square.html` after the develop merge. Splash and Welcome use the README’s color palette and permitted system-font fallbacks; their layout, copy, and code-drawn mark are interim choices. Exact visual fidelity is unverified. Member 1 must compare them with the prototype before accepting any visual deviation. The startup loader remains explicitly signed out until Member 2 connects S-13; no completed authentication flow is claimed.
