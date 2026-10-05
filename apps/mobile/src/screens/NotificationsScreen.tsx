@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -26,6 +26,7 @@ type Props = {
   accessToken?: string;
   onSessionExpired?: () => void;
   onUnreadCount?: (count: number) => void;
+  onOpenBooking?: (bookingId: string) => void;
   // Staff open this screen from the dashboard, so it needs a way back.
   onBack?: () => void;
 };
@@ -43,8 +44,19 @@ export const NotificationsScreen = ({
   accessToken,
   onSessionExpired,
   onUnreadCount,
+  onOpenBooking,
   onBack,
 }: Props) => {
+  // A late read acknowledgement must not sign out a replacement account or
+  // show an alert after this screen has been unmounted.
+  const readScope = useRef({ active: true });
+  useEffect(() => {
+    const scope = { active: true };
+    readScope.current = scope;
+    return () => {
+      scope.active = false;
+    };
+  }, [accessToken]);
   const load = useCallback(
     (signal: AbortSignal) => fetchNotifications(accessToken, signal),
     [accessToken],
@@ -72,6 +84,7 @@ export const NotificationsScreen = ({
 
   const markRead = async (item: AppNotification) => {
     if (!data || item.readAt) return;
+    const scope = readScope.current;
     const readAt = new Date().toISOString();
     // Shown as read immediately; a failed save reloads the stored state.
     show(
@@ -82,7 +95,7 @@ export const NotificationsScreen = ({
     try {
       await markNotificationRead(accessToken, item._id);
     } catch (failure) {
-      failed(failure);
+      if (scope.active) failed(failure);
     }
   };
 
@@ -174,6 +187,7 @@ export const NotificationsScreen = ({
             {data?.notifications.map(item => {
               const unread = !item.readAt;
               const priority = item.type === 'PRIORITY';
+              const opensBooking = Boolean(item.bookingId && onOpenBooking);
               return (
                 <TouchableOpacity
                   key={item._id}
@@ -183,8 +197,17 @@ export const NotificationsScreen = ({
                   accessibilityLabel={`${item.title}. ${item.message}${
                     unread ? ' Unread.' : ''
                   }`}
-                  accessibilityHint="Press to mark as read. Long press to delete."
-                  onPress={() => void markRead(item)}
+                  accessibilityHint={
+                    opensBooking
+                      ? 'Opens your booking details and marks this notification as read. Long press to delete.'
+                      : 'Press to mark as read. Long press to delete.'
+                  }
+                  onPress={() => {
+                    void markRead(item);
+                    // Navigate immediately: a slow read receipt must not block
+                    // booking access or navigate later after the account changes.
+                    if (item.bookingId) onOpenBooking?.(item.bookingId);
+                  }}
                   onLongPress={() => remove(item)}
                 >
                   <View
@@ -208,6 +231,9 @@ export const NotificationsScreen = ({
                   <View style={styles.contentWrap}>
                     <Text style={styles.titleText}>{item.title}</Text>
                     <Text style={styles.subText}>{item.message}</Text>
+                    {opensBooking && (
+                      <Text style={styles.stateLink}>View booking</Text>
+                    )}
                     <Text style={styles.timestampText}>
                       {formatWhen(item.createdAt)}
                     </Text>

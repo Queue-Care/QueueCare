@@ -272,13 +272,19 @@ export function PatientNavigator({
         }
       </Tabs.Screen>
       <Tabs.Screen name="Alerts">
-        {() =>
+        {({ navigation }) =>
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
             <NotificationsScreen
               accessToken={accessToken}
               onSessionExpired={onSessionExpired}
+              onOpenBooking={bookingId =>
+                navigation.navigate('Bookings', {
+                  screen: 'BookingDetails',
+                  params: { bookingId },
+                })
+              }
             />
           )
         }

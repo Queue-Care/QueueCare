@@ -20,6 +20,7 @@ export type AppNotification = {
   message: string;
   readAt: string | null;
   createdAt: string;
+  bookingId?: string;
 };
 export type NotificationList = {
   notifications: AppNotification[];
@@ -47,6 +48,13 @@ export function parseNotification(value: unknown): AppNotification {
     message: value.message,
     readAt: isText(value.readAt) ? value.readAt : null,
     createdAt: value.createdAt,
+    ...(value.type === 'BOOKING' &&
+    isRecord(value.data) &&
+    value.data.event === 'BOOKING_CONFIRMED' &&
+    typeof value.data.bookingId === 'string' &&
+    /^[a-f\d]{24}$/i.test(value.data.bookingId)
+      ? { bookingId: value.data.bookingId.toLowerCase() }
+      : {}),
   };
 }
 

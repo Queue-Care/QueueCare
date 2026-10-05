@@ -1,6 +1,6 @@
 # Patient booking-read integration — I-01 / T-04 progress
 
-As of 2026-10-05, M1-01 through M1-17 are implemented in local history; M1-17 is merged through PR #26. Device, usability and broader integration acceptance remain open. The next Member 1 integration step closes a concrete gap: Home and My Bookings requested `/bookings/me`, but Express matched `me` against the booking-ID route and rejected it. A signed-in patient could create a booking but could not retrieve it through these lists.
+The booking-read change below is merged through PR #28. As of 2026-10-06, M1-01 through M1-17 are implemented in local history; M1-17 is merged through PR #26. Device, usability and broader integration acceptance remain open. The next Member 1 integration step closes a concrete gap: Home and My Bookings requested `/bookings/me`, but Express matched `me` against the booking-ID route and rejected it. A signed-in patient could create a booking but could not retrieve it through these lists.
 
 ## Implemented in this change
 
@@ -50,6 +50,6 @@ API tests require `mongod` and permission to run temporary localhost servers. Ex
 
 ## Remaining work and owner handoff
 
-**I-01 and T-04 remain partial.** This delivers their booking-read portion, including the shared list read used by Member 2's pages. Member 2 still owns cancellation and priority-request backend operations; their current UI actions can return errors until those APIs exist. Member 4's Alerts/Profile screens still contain prototype data and are not wired into the patient tabs as live account data. Keep their integration pending until their APIs and real identity handling are ready. Notification creation is implemented, but read/display and I-03 acceptance remain pending.
+**I-01 and T-04 remain partial.** This delivers their booking-read portion, including the shared list read used by Member 2's pages. Member 2 still owns cancellation and priority-request backend operations; their current UI actions can return errors until those APIs exist. Member 4's Alerts/Profile APIs and live patient tabs are now present. The [booking-alert follow-up](BOOKING_NOTIFICATIONS.md#open-a-saved-booking-from-alerts--2026-10-06) connects booking-confirmed alerts to saved details and verifies the I-03 producer/consumer API flow. Physical notification/patient-flow acceptance and other alert destinations remain pending.
 
 Next: complete patient tabs with Members 2/4, verify registration/login → discovery → booking → details on Expo Go, and record phone/accessibility/usability evidence. Persistent session restoration, opening-hours data, full prototype fidelity and standalone release work also remain open. This change does not claim all Member 1 acceptance criteria or the whole project are complete.
