@@ -58,4 +58,4 @@ Run the command above from the repository root and open Expo Go:
 5. On a small phone and with enlarged text, check wrapping, scrolling, touch targets, and VoiceOver/TalkBack order: introduction → search → appointment → quick actions.
 6. Ask a first-time tester, without pointing to a control: “Find a hospital in your city.” Record their first tap, any sign-in confusion, success/failure, device/font settings, and screenshots in milestone evidence.
 
-Automated navigation checks pass for all five Home states. Physical-device and participant results are **pending**; no usability success rate is claimed. **Next: M1-17 — improve the View OPD Sessions action.**
+Automated navigation checks pass for all five Home states. Physical-device and participant results are **pending**; no usability success rate is claimed. M1-17’s [session-action refinement](HOSPITAL_DETAILS.md#m1-17-session-action-refinement) is implemented. **Next: patient-flow integration and phone acceptance (I-01 / T-04).**

@@ -1,6 +1,12 @@
-# Member 1 test evidence — M1-15
+# Member 1 test evidence — M1-15 through M1-17
 
 M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14/M1-15 are merged through PR #22; the current branch also includes the design update through PR #23.
+
+## M1-17 follow-up — 2026-10-05
+
+M1-16 is merged through PR #25, alongside PR #24's patient registration/sign-in work. M1-17 moves View OPD sessions next to service selection and gives accurate selected/empty/failure guidance. Two new tests check primary action order, existing 52-point minimum height, scalable labels, and visible-refresh invalidation; the guest/patient route and state tests now assert the guidance too.
+
+**247 mobile tests across 17 suites, TypeScript, and Android/iOS exports pass.** ESLint exits successfully with no errors and two pre-existing duplicate-import warnings in `PatientPages.test.tsx`. Exports: `/private/tmp/queuecare-m1-17-export`. API code was not changed or rerun for M1-17; historical API counts below do not cover the newly merged auth tests. Phone/participant acceptance is pending; see the [CTA checklist](HOSPITAL_DETAILS.md#m1-17-session-action-refinement).
 
 ## M1-16 follow-up — 2026-10-05
 
@@ -57,6 +63,6 @@ See the [functional cases](milestone03/FUNCTIONAL_TEST_CASES.md), [CRUD evidence
 
 ## Remaining acceptance work
 
-Real login/token issuance/session restoration, remaining Member 2 backend flows, and Member 4 notification APIs are incomplete. Physical Expo Go testing, assistive-technology speech/layout checks, usability participants, screenshots, and production network-failure/replica-set failover evidence remain pending. Follow the [confirmation checklist](BOOKING_CONFIRMATION.md) and [accessibility checklist](ACCESSIBILITY.md); do not report mocked mobile transport as completed phone acceptance.
+Patient registration/JWT sign-in and the in-memory session/profile handoff are now present through PR #24. Persistent session restoration, remaining Member 2 backend flows, and Member 4 notification APIs are incomplete. Physical Expo Go testing, assistive-technology speech/layout checks, usability participants, screenshots, and production network-failure/replica-set failover evidence remain pending. Follow the [confirmation checklist](BOOKING_CONFIRMATION.md) and [accessibility checklist](ACCESSIBILITY.md); do not report mocked mobile transport as completed phone acceptance.
 
-**Next Member 1 task: M1-17 — improve the View OPD Sessions action.**
+**Next Member 1 work: I-01 patient integration and T-04 end-to-end booking acceptance with the other feature owners.**
