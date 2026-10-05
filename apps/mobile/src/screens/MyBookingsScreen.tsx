@@ -14,7 +14,7 @@ import {
   PatientApiError,
 } from '../features/patient/api';
 import { usePatientResource } from '../features/patient/usePatientResource';
-import { colors } from '../theme/tokens';
+import { colors, radii, shadows } from '../theme/tokens';
 
 export function MyBookingsScreen({
   navigation,
@@ -47,7 +47,7 @@ export function MyBookingsScreen({
           {
             padding: 5,
             gap: 5,
-            borderRadius: 12,
+            borderRadius: radii.pill,
             backgroundColor: colors.tealTint,
           },
         ]}
@@ -59,9 +59,10 @@ export function MyBookingsScreen({
             accessibilityState={{ selected: tab === value }}
             onPress={() => setTab(value)}
             style={{
+              ...(tab === value ? shadows.segment : {}),
               flex: 1,
               padding: 13,
-              borderRadius: 9,
+              borderRadius: radii.pill,
               alignItems: 'center',
               backgroundColor: tab === value ? colors.panel : 'transparent',
             }}

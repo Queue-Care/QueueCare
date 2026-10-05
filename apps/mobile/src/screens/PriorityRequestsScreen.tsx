@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces, shadows } from '../theme/tokens';
 
 export const PriorityRequestsScreen = ({ navigation }: any) => {
   const [tab, setTab] = useState<'pending' | 'decided'>('pending');
@@ -170,11 +170,13 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.sageLine,
   },
   navTitle: {
+    fontFamily: fonts.display,
     fontSize: 20,
     fontWeight: '700',
     color: colors.tealDark,
   },
   iconBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -184,6 +186,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchIcon: {
+    fontFamily: fonts.body,
     fontSize: 14,
   },
   segmentWrap: {
@@ -192,11 +195,13 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   segment: {
+    borderRadius: radii.pill,
     flexDirection: 'row',
     backgroundColor: colors.tealTint,
     padding: 4,
   },
   segmentBtn: {
+    borderRadius: radii.pill,
     flex: 1,
     paddingVertical: 9,
     alignItems: 'center',
@@ -204,13 +209,10 @@ const styles = StyleSheet.create({
   },
   segmentActive: {
     backgroundColor: colors.panel,
-    shadowColor: '#17302A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...shadows.segment,
   },
   segmentText: {
+    fontFamily: fonts.body,
     fontSize: 13,
     fontWeight: '600',
     color: colors.inkSoft,
@@ -219,10 +221,13 @@ const styles = StyleSheet.create({
     color: colors.tealDark,
   },
   scrollContent: {
+    ...surfaces.content,
     paddingTop: 8,
     paddingBottom: 24,
   },
   list: {
+    overflow: 'hidden',
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -237,6 +242,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.sageLine,
   },
   avatar: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     alignItems: 'center',
@@ -263,21 +269,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: colors.ink,
   },
   sub: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: colors.inkSoft,
     marginTop: 2,
   },
   reason: {
+    fontFamily: fonts.body,
     fontSize: 12,
     color: colors.inkSoft,
     marginTop: 3,
   },
   badgePriority: {
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.coralTint,
@@ -285,17 +295,20 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeDotCoral: {
+    borderRadius: radii.circle,
     width: 6,
     height: 6,
     backgroundColor: colors.coral,
     marginRight: 5,
   },
   badgeTextCoral: {
+    fontFamily: fonts.body,
     fontSize: 11,
     fontWeight: '600',
     color: '#A7402C',
   },
   badgeDone: {
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.doneBg,
@@ -303,12 +316,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeDotDone: {
+    borderRadius: radii.circle,
     width: 6,
     height: 6,
     backgroundColor: '#3C8558',
     marginRight: 5,
   },
   badgeTextDone: {
+    fontFamily: fonts.body,
     fontSize: 11,
     fontWeight: '600',
     color: colors.doneText,

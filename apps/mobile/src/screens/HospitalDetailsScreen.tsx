@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { StatusText } from '../components/StatusText';
 import { useHospitalDetails } from '../features/hospitals/useHospitalDetails';
-import { colors, fonts, spacing } from '../theme/tokens';
+import { colors, fonts, radii, surfaces, typography, spacing } from '../theme/tokens';
 
 export function HospitalDetailsScreen({
   hospitalId,
@@ -50,20 +51,24 @@ export function HospitalDetailsScreen({
         }
       >
         {state.status === 'loading' ? (
-          <View
-            style={styles.card}
-            accessible
-            accessibilityLabel="Loading hospital details"
-            accessibilityState={{ busy: true }}
-          >
-            <ActivityIndicator color={colors.teal} />
-            <Text style={styles.description}>Loading hospital details…</Text>
+          <View style={styles.card}>
+            <ActivityIndicator
+              color={colors.teal}
+              accessible={false}
+              importantForAccessibility="no"
+            />
+            <StatusText
+              style={styles.description}
+              accessibilityState={{ busy: true }}
+            >
+              Loading hospital details…
+            </StatusText>
           </View>
         ) : state.status === 'unavailable' ? (
           <View style={styles.card}>
-            <Text accessibilityRole="header" style={styles.heading}>
+            <StatusText accessibilityRole="header" style={styles.heading}>
               Hospital unavailable
-            </Text>
+            </StatusText>
             <Text style={styles.description}>
               This hospital could not be found or is no longer listed. Please
               choose another hospital.
@@ -72,9 +77,9 @@ export function HospitalDetailsScreen({
           </View>
         ) : state.status === 'error' ? (
           <View style={styles.card}>
-            <Text accessibilityRole="alert" style={styles.heading}>
+            <StatusText accessibilityRole="alert" style={styles.heading}>
               We couldn’t load this hospital
-            </Text>
+            </StatusText>
             <Text style={styles.description}>
               Please check your connection and try again.
             </Text>
@@ -102,11 +107,21 @@ export function HospitalDetailsScreen({
               <Text accessibilityRole="header" style={styles.heading}>
                 OPD services
               </Text>
+              {!state.servicesFailed && state.services.length > 0 && (
+                <StatusText style={styles.description}>
+                  {`${state.services.length} OPD ${
+                    state.services.length === 1 ? 'service' : 'services'
+                  } available. Select one to continue.`}
+                </StatusText>
+              )}
               {state.servicesFailed ? (
                 <>
-                  <Text accessibilityRole="alert" style={styles.description}>
+                  <StatusText
+                    accessibilityRole="alert"
+                    style={styles.description}
+                  >
                     We couldn’t load OPD services.
-                  </Text>
+                  </StatusText>
                   <ActionButton
                     label="Retry services"
                     onPress={refresh}
@@ -115,9 +130,9 @@ export function HospitalDetailsScreen({
                 </>
               ) : state.services.length === 0 ? (
                 <>
-                  <Text style={styles.description}>
+                  <StatusText style={styles.description}>
                     No OPD services listed yet.
-                  </Text>
+                  </StatusText>
                   <Text style={styles.description}>
                     Please check again later or choose another hospital.
                   </Text>
@@ -171,8 +186,18 @@ export function HospitalDetailsScreen({
             </View>
             <View style={styles.action}>
               <ActionButton
+                label="Refresh hospital details"
+                onPress={refresh}
+                variant="outline"
+              />
+              <ActionButton
                 label="View OPD sessions"
                 disabled={!selected}
+                accessibilityHint={
+                  selected
+                    ? `Shows sessions for ${selected.name}`
+                    : 'Select an OPD service above to continue'
+                }
                 onPress={() => {
                   if (selected) onViewSessions(selected.id);
                 }}
@@ -192,34 +217,20 @@ export function HospitalDetailsScreen({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
+    ...surfaces.content,
     padding: spacing.lg,
     gap: spacing.md,
     flexGrow: 1,
     width: '100%',
-    maxWidth: 640,
+    maxWidth: 560,
     alignSelf: 'center',
   },
   section: { gap: spacing.sm },
-  title: {
-    fontFamily: fonts.display,
-    color: colors.tealDark,
-    fontSize: 30,
-    lineHeight: 39,
-  },
-  heading: {
-    fontFamily: fonts.body,
-    color: colors.ink,
-    fontSize: 19,
-    fontWeight: '600',
-    lineHeight: 28,
-  },
-  description: {
-    fontFamily: fonts.body,
-    color: colors.inkSoft,
-    fontSize: 16,
-    lineHeight: 25,
-  },
+  title: typography.title,
+  heading: typography.heading,
+  description: typography.body,
   card: {
+    ...surfaces.card,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -227,23 +238,24 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   service: {
+    borderRadius: radii.md,
     minHeight: 56,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.sageLine,
+    borderColor: colors.controlBorder,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  selected: { borderColor: colors.teal, backgroundColor: colors.tealTint },
+  selected: surfaces.selected,
   serviceName: {
     flexGrow: 1,
     flexShrink: 1,
     fontFamily: fonts.body,
     color: colors.ink,
-    fontSize: 16,
-    lineHeight: 25,
+    fontSize: 15,
+    lineHeight: 23,
   },
   choice: {
     fontFamily: fonts.body,
@@ -251,7 +263,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  note: { backgroundColor: colors.tealTint, padding: spacing.md },
+  note: {
+    borderRadius: radii.note,
+    backgroundColor: colors.tealTint,
+    padding: spacing.md,
+  },
   action: { gap: spacing.sm, marginTop: 'auto', paddingTop: spacing.md },
   helper: {
     fontFamily: fonts.body,
@@ -260,5 +276,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: 'center',
   },
-  pressed: { opacity: 0.78 },
+  pressed: { borderColor: colors.tealDark, borderWidth: 2 },
 });

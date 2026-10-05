@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 
 export const ProfileScreen = ({ navigation, onSignOut }: any) => {
   const menuOptions = [
@@ -84,11 +84,13 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.sageLine,
   },
   navTitle: {
+    fontFamily: fonts.display,
     fontSize: 20,
     fontWeight: '700',
     color: colors.tealDark,
   },
   iconBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -98,16 +100,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   gearIcon: {
+    fontFamily: fonts.body,
     fontSize: 18,
     color: colors.tealDark,
   },
   container: {
+    ...surfaces.content,
     paddingHorizontal: 22,
     paddingTop: 16,
     paddingBottom: 24,
     flexGrow: 1,
   },
   cardHeader: {
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -117,6 +122,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatarLg: {
+    borderRadius: radii.circle,
     width: 76,
     height: 76,
     backgroundColor: colors.tealTint,
@@ -125,21 +131,26 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   avatarLgText: {
+    fontFamily: fonts.display,
     fontSize: 24,
     fontWeight: '700',
     color: colors.tealDark,
   },
   nameText: {
+    fontFamily: fonts.body,
     fontSize: 18,
     fontWeight: '700',
     color: colors.ink,
     marginBottom: 4,
   },
   subText: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: colors.inkSoft,
   },
   list: {
+    overflow: 'hidden',
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -162,11 +173,13 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   rightValueText: {
+    fontFamily: fonts.body,
     fontSize: 13,
     color: colors.inkSoft,
     marginRight: 8,
   },
   chev: {
+    fontFamily: fonts.body,
     fontSize: 18,
     color: colors.sage,
   },
@@ -175,6 +188,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   outlineBtn: {
+    borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.sage,
     backgroundColor: 'transparent',
@@ -183,6 +197,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   outlineBtnText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: colors.tealDark,

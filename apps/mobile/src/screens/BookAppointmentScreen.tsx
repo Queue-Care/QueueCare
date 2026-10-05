@@ -15,6 +15,7 @@ import { bookingMessages } from '../features/booking/createBooking';
 import type { BookingSubmission } from '../features/booking/useBookingSubmission';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { StatusText } from '../components/StatusText';
 import {
   colomboDate,
   isCalendarDate,
@@ -24,7 +25,7 @@ import {
 } from '../features/booking/availableSessions';
 import { useAvailableSessions } from '../features/booking/useAvailableSessions';
 import type { PatientSummary } from '../navigation/types';
-import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { colors, fonts, surfaces, typography, radii, spacing } from '../theme/tokens';
 
 export function BookAppointmentScreen({
   hospitalId,
@@ -192,6 +193,11 @@ export function BookAppointmentScreen({
           </Text>
           <TextInput
             accessibilityLabel="Appointment date, YYYY-MM-DD"
+            accessibilityHint={
+              dateError ||
+              'Enter today or a future date in Sri Lanka time, then choose Show sessions'
+            }
+            accessibilityState={{ disabled: submission.pending }}
             style={styles.input}
             value={draftDate}
             placeholder="YYYY-MM-DD"
@@ -208,9 +214,9 @@ export function BookAppointmentScreen({
             returnKeyType="search"
           />
           {!!dateError && (
-            <Text accessibilityRole="alert" style={styles.error}>
+            <StatusText accessibilityRole="alert" style={styles.error}>
               {dateError}
-            </Text>
+            </StatusText>
           )}
           <ActionButton
             label="Show sessions"
@@ -218,8 +224,8 @@ export function BookAppointmentScreen({
             variant="outline"
             onPress={() => chooseDate(draftDate)}
           />
-          <View style={styles.row}>
-            <View style={styles.grow}>
+          <View style={styles.dateNavigation}>
+            <View style={styles.dateAction}>
               <ActionButton
                 label="Previous day"
                 variant="outline"
@@ -229,7 +235,7 @@ export function BookAppointmentScreen({
                 }}
               />
             </View>
-            <View style={styles.grow}>
+            <View style={styles.dateAction}>
               <ActionButton
                 label="Next day"
                 variant="outline"
@@ -241,19 +247,25 @@ export function BookAppointmentScreen({
             </View>
           </View>
         </View>
-        <Text accessibilityLiveRegion="polite" style={styles.heading}>
+        <Text accessibilityRole="header" style={styles.heading}>
           Sessions for {date}
         </Text>
         {state.status === 'loading' ? (
           <View style={styles.card} accessibilityState={{ busy: true }}>
-            <ActivityIndicator color={colors.teal} />
-            <Text style={styles.body}>Loading sessions…</Text>
+            <ActivityIndicator
+              color={colors.teal}
+              accessible={false}
+              importantForAccessibility="no"
+            />
+            <StatusText style={styles.body} accessibilityState={{ busy: true }}>
+              Loading sessions…
+            </StatusText>
           </View>
         ) : state.status === 'unavailable' ? (
           <View style={styles.card}>
-            <Text accessibilityRole="alert" style={styles.heading}>
+            <StatusText accessibilityRole="alert" style={styles.heading}>
               Hospital or service unavailable
-            </Text>
+            </StatusText>
             <Text style={styles.body}>
               Please choose an available hospital and OPD service.
             </Text>
@@ -264,9 +276,9 @@ export function BookAppointmentScreen({
           </View>
         ) : state.status === 'error' ? (
           <View style={styles.card}>
-            <Text accessibilityRole="alert" style={styles.heading}>
+            <StatusText accessibilityRole="alert" style={styles.heading}>
               We couldn’t load sessions
-            </Text>
+            </StatusText>
             <Text style={styles.body}>
               Check your connection and try again.
             </Text>
@@ -279,11 +291,20 @@ export function BookAppointmentScreen({
           </View>
         ) : (
           <>
+            {sessions.length > 0 && (
+              <StatusText style={styles.body}>
+                {`${sessions.length} upcoming ${
+                  sessions.length === 1 ? 'session' : 'sessions'
+                } for ${date}. ${
+                  sessions.filter(item => isSessionBookable(item, now)).length
+                } available to book.`}
+              </StatusText>
+            )}
             {sessions.length === 0 ? (
               <View style={styles.card}>
-                <Text style={styles.heading}>
+                <StatusText style={styles.heading}>
                   No upcoming sessions for this date
-                </Text>
+                </StatusText>
                 <Text style={styles.body}>
                   Try another date or check again later.
                 </Text>
@@ -317,6 +338,7 @@ export function BookAppointmentScreen({
                     }}
                     style={({ pressed }) => [
                       styles.card,
+                      styles.sessionControl,
                       checked && styles.selected,
                       !bookable && styles.full,
                       pressed && styles.pressed,
@@ -332,9 +354,14 @@ export function BookAppointmentScreen({
                         </Text>
                         <Text style={styles.body}>{session.doctorOrTeam}</Text>
                       </View>
-                      <Text style={styles.radio} importantForAccessibility="no">
-                        {checked ? '●' : '○'}
-                      </Text>
+                      <View
+                        style={[styles.radio, checked && styles.radioSelected]}
+                        accessible={false}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                      >
+                        {checked ? <View style={styles.radioFill} /> : null}
+                      </View>
                     </View>
                     <Text style={[styles.badge, !bookable && styles.fullBadge]}>
                       {capacity}
@@ -372,7 +399,7 @@ export function BookAppointmentScreen({
           )}
         </View>
         {selected && (
-          <View style={styles.card} accessibilityLiveRegion="polite">
+          <View style={styles.card}>
             <Text style={styles.heading}>Selected session</Text>
             <Text style={styles.body}>
               {selected.serviceName} · {date}
@@ -395,17 +422,25 @@ export function BookAppointmentScreen({
           </View>
         )}
         {attempt && outcome && (
-          <View style={styles.card} accessibilityLiveRegion="polite">
+          <View style={styles.card}>
             <Text style={styles.heading}>Booking request</Text>
             <Text style={styles.body}>{attempt.label}</Text>
             {outcome.status === 'pending' ? (
               <>
-                <ActivityIndicator color={colors.teal} />
-                <Text style={styles.body}>Confirming your appointment…</Text>
+                <ActivityIndicator
+                  color={colors.teal}
+                  accessible={false}
+                  importantForAccessibility="no"
+                />
+                <StatusText style={styles.body}>
+                  Confirming your appointment…
+                </StatusText>
               </>
             ) : outcome.status === 'success' ? (
               <>
-                <Text style={styles.heading}>Appointment saved</Text>
+                <StatusText style={styles.heading}>
+                  Appointment saved
+                </StatusText>
                 <Text selectable style={styles.body}>
                   {outcome.booking.bookingCode}
                 </Text>
@@ -416,9 +451,9 @@ export function BookAppointmentScreen({
               </>
             ) : (
               <>
-                <Text accessibilityRole="alert" style={styles.body}>
+                <StatusText accessibilityRole="alert" style={styles.body}>
                   {bookingMessages[outcome.kind]}
-                </Text>
+                </StatusText>
                 {['duplicate', 'uncertain'].includes(outcome.kind) && (
                   <ActionButton
                     label="Check My bookings"
@@ -456,6 +491,20 @@ export function BookAppointmentScreen({
               : 'Confirm appointment'
           }
           disabled={!canConfirm}
+          busy={submission.pending}
+          accessibilityHint={
+            submission.pending
+              ? 'Please wait while your appointment is saved'
+              : !submission.authenticated
+              ? 'Sign in with an active patient account first'
+              : !patientName
+              ? 'Your patient profile must be loaded first'
+              : !selected
+              ? 'Select an available session above'
+              : needsRecovery
+              ? 'Use the booking request actions above to check or recover your booking'
+              : 'Saves your appointment and opens the booking summary'
+          }
           onPress={() => {
             void confirm();
           }}
@@ -466,59 +515,70 @@ export function BookAppointmentScreen({
 }
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  title: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    lineHeight: 36,
-    color: colors.ink,
+  content: {
+    ...surfaces.content,
+    padding: spacing.lg,
+    gap: spacing.md,
+    paddingBottom: spacing.xl,
   },
-  heading: {
-    fontFamily: fonts.body,
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-  body: {
-    fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.inkSoft,
-  },
+  title: typography.title,
+  heading: typography.heading,
+  body: typography.body,
   card: {
+    ...surfaces.card,
     padding: spacing.md,
     gap: spacing.sm,
     borderWidth: 1,
     borderColor: colors.sageLine,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
   },
   input: {
+    fontFamily: fonts.body,
     minHeight: 52,
     borderWidth: 1,
-    borderColor: colors.sage,
+    borderColor: colors.controlBorder,
     borderRadius: radii.sm,
-    padding: spacing.md,
-    fontSize: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 15,
     color: colors.ink,
     backgroundColor: colors.panel,
   },
   row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  dateNavigation: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  dateAction: { flexBasis: 140, flexGrow: 1 },
+  sessionControl: { minHeight: 52, borderColor: colors.controlBorder },
   grow: { flex: 1 },
-  selected: { borderColor: colors.teal, backgroundColor: colors.tealTint },
+  selected: surfaces.selected,
   full: { backgroundColor: colors.mist },
-  radio: { color: colors.teal, fontSize: 28 },
+  radio: {
+    borderRadius: radii.circle,
+    width: 22,
+    height: 22,
+    borderWidth: 1.5,
+    borderColor: colors.controlBorder,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: { borderColor: colors.teal, borderWidth: 2 },
+  radioFill: {
+    borderRadius: radii.circle,
+    width: 11,
+    height: 11,
+    backgroundColor: colors.teal,
+  },
   badge: {
     alignSelf: 'flex-start',
     color: colors.tealDark,
     backgroundColor: colors.tealTint,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: radii.sm,
+    borderRadius: radii.pill,
     fontWeight: '600',
   },
   fullBadge: { backgroundColor: colors.amberTint, color: colors.ink },
   error: { color: colors.ink, fontSize: 16, lineHeight: 24 },
-  pressed: { opacity: 0.8 },
+  pressed: { borderColor: colors.tealDark, borderWidth: 2 },
 });

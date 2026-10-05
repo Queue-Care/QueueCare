@@ -181,3 +181,24 @@ test.each(['timeout', 'cancel'])(
     expect(jest.getTimerCount()).toBe(0);
   },
 );
+
+test('invalid JSON, unexpected HTTP success and lost transport cannot produce a booking summary', async () => {
+  fetchMock
+    .mockResolvedValueOnce({
+      status: 200,
+      json: async () => {
+        throw new Error('private-json-error');
+      },
+    })
+    .mockResolvedValueOnce({
+      status: 202,
+      json: async () => bookingDetailsPayload,
+    })
+    .mockRejectedValueOnce(new Error('private-connection-error'));
+  for (let attempt = 0; attempt < 3; attempt++)
+    await expect(load()).rejects.toMatchObject({
+      kind: 'network',
+      message: 'Unable to load booking details',
+    });
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+});

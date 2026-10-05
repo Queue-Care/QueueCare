@@ -95,12 +95,14 @@ export function AppNavigator({
 }: AppNavigatorProps) {
   // S-13 will supply the restored, validated session. Selecting a role is not login.
   if (isRestoring) return <SplashScreen />;
+  // Reset container-owned history on identity changes, but retain it on token refresh.
   return (
-    <NavigationContainer ref={navigationRef} theme={theme}>
-      <Root.Navigator
-        key={session ? `${session.userId}:${session.role}` : 'signed-out'}
-        screenOptions={stackOptions}
-      >
+    <NavigationContainer
+      key={session ? `${session.userId}:${session.role}` : 'signed-out'}
+      ref={navigationRef}
+      theme={theme}
+    >
+      <Root.Navigator screenOptions={stackOptions}>
         {session ? (
           session.role === 'PATIENT' ? (
             <Root.Screen name="PatientApp" options={{ headerShown: false }}>
