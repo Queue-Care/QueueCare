@@ -16,5 +16,6 @@ IDs follow root README sections 21 and 33. This table covers Member 1's implemen
 | M1-15 discovery/booking regression coverage | M1-04..M1-13 | M1-T01..M1-T11 | Coverage review, added gaps and reproducible evidence complete |
 | Usability feedback: clarify Home hospital search | M1-16 | M1-T13 | Single primary entry and navigation covered; phone and participant acceptance pending |
 | Usability feedback: improve View OPD sessions hierarchy and touch target | M1-17 | M1-T14 | Action placement, minimum target, guidance and navigation covered; phone and participant acceptance pending |
+| Patient navigation and booking reads | I-01 / T-04 (partial), M1-03, M2-09 | M1-T15 | Home/list/detail integration passes; remaining patient modules and phone acceptance pending |
 
 See [functional cases](FUNCTIONAL_TEST_CASES.md) and [test setup/limits](../TESTING.md). Member 2/3/4 owners should extend this matrix with evidence from their modules; this table does not certify the whole application.

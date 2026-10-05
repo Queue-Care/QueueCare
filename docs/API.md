@@ -18,7 +18,7 @@ Registration returns HTTP 201 and saves an ACTIVE PATIENT account. Passwords use
 
 All dates must be valid ISO timestamps with Z or an explicit offset. All identifier and display-name fields must be nonempty strings. The registration endpoint normalizes and validates NIC/mobile and hashes passwords on the server; client validation is not a substitute for server validation. Use 409 for duplicate registration, conflicting cancellation, or an existing active priority request.
 
-The root README section 15 defines the overall API routes. Hospital search, details, OPD services, available sessions, protected booking creation, and health are implemented; the Patient Home booking contract below remains proposed. See [API setup](../apps/api/README.md).
+The root README section 15 defines the overall API routes. Hospital search, details, OPD services, available sessions, protected booking creation, and health are implemented; the Patient Home/My Bookings list contract below is now implemented as the I-01 booking-read integration. See [API setup](../apps/api/README.md).
 
 ## Hospital search — implemented (M1-04)
 
@@ -244,9 +244,9 @@ All known booking and session statuses are readable, including past sessions and
 
 Malformed IDs/query parameters return 400 `VALIDATION_ERROR`; invalid authentication returns 401; inactive/non-patient accounts return 403. Missing or inconsistent linked records return 409 `BOOKING_DETAILS_UNAVAILABLE`. Unconfigured authentication/repository returns 503, and unexpected database failures return generic 500 errors. No private notes, user profile, or NIC fields are returned. Member 2's list/actions/staff access remain pending; register future static `/bookings/me` before the parameter route. See [screen behavior and phone checks](BOOKING_CONFIRMATION.md).
 
-## Patient Home — next appointment (proposed; not implemented)
+## Patient Home / My Bookings — implemented booking list (I-01 read integration)
 
-**Owner handoff:** Member 2's patient booking-list API, using Member 3's MongoDB/session foundation. Member 1 consumes the result in Home.
+**Shared integration:** Member 1 implemented the missing read endpoint consumed by Home and Member 2's My Bookings screen. Cancellation and priority writes remain separate owner work.
 
 ```http
 GET /api/v1/bookings/me?status=upcoming&limit=1
@@ -254,7 +254,21 @@ Authorization: Bearer <JWT>
 Accept: application/json
 ```
 
-Authenticate and authorize the patient on the server. Scope results to the patient identified by the JWT. Join the booking with its hospital, service, and OPD session. Return only CONFIRMED bookings in future or still-running sessions, ordered by session start ascending (with a stable booking-ID tie-breaker), and apply `limit=1` after filtering and sorting. The client must receive the earliest relevant booking, not an arbitrary page item.
+The route verifies the JWT and current ACTIVE PATIENT database account, then scopes all reads to that patient. `/me` is registered before `/:bookingId`; it is no longer mistaken for a MongoDB booking ID. Responses use `Cache-Control: no-store`.
+
+| Query | Default | Accepted values |
+| --- | --- | --- |
+| `status` | `upcoming` | `upcoming`, `past` |
+| `page` | `1` | Integer 1–1000, no leading zeros |
+| `limit` | `20` | Integer 1–50, no leading zeros |
+
+Unknown and repeated fields are rejected with 400; caller-supplied patient IDs are never accepted.
+
+Upcoming means a CONFIRMED booking whose session is OPEN/CLOSED/RUNNING and either has not reached its scheduled end or is still marked RUNNING (including a delayed running session). Other valid saved bookings are Past, including cancelled/rescheduled/completed/skipped bookings and cancelled/completed sessions. At the exact scheduled end, a session that is not RUNNING becomes Past. Upcoming sorts by session start then booking ID ascending; Past uses descending order. Filtering and sorting happen before pagination, so Home's `limit=1` selects the earliest relevant visit.
+
+The list joins current linked records and uses the same validated summary reader as booking details. Inactive hospitals/services remain readable. Missing sessions or unusable session times/statuses fail instead of becoming an empty list; missing/malformed linked details on the selected page also fail. Unexpected database failures return a generic 500. Page selection/count and subsequent detail reads are not a transactional snapshot; refresh after concurrent changes.
+
+Each success includes `meta: { page, limit, total, totalPages, hasNextPage }`. A page beyond the results has `data: []` but retains the total. My Bookings requests 20 records per page, validates metadata, and provides Previous/Next/Refresh controls. Switching Upcoming/Past resets to page 1 and cancels the old request.
 
 Successful response:
 
@@ -270,13 +284,14 @@ Successful response:
       "serviceName": "General OPD",
       "startsAt": "2026-10-04T09:00:00+05:30"
     }
-  ]
+  ],
+  "meta": { "page": 1, "limit": 1, "total": 1, "totalPages": 1, "hasNextPage": false }
 }
 ```
 
 The example above is documentation only; the application has no demo-booking fallback. All displayed fields are required nonempty strings. `_id` is the booking's ID, not the hospital/session ID. `startsAt` is an ISO datetime with `Z` or an explicit offset, derived from the session's date/time. Home displays it in Asia/Colombo time even when the phone uses a different timezone.
 
-No upcoming bookings:
+No upcoming bookings (pagination metadata omitted here for brevity):
 
 ```json
 { "success": true, "data": [] }
@@ -286,4 +301,4 @@ Follow README section 16 for errors, using an appropriate HTTP status and `succe
 
 The adapter validates the envelope and booking summary. It requires zero or one booking, rejects unzoned/invalid dates and unexpected booking statuses, and never renders raw backend error messages. Requests time out after 15 seconds and are cancelled when superseded or when Home loses focus.
 
-This is a joined response DTO, not a change to the README's MongoDB document schema. API owners should confirm this contract before implementing the endpoint; update the client and its tests together if the shape changes.
+This is a joined response DTO, not a change to the README's MongoDB document schema. Existing patient/session indexes cover the initial owner filter. The list never reserves capacity, cancels bookings, or creates notifications. See [integration evidence and phone checks](PATIENT_INTEGRATION.md).
