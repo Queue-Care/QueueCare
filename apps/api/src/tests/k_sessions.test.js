@@ -12,6 +12,7 @@ import { staffSessionRoutes } from '../modules/sessions/k_sessionRoutes.js';
 import { createStaffSessionRepository } from '../modules/sessions/k_sessionRepository.js';
 import { parseCreateSessionBody, parseStaffSessionId, parseStaffSessionQuery } from '../modules/sessions/k_sessionValidation.js';
 import { ensureSessionIndexes } from '../modules/hospitals/hospitalSessions.js';
+import { createBookingRepository, ensureBookingIndexes } from '../modules/bookings/bookingRepository.js';
 import { startHttp, startMongo } from './testServer.js';
 
 const id = (n) => new ObjectId(n.toString(16).padStart(24, '0'));
@@ -163,6 +164,16 @@ test('staff session list/detail use verified identity and hospital scope with re
         headers: { 'Content-Type': 'application/json',
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
         body: JSON.stringify(body),
+      });
+      return { status: response.status, cache: response.headers.get('cache-control'),
+        body: await response.json() };
+    }
+    async function closeBookings(sessionId, body, accessToken = staffToken, query = '') {
+      const response = await fetch(`${base}/api/v1/staff/sessions/${sessionId}/close-bookings${query}`, {
+        method: 'PATCH',
+        headers: { ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
       return { status: response.status, cache: response.headers.get('cache-control'),
         body: await response.json() };
@@ -607,5 +618,149 @@ test('staff session list/detail use verified identity and hospital scope with re
       assert.equal(stored.bookedCount, 5);
       assert.equal(stored.capacity, 10);
       assert.equal(await db.collection('auditLogs').countDocuments(), auditCount);
+    });
+    await t.test('closure requires authenticated authorized staff with a current hospital link', async () => {
+      await db.collection('opdSessions').insertOne(session(301));
+      const before = await db.collection('opdSessions').findOne({ _id: id(301) });
+      assert.equal((await closeBookings(id(301), undefined, null)).status, 401);
+      assert.equal((await closeBookings(id(301), undefined, 'invalid-token')).status, 401);
+      for (const userId of [patient, id(23), id(24), id(25), id(26), id(29), id(30)]) {
+        assert.equal((await closeBookings(id(301), {}, await token(userId,
+          { role: 'ADMIN', hospitalId: hospitalId.toString() }))).status, 403);
+      }
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(301) }), before);
+    });
+    await t.test('closure validates IDs, body and query without permitting client fields', async () => {
+      const before = await db.collection('opdSessions').findOne({ _id: id(301) });
+      const audits = await db.collection('auditLogs').countDocuments();
+      assert.equal((await closeBookings('invalid')).status, 400);
+      for (const body of [null, [], 'invalid', 1, ...Object.entries({
+        _id: id(999).toString(), hospitalId: otherHospitalId.toString(), status: 'CANCELLED',
+        bookedCount: 0, capacity: 1, serviceId: serviceId.toString(), doctorOrTeam: 'other',
+        sessionDate: '2026-10-09', startTime: '10:00', endTime: '11:00',
+        createdById: patient.toString(), createdAt: '2020-01-01', updatedAt: '2020-01-01',
+        unknown: true, $set: { status: 'CLOSED' },
+      }).map(([key, value]) => ({ [key]: value }))]) {
+        assert.equal((await closeBookings(id(301), body)).status, 400, JSON.stringify(body));
+      }
+      assert.equal((await closeBookings(id(301), {}, staffToken, '?hospitalId=bad')).status, 400);
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(301) }), before);
+      assert.equal(await db.collection('auditLogs').countDocuments(), audits);
+    });
+    await t.test('unknown and cross-hospital closure use the same 404 without writes', async () => {
+      const before = await db.collection('opdSessions').findOne({ _id: id(106) });
+      const foreign = await closeBookings(id(106));
+      const missing = await closeBookings(id(999));
+      assert.equal(foreign.status, 404);
+      assert.deepEqual(foreign.body, missing.body);
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(106) }), before);
+    });
+    for (const [role, userId, n] of [['RECEPTION', reception, 302], ['NURSE', id(27), 303], ['ADMIN', id(28), 304]]) {
+      await t.test(`${role} closes OPEN once, preserves all other fields and reads the result`, async () => {
+        await db.collection('opdSessions').insertOne(session(n));
+        const before = await db.collection('opdSessions').findOne({ _id: id(n) });
+        const accessToken = await token(userId, { hospitalId: otherHospitalId.toString() });
+        const result = await closeBookings(id(n), n === 302 ? undefined : {}, accessToken);
+        assert.equal(result.status, 200);
+        assert.equal(result.cache, 'no-store');
+        assert.equal(result.body.success, true);
+        assert.equal(result.body.data.status, 'CLOSED');
+        assert.deepEqual((await call(`/${id(n)}`)).body.data, result.body.data);
+        const after = await db.collection('opdSessions').findOne({ _id: id(n) });
+        assert.deepEqual(after, { ...before, status: 'CLOSED', updatedAt: now });
+        assert.equal(result.body.data.bookedCount, before.bookedCount);
+        assert.equal(result.body.data.capacity, before.capacity);
+        assert.equal(result.body.data.internalSecret, undefined);
+        const repeated = await closeBookings(id(n), {}, accessToken);
+        assert.deepEqual(repeated.body, result.body);
+        assert.equal(repeated.status, 200);
+        assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(n) }), after);
+        const logs = await db.collection('auditLogs').find({ entityId: id(n).toString(),
+          action: 'SESSION_BOOKINGS_CLOSED' }).toArray();
+        assert.equal(logs.length, 1);
+        assert.equal(logs[0].entityType, 'opdSession');
+        assert.ok(logs[0].actorUserId.equals(userId));
+        assert.deepEqual(logs[0].metadata, { hospitalId, fromStatus: 'OPEN', toStatus: 'CLOSED' });
+        assert.deepEqual(logs[0].createdAt, now);
+      });
+    }
+    await t.test('RUNNING, COMPLETED, CANCELLED and invalid states cannot be overwritten by closure', async () => {
+      const audits = await db.collection('auditLogs').countDocuments();
+      for (const [n, status] of [[305, 'RUNNING'], [306, 'COMPLETED'], [307, 'CANCELLED'], [308, 'INVALID']]) {
+        await db.collection('opdSessions').insertOne(session(n, { status }));
+        const before = await db.collection('opdSessions').findOne({ _id: id(n) });
+        const result = await closeBookings(id(n));
+        assert.equal(result.status, 409);
+        assert.equal(result.body.error.code, 'SESSION_CLOSURE_NOT_ALLOWED');
+        assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(n) }), before);
+      }
+      assert.equal(await db.collection('auditLogs').countDocuments(), audits);
+    });
+    await t.test('inactive hospital and malformed day marker deny closure without changes', async () => {
+      await db.collection('hospitals').updateOne({ _id: hospitalId }, { $set: { isActive: false } });
+      try { assert.equal((await closeBookings(id(301))).status, 403); }
+      finally { await db.collection('hospitals').updateOne({ _id: hospitalId }, { $set: { isActive: true } }); }
+      assert.equal((await closeBookings(id(110))).status, 409);
+      assert.equal((await db.collection('opdSessions').findOne({ _id: id(301) })).status, 'OPEN');
+      assert.equal((await db.collection('opdSessions').findOne({ _id: id(110) })).status, 'OPEN');
+    });
+    await t.test('audit failure rolls back closure and permits a clean retry', async () => {
+      const before = await db.collection('opdSessions').findOne({ _id: id(301) });
+      const audits = await db.collection('auditLogs').countDocuments();
+      const originalCollection = db.collection.bind(db);
+      const mocked = t.mock.method(db, 'collection', (name, ...args) => name === 'auditLogs'
+        ? { insertOne: async () => { throw new Error('private closure audit failure'); } }
+        : originalCollection(name, ...args));
+      try {
+        const result = await closeBookings(id(301));
+        assert.equal(result.status, 500);
+        assert.equal(result.body.error.code, 'INTERNAL_ERROR');
+        assert.ok(!JSON.stringify(result.body).includes('private closure audit failure'));
+      } finally { mocked.mock.restore(); }
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(301) }), before);
+      assert.equal(await db.collection('auditLogs').countDocuments(), audits);
+      assert.equal((await closeBookings(id(301))).status, 200);
+    });
+    await t.test('concurrent closure requests succeed with one state change and one audit', async () => {
+      await db.collection('opdSessions').insertOne(session(309));
+      const results = await Promise.all(Array.from({ length: 6 }, () => closeBookings(id(309))));
+      for (const result of results) {
+        assert.equal(result.status, 200);
+        assert.deepEqual(result.body, results[0].body);
+      }
+      const stored = await db.collection('opdSessions').findOne({ _id: id(309) });
+      assert.equal(stored.status, 'CLOSED');
+      assert.equal(stored.capacity, 50);
+      assert.equal(stored.bookedCount, 4);
+      assert.equal(await db.collection('auditLogs').countDocuments({ entityId: id(309).toString(),
+        action: 'SESSION_BOOKINGS_CLOSED' }), 1);
+    });
+    await t.test('closure preserves confirmed bookings and blocks the existing patient booking repository', async () => {
+      await ensureBookingIndexes(db);
+      await db.collection('opdSessions').insertOne(session(310, {
+        sessionDate: new Date('2026-10-06T00:00:00Z'), bookedCount: 0,
+      }));
+      const bookings = createBookingRepository(db, db.client, { now: () => now });
+      const booked = await bookings.create(patient, id(310));
+      const before = await db.collection('bookings').findOne({ _id: new ObjectId(booked._id) });
+      assert.equal((await closeBookings(id(310))).status, 200);
+      assert.deepEqual(await db.collection('bookings').findOne({ _id: before._id }), before);
+      assert.equal(before.status, 'CONFIRMED');
+      await db.collection('users').insertOne({ _id: id(31), role: 'PATIENT', status: 'ACTIVE' });
+      await assert.rejects(bookings.create(id(31), id(310)), (error) =>
+        error.status === 409 && error.code === 'SESSION_UNAVAILABLE');
+      assert.equal(await db.collection('bookings').countDocuments({ sessionId: id(310) }), 1);
+      assert.equal((await db.collection('opdSessions').findOne({ _id: id(310) })).bookedCount, 1);
+    });
+    await t.test('a standalone database refuses closure without partial writes', async () => {
+      await db.collection('opdSessions').insertOne(session(311));
+      const before = await db.collection('opdSessions').findOne({ _id: id(311) });
+      const mocked = t.mock.method(db, 'admin', () => ({ command: async () => ({}) }));
+      try {
+        const result = await closeBookings(id(311));
+        assert.equal(result.status, 503);
+        assert.equal(result.body.error.code, 'SESSION_CLOSURE_UNAVAILABLE');
+      } finally { mocked.mock.restore(); }
+      assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(311) }), before);
     });
   });

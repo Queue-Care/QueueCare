@@ -13,6 +13,17 @@ export function parseEditSessionBody(body, query = {}) {
   return parseSessionBody(body, query, true);
 }
 
+export function validateCloseBookingsBody(body) {
+  if (body === undefined) return;
+  const errors = Object.create(null);
+  if (!body || typeof body !== 'object' || Array.isArray(body))
+    errors.body = 'Send no body or an empty JSON object.';
+  else
+    for (const key of Object.keys(body)) errors[key] = 'Unsupported close-bookings field.';
+  if (Object.keys(errors).length)
+    throw new HttpError(400, 'VALIDATION_ERROR', 'Check the close-bookings request.', errors);
+}
+
 function parseSessionBody(body, query, partial) {
   const errors = Object.create(null);
   for (const key of Object.keys(query)) errors[key] = 'Unsupported query parameter.';

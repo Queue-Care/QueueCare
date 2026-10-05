@@ -51,6 +51,50 @@ function toPublic(item) {
 
 export function createStaffSessionRepository(db, { now = () => new Date() } = {}) {
   return {
+    async closeBookings(staffUserId, sessionId) {
+      const hospitalId = await readStaffHospitalScope(db, staffUserId);
+      const topology = await db.admin().command({ hello: 1 });
+      if (!topology.setName && topology.msg !== 'isdbgrid')
+        throw new HttpError(503, 'SESSION_CLOSURE_UNAVAILABLE',
+          'Closing bookings requires a transaction-capable database.');
+      const transaction = db.client.startSession();
+      try {
+        return await transaction.withTransaction(async () => {
+          const options = { session: transaction, maxTimeMS: 3000 };
+          const item = await db.collection('opdSessions').aggregate([
+            { $match: { _id: sessionId, hospitalId } }, ...summary,
+          ], options).next();
+          if (!item) throw new HttpError(404, 'NOT_FOUND', 'OPD session not found.');
+          const hospital = await db.collection('hospitals').findOne({ _id: hospitalId, isActive: true }, options);
+          if (!hospital)
+            throw new HttpError(403, 'FORBIDDEN', 'An active linked hospital is required to close bookings.');
+          const data = toPublic(item);
+          // A retry after a successful closure has no further writes or audit.
+          if (item.status === 'CLOSED') return data;
+          if (item.status !== 'OPEN')
+            throw new HttpError(409, 'SESSION_CLOSURE_NOT_ALLOWED',
+              'Only an open session can have bookings closed.');
+          const at = now();
+          const result = await db.collection('opdSessions').updateOne(
+            { _id: sessionId, hospitalId, status: 'OPEN' },
+            { $set: { status: 'CLOSED', updatedAt: at } }, options
+          );
+          if (result.modifiedCount !== 1)
+            throw new HttpError(409, 'SESSION_CLOSURE_NOT_ALLOWED', 'The session state has changed.');
+          await writeAuditLog(db, {
+            actorUserId: staffUserId, action: 'SESSION_BOOKINGS_CLOSED', entityType: 'opdSession',
+            entityId: sessionId, metadata: { hospitalId, fromStatus: 'OPEN', toStatus: 'CLOSED' },
+            createdAt: at,
+          }, options);
+          return { ...data, status: 'CLOSED' };
+        }, {
+          readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' },
+          readPreference: 'primary', maxCommitTimeMS: 5000, timeoutMS: 10000,
+        });
+      } finally {
+        await transaction.endSession();
+      }
+    },
     async edit(staffUserId, sessionId, input) {
       const hospitalId = await readStaffHospitalScope(db, staffUserId);
       const topology = await db.admin().command({ hello: 1 });
