@@ -71,5 +71,16 @@ export function useAppStartup(loadSession: SessionLoader) {
       state: { status: 'ready', session: null },
     });
   }, [loadSession, attempt]);
-  return { state, retry, continueSignedOut };
+  const signIn = useCallback(
+    (session: NavigationSession) => {
+      validateSession(session);
+      setResult({
+        loader: loadSession,
+        attempt,
+        state: { status: 'ready', session },
+      });
+    },
+    [loadSession, attempt],
+  );
+  return { state, retry, continueSignedOut, signIn };
 }
