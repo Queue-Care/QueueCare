@@ -14,6 +14,8 @@ import {
   ensurePatientRegistrationIndexes,
 } from '../modules/auth/patientRegistration.js';
 import { startHttp, startMongo } from './testServer.js';
+import { createNotificationRepository } from '../modules/notifications/g_notificationRepository.js';
+import { ensureBookingNotificationIndexes } from '../modules/bookings/bookingNotification.js';
 
 const id = (n) => new ObjectId(n.toString(16).padStart(24, '0'));
 const at = new Date('2026-10-05T04:00:00Z'); // 09:30 in Sri Lanka.
@@ -23,6 +25,7 @@ test(
   async (t) => {
     const { db, client } = await startMongo(t, { replicaSet: true });
     await ensureBookingIndexes(db);
+    await ensureBookingNotificationIndexes(db);
     await ensurePatientRegistrationIndexes(db);
     const config = readAuthConfig({
       JWT_SECRET: 'test-only-booking-list-secret-not-for-app-use',
@@ -31,15 +34,16 @@ test(
     const app = createApp({
       hospitalRepository: createHospitalRepository(db, { now: () => at }),
       bookingRepository: repository,
+      notificationRepository: createNotificationRepository(db),
       patientRegistrationRepository: createPatientRegistrationRepository(db),
       authConfig: config,
       authenticate: authenticate(db, config),
       checkDatabase: () => db.command({ ping: 1 }),
     });
     const base = await startHttp(t, app);
-    async function request(path, token, body) {
+    async function request(path, token, body, method = body ? 'POST' : 'GET') {
       const response = await fetch(`${base}/api/v1${path}`, {
-        method: body ? 'POST' : 'GET',
+        method,
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(body ? { 'Content-Type': 'application/json' } : {}),
@@ -74,23 +78,19 @@ test(
     const patient = await account('200012345678', '0771234567');
     const other = await account('200012345679', '0771234568');
     const patientId = new ObjectId(patient.userId);
-    await db
-      .collection('hospitals')
-      .insertOne({
-        _id: id(100),
-        name: 'Integration Hospital',
-        address: 'Test address',
-        city: 'Colombo',
-        isActive: true,
-      });
-    await db
-      .collection('opdServices')
-      .insertOne({
-        _id: id(200),
-        hospitalId: id(100),
-        name: 'General OPD',
-        isActive: true,
-      });
+    await db.collection('hospitals').insertOne({
+      _id: id(100),
+      name: 'Integration Hospital',
+      address: 'Test address',
+      city: 'Colombo',
+      isActive: true,
+    });
+    await db.collection('opdServices').insertOne({
+      _id: id(200),
+      hospitalId: id(100),
+      name: 'General OPD',
+      isActive: true,
+    });
     const slot = {
       hospitalId: id(100),
       serviceId: id(200),
@@ -100,19 +100,83 @@ test(
       capacity: 20,
       bookedCount: 0,
     };
-    await db
-      .collection('opdSessions')
-      .insertOne({
-        ...slot,
-        _id: id(300),
-        startTime: '10:00',
-        endTime: '11:00',
-      });
+    await db.collection('opdSessions').insertOne({
+      ...slot,
+      _id: id(300),
+      startTime: '10:00',
+      endTime: '11:00',
+    });
     const created = await request('/bookings', patient.accessToken, {
       sessionId: id(300).toString(),
     });
     assert.equal(created.status, 201);
     const bookingId = created.body.data._id;
+    await t.test(
+      'committed booking notification can be listed, opened and marked read only by its patient',
+      async () => {
+        const alerts = await request('/notifications', patient.accessToken);
+        assert.equal(alerts.status, 200);
+        assert.equal(alerts.cache, 'no-store');
+        assert.equal(alerts.body.meta.unreadCount, 1);
+        assert.equal(alerts.body.data.length, 1);
+        const notice = alerts.body.data[0];
+        assert.equal(notice.type, 'BOOKING');
+        assert.equal(notice.data.event, 'BOOKING_CONFIRMED');
+        assert.equal(notice.data.bookingId, bookingId);
+        assert.equal(notice.readAt, null);
+        assert.equal(notice.userId, undefined);
+        const opened = await request(
+          `/bookings/${notice.data.bookingId}`,
+          patient.accessToken
+        );
+        assert.equal(opened.status, 200);
+        assert.equal(
+          opened.body.data.bookingCode,
+          created.body.data.bookingCode
+        );
+        assert.deepEqual(
+          (await request('/notifications', other.accessToken)).body.data,
+          []
+        );
+        assert.equal(
+          (
+            await request(
+              `/notifications/${notice._id}/read`,
+              other.accessToken,
+              undefined,
+              'PATCH'
+            )
+          ).status,
+          404
+        );
+        assert.equal(
+          (
+            await request(
+              `/bookings/${notice.data.bookingId}`,
+              other.accessToken
+            )
+          ).status,
+          404
+        );
+        const marked = await request(
+          `/notifications/${notice._id}/read`,
+          patient.accessToken,
+          undefined,
+          'PATCH'
+        );
+        assert.equal(marked.status, 200);
+        assert.equal(marked.body.meta.unreadCount, 0);
+        assert.ok(marked.body.data.readAt);
+        const duplicate = await request('/bookings', patient.accessToken, {
+          sessionId: id(300).toString(),
+        });
+        assert.equal(duplicate.status, 409);
+        const again = await request('/notifications', patient.accessToken);
+        assert.equal(again.body.data.length, 1);
+        assert.equal(again.body.data[0].readAt, marked.body.data.readAt);
+        assert.equal(again.body.meta.unreadCount, 0);
+      }
+    );
     const list = (query = '', token = patient.accessToken) =>
       request(`/bookings/me${query}`, token);
     await t.test(
@@ -173,26 +237,22 @@ test(
       status = 'CONFIRMED',
       sessionStatus = 'OPEN'
     ) {
-      await db
-        .collection('opdSessions')
-        .insertOne({
-          ...slot,
-          _id: id(n),
-          startTime,
-          endTime,
-          status: sessionStatus,
-        });
-      await db
-        .collection('bookings')
-        .insertOne({
-          _id: id(n + 1000),
-          patientId,
-          sessionId: id(n),
-          status,
-          bookingCode: `TEST-${n}`,
-          createdAt: at,
-          updatedAt: at,
-        });
+      await db.collection('opdSessions').insertOne({
+        ...slot,
+        _id: id(n),
+        startTime,
+        endTime,
+        status: sessionStatus,
+      });
+      await db.collection('bookings').insertOne({
+        _id: id(n + 1000),
+        patientId,
+        sessionId: id(n),
+        status,
+        bookingCode: `TEST-${n}`,
+        createdAt: at,
+        updatedAt: at,
+      });
     }
     await saved(301, '09:00', '10:00'); // Ongoing comes before a future booking.
     await saved(302, '08:00', '09:30'); // Exact end boundary is past.
