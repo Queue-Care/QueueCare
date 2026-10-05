@@ -1,9 +1,10 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NextAppointment } from '../features/home/nextAppointment';
-import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { colors, fonts, radii, spacing, surfaces, ticketStyles } from '../theme/tokens';
 import { ActionButton } from './ActionButton';
 import { StatusText } from './StatusText';
+import { TicketAccent } from './TicketAccent';
 
 export function NextAppointmentCard({
   appointment,
@@ -27,6 +28,7 @@ export function NextAppointmentCard({
   });
   return (
     <View style={styles.card}>
+      <TicketAccent />
       <StatusText style={styles.badge}>Next appointment confirmed</StatusText>
       <Text style={styles.hospital}>{appointment.hospitalName}</Text>
       <Text style={styles.detail}>{appointment.serviceName}</Text>
@@ -34,21 +36,25 @@ export function NextAppointmentCard({
         <Text style={styles.day}>{day}</Text>
         <Text style={styles.detail}>{time} · Sri Lanka time</Text>
       </View>
-      <Text style={styles.detail}>Booking {appointment.bookingCode}</Text>
+      <Text style={styles.identifier}>Booking {appointment.bookingCode}</Text>
       <ActionButton
         label="View booking"
+        variant="onDark"
         onPress={() => onView(appointment.bookingId)}
       />
     </View>
   );
 }
 const styles = StyleSheet.create({
+  identifier: ticketStyles.identifier,
   card: {
-    backgroundColor: colors.panel,
+    ...ticketStyles.panel,
+    ...surfaces.card,
+    backgroundColor: colors.tealDark,
     borderWidth: 1,
-    borderColor: colors.sageLine,
-    borderRadius: radii.md,
-    padding: spacing.lg,
+    borderColor: colors.tealDark,
+    borderRadius: radii.lg,
+    padding: 20,
     gap: spacing.sm,
   },
   badge: {
@@ -57,35 +63,35 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tealTint,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: radii.sm,
+    borderRadius: radii.pill,
     fontFamily: fonts.body,
     fontSize: 13,
     fontWeight: '600',
   },
   hospital: {
-    color: colors.ink,
-    fontFamily: fonts.body,
-    fontSize: 21,
-    lineHeight: 29,
+    color: colors.panel,
+    fontFamily: fonts.display,
+    fontSize: 26,
+    lineHeight: 34,
     fontWeight: '600',
     marginTop: spacing.sm,
   },
   detail: {
-    color: colors.inkSoft,
+    color: colors.ticketMuted,
     fontFamily: fonts.body,
     fontSize: 15,
     lineHeight: 24,
   },
   schedule: {
     borderTopWidth: 1,
-    borderTopColor: colors.sageLine,
+    borderTopColor: 'rgba(255,255,255,0.16)',
     paddingTop: spacing.md,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
     gap: spacing.xs,
   },
   day: {
-    color: colors.ink,
+    color: colors.panel,
     fontFamily: fonts.body,
     fontSize: 17,
     lineHeight: 26,

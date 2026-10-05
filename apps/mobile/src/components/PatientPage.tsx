@@ -12,7 +12,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from './ActionButton';
-import { colors, fonts } from '../theme/tokens';
+import {
+  colors,
+  radii,
+  fonts,
+  spacing,
+  surfaces,
+  typography,
+  ticketStyles,
+} from '../theme/tokens';
 
 export function PatientPage({ children }: { children: React.ReactNode }) {
   return (
@@ -65,19 +73,18 @@ export function Field({
 export function Note({ children }: { children: React.ReactNode }) {
   return (
     <View style={patientStyles.note}>
-      <Text style={patientStyles.text}>{children}</Text>
+      <Text style={[patientStyles.text, { color: colors.tealDark }]}>
+        {children}
+      </Text>
     </View>
   );
 }
 export function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <View style={patientStyles.row}>
-      <Text style={patientStyles.small}>{label}</Text>
+    <View style={patientStyles.detailRow}>
+      <Text style={[patientStyles.small, { fontWeight: '600' }]}>{label}</Text>
       <Text
-        style={[
-          patientStyles.text,
-          { flex: 1, textAlign: 'right', fontWeight: '600' },
-        ]}
+        style={[patientStyles.text, { color: colors.ink, fontWeight: '500' }]}
       >
         {value}
       </Text>
@@ -114,49 +121,38 @@ export function LoadState({
 export const patientStyles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
+    ...surfaces.content,
     flexGrow: 1,
-    padding: 24,
-    gap: 18,
+    padding: spacing.lg,
+    gap: 16,
     width: '100%',
     maxWidth: 560,
     alignSelf: 'center',
   },
-  title: {
-    fontFamily: fonts.display,
-    fontSize: 30,
-    lineHeight: 38,
-    color: colors.ink,
-  },
-  heading: { fontFamily: fonts.display, fontSize: 21, color: colors.ink },
-  text: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    lineHeight: 23,
-    color: colors.inkSoft,
-  },
-  small: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    lineHeight: 19,
-    color: colors.inkSoft,
-  },
-  label: { fontSize: 13, fontWeight: '600', color: colors.ink },
+  detailRow: { gap: 2, alignItems: 'stretch' },
+  title: typography.title,
+  heading: typography.heading,
+  text: typography.body,
+  small: typography.meta,
+  label: typography.label,
   input: {
     minHeight: 52,
     borderWidth: 1,
     borderColor: colors.sage,
-    borderRadius: 12,
+    borderRadius: radii.sm,
     backgroundColor: colors.panel,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontFamily: fonts.body,
+    fontSize: 15,
     color: colors.ink,
   },
   card: {
-    padding: 18,
+    ...surfaces.card,
+    padding: 16,
     borderWidth: 1,
     borderColor: colors.sageLine,
-    borderRadius: 20,
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
     gap: 12,
   },
@@ -166,30 +162,45 @@ export const patientStyles = StyleSheet.create({
     gap: 14,
     justifyContent: 'space-between',
   },
-  note: { backgroundColor: colors.tealTint, borderRadius: 12, padding: 16 },
-  error: { color: '#A53727', fontSize: 13, lineHeight: 20 },
+  note: {
+    backgroundColor: colors.tealTint,
+    borderRadius: radii.note,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+  },
+  error: {
+    fontFamily: fonts.body,
+    color: colors.coralStrong,
+    fontSize: 13,
+    lineHeight: 20,
+  },
   badge: {
+    fontFamily: fonts.body,
     color: colors.tealDark,
     backgroundColor: colors.tealTint,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 20,
+    borderRadius: radii.pill,
     fontSize: 12,
     fontWeight: '600',
     alignSelf: 'flex-start',
   },
+  ticketLabel: ticketStyles.label,
+  ticketText: ticketStyles.text,
+  ticketLine: ticketStyles.divider,
   ticket: {
-    borderRadius: 20,
-    backgroundColor: colors.teal,
-    padding: 24,
-    alignItems: 'center',
+    ...ticketStyles.panel,
+    borderRadius: radii.lg,
+    backgroundColor: colors.tealDark,
+    padding: 20,
+    alignItems: 'flex-start',
     gap: 12,
   },
   ticketCode: {
-    color: colors.panel,
-    fontSize: 23,
-    fontWeight: '600',
-    letterSpacing: 1,
+    ...ticketStyles.identifier,
+    fontSize: 20,
+    lineHeight: 30,
+    flexShrink: 1,
   },
   divider: { height: 1, backgroundColor: colors.sageLine },
 });

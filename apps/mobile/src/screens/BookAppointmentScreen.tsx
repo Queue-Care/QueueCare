@@ -25,7 +25,7 @@ import {
 } from '../features/booking/availableSessions';
 import { useAvailableSessions } from '../features/booking/useAvailableSessions';
 import type { PatientSummary } from '../navigation/types';
-import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { colors, fonts, surfaces, typography, radii, spacing } from '../theme/tokens';
 
 export function BookAppointmentScreen({
   hospitalId,
@@ -354,14 +354,14 @@ export function BookAppointmentScreen({
                         </Text>
                         <Text style={styles.body}>{session.doctorOrTeam}</Text>
                       </View>
-                      <Text
-                        style={styles.radio}
+                      <View
+                        style={[styles.radio, checked && styles.radioSelected]}
                         accessible={false}
                         accessibilityElementsHidden
                         importantForAccessibility="no-hide-descendants"
                       >
-                        {checked ? '●' : '○'}
-                      </Text>
+                        {checked ? <View style={styles.radioFill} /> : null}
+                      </View>
                     </View>
                     <Text style={[styles.badge, !bookable && styles.fullBadge]}>
                       {capacity}
@@ -515,41 +515,33 @@ export function BookAppointmentScreen({
 }
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  title: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    lineHeight: 36,
-    color: colors.ink,
+  content: {
+    ...surfaces.content,
+    padding: spacing.lg,
+    gap: spacing.md,
+    paddingBottom: spacing.xl,
   },
-  heading: {
-    fontFamily: fonts.body,
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '600',
-    color: colors.ink,
-  },
-  body: {
-    fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.inkSoft,
-  },
+  title: typography.title,
+  heading: typography.heading,
+  body: typography.body,
   card: {
+    ...surfaces.card,
     padding: spacing.md,
     gap: spacing.sm,
     borderWidth: 1,
     borderColor: colors.sageLine,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     backgroundColor: colors.panel,
   },
   input: {
+    fontFamily: fonts.body,
     minHeight: 52,
     borderWidth: 1,
     borderColor: colors.controlBorder,
     borderRadius: radii.sm,
-    padding: spacing.md,
-    fontSize: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 15,
     color: colors.ink,
     backgroundColor: colors.panel,
   },
@@ -558,16 +550,32 @@ const styles = StyleSheet.create({
   dateAction: { flexBasis: 140, flexGrow: 1 },
   sessionControl: { minHeight: 52, borderColor: colors.controlBorder },
   grow: { flex: 1 },
-  selected: { borderColor: colors.teal, backgroundColor: colors.tealTint },
+  selected: surfaces.selected,
   full: { backgroundColor: colors.mist },
-  radio: { color: colors.teal, fontSize: 28 },
+  radio: {
+    borderRadius: radii.circle,
+    width: 22,
+    height: 22,
+    borderWidth: 1.5,
+    borderColor: colors.controlBorder,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: { borderColor: colors.teal, borderWidth: 2 },
+  radioFill: {
+    borderRadius: radii.circle,
+    width: 11,
+    height: 11,
+    backgroundColor: colors.teal,
+  },
   badge: {
     alignSelf: 'flex-start',
     color: colors.tealDark,
     backgroundColor: colors.tealTint,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: radii.sm,
+    borderRadius: radii.pill,
     fontWeight: '600',
   },
   fullBadge: { backgroundColor: colors.amberTint, color: colors.ink },
