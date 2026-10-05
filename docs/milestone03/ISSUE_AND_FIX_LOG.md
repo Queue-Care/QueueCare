@@ -1,5 +1,13 @@
 # Issue and fix evidence
 
+## M1-17-01 — make View OPD sessions the clear next action
+
+- **Source:** README usability feedback records hesitation around the View OPD Sessions CTA; M1-17 requests clearer hierarchy and an adequate touch target.
+- **Reviewed:** 2026-10-05, after PR #25. The action followed opening hours, a note, and the secondary refresh action, separate from service selection.
+- **Change:** Place the full-width primary action immediately below the service choices in a highlighted panel. Show the selected service or specific selection/error/empty guidance. Move refresh after opening hours. Retain the existing 52-point minimum button height and scalable label.
+- **Evidence:** `HospitalDetails.test.tsx` covers action order, touch target/scaling, selection guidance, refresh invalidation, empty/error states, correct route IDs and guest gates. All 247 mobile tests, TypeScript and Android/iOS exports pass; lint has zero errors and two pre-existing duplicate-import warnings in patient-page tests.
+- **Limit:** Physical touch/layout, screen-reader behavior and participant hesitation still require the [phone checklist](../HOSPITAL_DETAILS.md#m1-17-session-action-refinement). No participant outcome is inferred from automated tests.
+
 ## M1-16-01 — clarify the first hospital-search action
 
 - **Source:** Root README usability feedback and screen 06 of `opd-high-fidelity-screens .html`, which shows both a search-shaped entry and a Find a hospital quick-action tile.
