@@ -10,12 +10,34 @@ import { authenticate } from '../middleware/auth.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 import { staffSessionRoutes } from '../modules/sessions/k_sessionRoutes.js';
 import { createStaffSessionRepository } from '../modules/sessions/k_sessionRepository.js';
-import { parseStaffSessionId, parseStaffSessionQuery } from '../modules/sessions/k_sessionValidation.js';
+import { parseCreateSessionBody, parseStaffSessionId, parseStaffSessionQuery } from '../modules/sessions/k_sessionValidation.js';
 import { ensureSessionIndexes } from '../modules/hospitals/hospitalSessions.js';
 import { startHttp, startMongo } from './testServer.js';
 
 const id = (n) => new ObjectId(n.toString(16).padStart(24, '0'));
 const authConfig = readAuthConfig({ JWT_SECRET: 'member3-session-test-secret-'.repeat(3) });
+const createBody = () => ({
+  serviceId: id(11).toString(), sessionDate: '2026-10-06',
+  startTime: '08:30', endTime: '12:30', capacity: 50, doctorOrTeam: '  OPD team  ',
+});
+
+test('session creation accepts only the six validated input fields', () => {
+  const input = parseCreateSessionBody(createBody());
+  assert.equal(input.serviceId.toString(), id(11).toString());
+  assert.equal(input.sessionDate.toISOString(), '2026-10-06T00:00:00.000Z');
+  assert.equal(input.doctorOrTeam, 'OPD team');
+  for (const field of Object.keys(createBody())) {
+    const body = createBody();
+    delete body[field];
+    assert.throws(() => parseCreateSessionBody(body), (error) => error.status === 400);
+  }
+  for (const body of [null, [], 'invalid',
+    { ...createBody(), serviceId: ['00000000000000000000000b'] },
+    { ...createBody(), doctorOrTeam: ['team'] },
+    { ...createBody(), sessionDate: ['2026-10-06'] },
+    { ...createBody(), capacity: [50] },
+  ]) assert.throws(() => parseCreateSessionBody(body), (error) => error.status === 400);
+});
 
 test('staff session filters validate calendar dates, IDs, statuses and bounded pagination', () => {
   assert.equal(parseStaffSessionQuery({}).view, 'today');
@@ -50,7 +72,7 @@ test('staff session list/detail use verified identity and hospital scope with re
     if (spawnMock) syncBuiltinESMExports();
     let db;
     try {
-      ({ db } = await startMongo(t));
+      ({ db } = await startMongo(t, { replicaSet: true }));
     } finally {
       if (spawnMock) {
         spawnMock.mock.restore();
@@ -108,6 +130,7 @@ test('staff session list/detail use verified identity and hospital scope with re
     // are exercised by the existing full-app suite.
     const app = express();
     app.set('query parser', 'simple');
+    app.use(express.json({ limit: '100kb' }));
     app.use('/api/v1/staff/sessions', staffSessionRoutes(repository, authenticate(db, authConfig)));
     app.use(errorHandler);
     const base = await startHttp(t, app);
@@ -120,6 +143,16 @@ test('staff session list/detail use verified identity and hospital scope with re
     async function call(path = '', accessToken = staffToken) {
       const response = await fetch(`${base}/api/v1/staff/sessions${path}`, {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
+      return { status: response.status, cache: response.headers.get('cache-control'),
+        body: await response.json() };
+    }
+    async function create(body = createBody(), accessToken = staffToken, query = '') {
+      const response = await fetch(`${base}/api/v1/staff/sessions${query}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+        body: JSON.stringify(body),
       });
       return { status: response.status, cache: response.headers.get('cache-control'),
         body: await response.json() };
@@ -261,5 +294,132 @@ test('staff session list/detail use verified identity and hospital scope with re
       await call();
       await call(`/${id(101)}`);
       assert.deepEqual(await db.collection('opdSessions').findOne({ _id: id(101) }), before);
+    });
+    await t.test('create requires authenticated active staff with a valid hospital link', async () => {
+      const before = await db.collection('opdSessions').countDocuments();
+      assert.equal((await create(createBody(), null)).status, 401);
+      assert.equal((await create(createBody(), 'invalid-token')).status, 401);
+      for (const userId of [patient, id(23), id(24), id(25), id(26), id(29), id(30)]) {
+        const result = await create(createBody(), await token(userId, { role: 'ADMIN' }));
+        assert.equal(result.status, 403);
+      }
+      assert.equal(await db.collection('opdSessions').countDocuments(), before);
+      assert.equal(await db.collection('auditLogs').countDocuments(), 0);
+    });
+    await t.test('creation rejects invalid fields, calendar dates, times and capacity without writes', async () => {
+      const invalid = [null, [], {},
+        ...['invalid', id(11).toString().slice(1), ['bad'], { $ne: null }]
+          .map((serviceId) => ({ ...createBody(), serviceId })),
+        ...['2026-02-29', '2026-04-31', '2026-10-6', '2026-10-06T00:00:00Z', ['2026-10-06']]
+          .map((sessionDate) => ({ ...createBody(), sessionDate })),
+        ...['8:30', '24:00', '12:60', '08:30:00', ['08:30'], null]
+          .flatMap((time) => [
+            { ...createBody(), startTime: time }, { ...createBody(), endTime: time },
+          ]),
+        { ...createBody(), endTime: '08:30' }, { ...createBody(), endTime: '08:00' },
+        ...[0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, '50', null, [50]]
+          .map((capacity) => ({ ...createBody(), capacity })),
+        { ...createBody(), doctorOrTeam: '   ' }, { ...createBody(), doctorOrTeam: ['team'] },
+      ];
+      for (const field of Object.keys(createBody())) {
+        const body = createBody(); delete body[field]; invalid.push(body);
+      }
+      const before = await db.collection('opdSessions').countDocuments();
+      for (const body of invalid) {
+        const result = await create(body);
+        assert.equal(result.status, 400, JSON.stringify(body));
+        assert.equal(result.body.error.code, 'VALIDATION_ERROR');
+      }
+      assert.equal((await create(createBody(), staffToken, '?date=2026-10-06')).status, 400);
+      assert.equal(await db.collection('opdSessions').countDocuments(), before);
+    });
+    await t.test('creation rejects all client-controlled identity, counter, status and timestamp fields', async () => {
+      for (const [field, value] of Object.entries({
+        hospitalId: otherHospitalId.toString(), bookedCount: 10, status: 'CLOSED',
+        createdById: patient.toString(), createdAt: '2020-01-01', updatedAt: '2020-01-01',
+        _id: id(999).toString(), serviceName: 'Fake clinic', waitingCount: 100,
+      })) {
+        const result = await create({ ...createBody(), [field]: value });
+        assert.equal(result.status, 400);
+        assert.ok(result.body.error.fieldErrors[field]);
+      }
+    });
+    await t.test('foreign, unknown, inactive and malformed services share a controlled error', async () => {
+      await db.collection('opdServices').insertOne({ _id: id(14), hospitalId, isActive: true, name: '' });
+      let expected;
+      for (const serviceId of [id(13), id(999), id(12), id(14)]) {
+        const result = await create({ ...createBody(), serviceId: serviceId.toString() });
+        assert.equal(result.status, 400);
+        assert.equal(result.body.error.code, 'VALIDATION_ERROR');
+        expected ??= result.body;
+        assert.deepEqual(result.body, expected);
+      }
+      await db.collection('hospitals').updateOne({ _id: hospitalId }, { $set: { isActive: false } });
+      try { assert.equal((await create()).status, 403); }
+      finally { await db.collection('hospitals').updateOne({ _id: hospitalId }, { $set: { isActive: true } }); }
+    });
+    await t.test('creation requires a future start interpreted in Asia/Colombo', async () => {
+      for (const body of [
+        { ...createBody(), sessionDate: '2026-10-01' },
+        { ...createBody(), sessionDate: '2026-10-02', startTime: '00:00' },
+      ]) assert.equal((await create(body)).status, 400);
+      const result = await create({ ...createBody(), sessionDate: '2026-10-02', startTime: '00:01' });
+      assert.equal(result.status, 201); // One minute after Colombo midnight.
+    });
+    for (const [role, userId] of [['RECEPTION', reception], ['NURSE', id(27)], ['ADMIN', id(28)]]) {
+      await t.test(`${role} creates a server-owned OPEN session readable through M3-04 with one audit`, async () => {
+        const result = await create(createBody(), await token(userId, { hospitalId: otherHospitalId.toString() }));
+        assert.equal(result.status, 201);
+        assert.equal(result.cache, 'no-store');
+        assert.equal(result.body.success, true);
+        const data = result.body.data;
+        assert.deepEqual(data, {
+          _id: data._id, hospitalId: hospitalId.toString(), serviceId: serviceId.toString(),
+          serviceName: 'General OPD', doctorOrTeam: 'OPD team', sessionDate: '2026-10-06',
+          startTime: '08:30', endTime: '12:30', capacity: 50, bookedCount: 0, status: 'OPEN',
+        });
+        const stored = await db.collection('opdSessions').findOne({ _id: new ObjectId(data._id) });
+        assert.ok(stored.hospitalId.equals(hospitalId));
+        assert.ok(stored.createdById.equals(userId));
+        assert.equal(stored.sessionDate.toISOString(), '2026-10-06T00:00:00.000Z');
+        assert.ok(stored.createdAt instanceof Date);
+        assert.deepEqual(stored.createdAt, now);
+        assert.deepEqual(stored.updatedAt, stored.createdAt);
+        assert.deepEqual((await call(`/${data._id}`)).body.data, data);
+        assert.ok((await call('?date=2026-10-06')).body.data.some((s) => s._id === data._id));
+        const logs = await db.collection('auditLogs').find({ entityId: data._id }).toArray();
+        assert.equal(logs.length, 1);
+        assert.equal(logs[0].action, 'SESSION_CREATED');
+        assert.equal(logs[0].entityType, 'opdSession');
+        assert.ok(logs[0].actorUserId.equals(userId));
+        assert.ok(logs[0].metadata.hospitalId.equals(hospitalId));
+        assert.deepEqual(logs[0].createdAt, stored.createdAt);
+      });
+    }
+    await t.test('audit failure rolls back session creation and returns a safe project error', async () => {
+      const before = await db.collection('opdSessions').countDocuments();
+      const auditCount = await db.collection('auditLogs').countDocuments();
+      const originalCollection = db.collection.bind(db);
+      const mocked = t.mock.method(db, 'collection', (name, ...args) => name === 'auditLogs'
+        ? { insertOne: async () => { throw new Error('private audit failure details'); } }
+        : originalCollection(name, ...args));
+      try {
+        const result = await create();
+        assert.equal(result.status, 500);
+        assert.equal(result.body.error.code, 'INTERNAL_ERROR');
+        assert.ok(!JSON.stringify(result.body).includes('private audit failure'));
+      } finally { mocked.mock.restore(); }
+      assert.equal(await db.collection('opdSessions').countDocuments(), before);
+      assert.equal(await db.collection('auditLogs').countDocuments(), auditCount);
+    });
+    await t.test('a non-transaction-capable database rejects creation without partial writes', async () => {
+      const before = await db.collection('opdSessions').countDocuments();
+      const mocked = t.mock.method(db, 'admin', () => ({ command: async () => ({}) }));
+      try {
+        const result = await create();
+        assert.equal(result.status, 503);
+        assert.equal(result.body.error.code, 'SESSION_CREATION_UNAVAILABLE');
+      } finally { mocked.mock.restore(); }
+      assert.equal(await db.collection('opdSessions').countDocuments(), before);
     });
   });
