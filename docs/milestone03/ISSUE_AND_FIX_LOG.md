@@ -1,5 +1,13 @@
 # Issue and fix evidence
 
+## M1-16-01 — clarify the first hospital-search action
+
+- **Source:** Root README usability feedback and screen 06 of `opd-high-fidelity-screens .html`, which shows both a search-shaped entry and a Find a hospital quick-action tile.
+- **Reviewed:** 2026-10-05, after PR #23. The running Home already had one search button, but it followed appointment/sign-in content; no new participant observation is claimed.
+- **Change:** Place the single primary Search hospitals action before appointment content. Explain name/city search and guest browsing, add a destination hint, and keep refresh inside the appointment section.
+- **Regression evidence:** Five Home navigation cases cover guest, loading, empty, error, and saved appointment states. Each exposes one enabled primary search action first and opens HospitalSearch; guests make no private appointment request. All 244 mobile tests, TypeScript, lint, and Android/iOS exports pass.
+- **Limit:** Phone layout, native screen-reader order, and first-time participant acceptance remain pending. Follow the [Home checklist](../PATIENT_HOME.md).
+
 ## M1-15-01 — previous patient's route survives a direct account switch
 
 - **Found:** 2026-10-04, automated regression in `ConfirmAppointment.test.tsx`.
