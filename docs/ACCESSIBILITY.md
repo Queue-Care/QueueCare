@@ -1,6 +1,6 @@
 # Member 1 accessibility refinements — M1-14
 
-M1-12/M1-13 are merged through PR #19; the current branch also includes the patient frontend merge through PR #21. M1-14 reviews Patient Home, Hospital Search, Hospital Details, Book Appointment, and Booking Confirmation. Implementation and automated checks are complete; physical-device accessibility acceptance remains pending. M1-15’s [test coverage review](TESTING.md) is complete. The next Member 1 task is **M1-16: clarify Hospital Search entry points**.
+M1-12/M1-13 are merged through PR #19; the current branch also includes the patient frontend merge through PR #21. M1-14 reviews Patient Home, Hospital Search, Hospital Details, Book Appointment, and Booking Confirmation. Implementation and automated checks are complete; physical-device accessibility acceptance remains pending. M1-15’s [test coverage review](TESTING.md) is complete. M1-16’s [Home search clarification](PATIENT_HOME.md) is implemented. The next Member 1 task is **M1-17: improve the View OPD Sessions action**.
 
 ## Changes
 

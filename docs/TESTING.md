@@ -1,8 +1,14 @@
 # Member 1 test evidence — M1-15
 
-M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14's accessibility changes remain in this working tree. M1-14/M1-15 are local and uncommitted; M1-12/M1-13 are merged through PR #19.
+M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14/M1-15 are merged through PR #22; the current branch also includes the design update through PR #23.
 
-## Reproduce
+## M1-16 follow-up — 2026-10-05
+
+After the design merge, Home still had one search entry, but it followed appointment/sign-in content. M1-16 moves it first and clarifies guest browsing. Five new cases in `PatientHome.test.tsx` check one enabled primary search action before appointment actions and successful navigation for guest, loading, empty, error, and appointment states; guest browsing makes no private appointment request.
+
+Verified with Node v25.9.0: **244 mobile tests across 17 suites, TypeScript, ESLint, and Android/iOS exports pass**. Exports are in `/private/tmp/queuecare-m1-16-export`. API code is unchanged; the 64-test API result below is the previous M1-15 run, not a new run. Phone visual/accessibility and participant checks remain pending; see the [Home checklist](PATIENT_HOME.md).
+
+## Reproduce M1-15 evidence
 
 Verified on **2026-10-04**, using Node **v25.9.0**:
 
@@ -53,4 +59,4 @@ See the [functional cases](milestone03/FUNCTIONAL_TEST_CASES.md), [CRUD evidence
 
 Real login/token issuance/session restoration, remaining Member 2 backend flows, and Member 4 notification APIs are incomplete. Physical Expo Go testing, assistive-technology speech/layout checks, usability participants, screenshots, and production network-failure/replica-set failover evidence remain pending. Follow the [confirmation checklist](BOOKING_CONFIRMATION.md) and [accessibility checklist](ACCESSIBILITY.md); do not report mocked mobile transport as completed phone acceptance.
 
-**Next Member 1 task: M1-16 — remove or clarify duplicate Hospital Search entry points based on the usability feedback.**
+**Next Member 1 task: M1-17 — improve the View OPD Sessions action.**
