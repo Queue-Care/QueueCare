@@ -10,21 +10,24 @@ import { colors, radii, surfaces } from '../theme/tokens';
 import { useHomeFonts } from '../theme/homeFonts';
 
 type Props = { accessToken?: string; hospital?: string; onSessionExpired?: () => void;
+  savedSessionDate?: string; saveMessage?: string;
   onAdd: () => void; onEdit: (sessionId: string) => void };
 
 export function OpdSessionsScreen(props: Props) {
   const [view, setView] = useState<SessionView>('today');
   const [page, setPage] = useState(1);
-  return <SessionsPage key={`${view}:${page}`} {...props}
+  const [date, setDate] = useState(props.savedSessionDate);
+  return <SessionsPage key={`${view}:${page}:${date ?? ''}`} {...props} date={date}
     view={view} page={page} onPage={setPage}
-    onView={next => { setView(next); setPage(1); }} />;
+    onView={next => { setView(next); setPage(1); setDate(undefined); }} />;
 }
 
-function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView }:
-  Props & { view: SessionView; page: number; onPage: (page: number) => void; onView: (view: SessionView) => void }) {
+function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView, date, saveMessage }:
+  Props & { view: SessionView; page: number; date?: string; onPage: (page: number) => void; onView: (view: SessionView) => void }) {
   const fonts = useHomeFonts();
-  const load = useCallback((signal: AbortSignal) => fetchStaffSessions(accessToken, view, page, signal),
-    [accessToken, view, page]);
+  const load = useCallback((signal: AbortSignal) => date
+    ? fetchStaffSessions(accessToken, view, page, signal, date)
+    : fetchStaffSessions(accessToken, view, page, signal), [accessToken, view, page, date]);
   const { data, loading, error, reload, setData } = useApiResource(load, { onUnauthorized: onSessionExpired });
   const lock = useRef(false);
   const alive = useRef(true);
@@ -74,18 +77,19 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
       {hospital ? <Text style={[styles.sub, bodyFont]}>{hospital}</Text> : null}
       <View style={styles.segment}>{(['today', 'upcoming'] as const).map(option =>
         <Pressable key={option} accessibilityRole="tab" accessibilityLabel={option === 'today' ? 'Today' : 'Upcoming'}
-          accessibilityState={{ selected: view === option, disabled: !!busy }} disabled={!!busy}
-          onPress={() => onView(option)} style={[styles.tab, view === option && styles.selected]}>
+          accessibilityState={{ selected: !date && view === option, disabled: !!busy }} disabled={!!busy}
+          onPress={() => onView(option)} style={[styles.tab, !date && view === option && styles.selected]}>
           <Text style={[styles.tabText, { fontFamily: fonts.semibold }]}>{option === 'today' ? 'Today' : 'Upcoming'}</Text>
         </Pressable>)}</View>
       <Text style={[styles.sub, bodyFont]}>Session times are shown in Sri Lanka time.</Text>
+      {date ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>{saveMessage} Sessions for {sessionDayLabel(date)}</Text> : null}
       {feedback ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>{feedback}</Text> : null}
       {loading && !data ? <View style={styles.state}><ActivityIndicator color={colors.teal} />
         <Text style={[styles.sub, bodyFont]}>Loading sessions…</Text></View> : null}
       {error ? <View style={styles.state}><Text accessibilityRole="alert" style={[styles.sub, bodyFont]}>{error}</Text>
         <ActionButton label="Try again" onPress={reload} /></View> : null}
       {!loading && !error && data?.data.length === 0 ? <View style={styles.state}>
-        <Text style={[styles.heading, { fontFamily: fonts.semibold }]}>{view === 'today' ? 'No sessions today' : 'No upcoming sessions'}</Text>
+        <Text style={[styles.heading, { fontFamily: fonts.semibold }]}>{date ? 'No sessions on this date' : view === 'today' ? 'No sessions today' : 'No upcoming sessions'}</Text>
         <Text style={[styles.sub, bodyFont]}>Add a session or pull down to refresh.</Text></View> : null}
       {data?.data.map(session => <View key={session._id} style={styles.card}>
         <View style={styles.cardTop}><Text style={[styles.heading, styles.grow, { fontFamily: fonts.semibold }]}>{session.serviceName ?? 'Service unavailable'}</Text>

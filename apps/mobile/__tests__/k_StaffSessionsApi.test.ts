@@ -1,5 +1,5 @@
 import { ApiError } from '../src/api/g_apiClient';
-import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, sessionDayLabel } from '../src/features/sessions/k_staffSessions';
+import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, saveStaffSession, sessionDayLabel } from '../src/features/sessions/k_staffSessions';
 
 const session = { _id: '000000000000000000000101', hospitalId: '000000000000000000000001',
   serviceId: '000000000000000000000011', serviceName: 'General OPD', doctorOrTeam: 'Team',
@@ -17,12 +17,13 @@ afterEach(() => {
   if (originalUrl === undefined) delete process.env.EXPO_PUBLIC_API_BASE_URL;
   else process.env.EXPO_PUBLIC_API_BASE_URL = originalUrl;
 });
-function respond(data: unknown, meta = {}) {
+function respond(data: unknown, meta: Record<string, unknown> = {}) {
+  meta = { hospitalId: session.hospitalId, ...meta };
   fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true, data, meta }) });
 }
 test('list sends the existing JWT and supported view/page filters without hospital scope', async () => {
   respond([session], { hasMore: true });
-  expect(await fetchStaffSessions('staff-token', 'today')).toEqual({ data: [session], hasMore: true });
+  expect(await fetchStaffSessions('staff-token', 'today')).toEqual({ data: [session], hasMore: true, hospitalId: session.hospitalId });
   expect(fetchMock.mock.calls[0][0]).toBe('http://192.0.2.1:4000/api/v1/staff/sessions?view=today&page=1&limit=50');
   expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer staff-token');
   await fetchStaffSessions('staff-token', 'upcoming', 2);
@@ -49,4 +50,23 @@ test('missing tokens reject without fetching and calendar date labels preserve t
   await expect(fetchStaffSessions(undefined, 'today')).rejects.toBeInstanceOf(ApiError);
   expect(fetchMock).not.toHaveBeenCalled();
   expect(sessionDayLabel('2026-10-06')).toBe('6 Oct 2026');
+});
+test.each([undefined, session._id])('save sends only six fields using the correct method and path (%s)', async sessionId => {
+  respond(session);
+  await saveStaffSession('staff-token', { ...session, capacity: 50, serviceId: session.serviceId,
+    doctorOrTeam: 'Team', startTime: '08:30', endTime: '12:30' }, sessionId);
+  const [path, options] = fetchMock.mock.calls[0];
+  expect(path).toBe(`http://192.0.2.1:4000/api/v1/staff/sessions${sessionId ? `/${sessionId}` : ''}`);
+  expect(options.method).toBe(sessionId ? 'PATCH' : 'POST');
+  expect(JSON.parse(options.body)).toEqual({ serviceId: session.serviceId, sessionDate: session.sessionDate,
+    startTime: '08:30', endTime: '12:30', capacity: 50, doctorOrTeam: 'Team' });
+});
+test('empty staff lists still supply hospital scope and saved-date queries exclude view', async () => {
+  respond([], { hasMore: false });
+  expect((await fetchStaffSessions('staff-token', 'today')).hospitalId).toBe(session.hospitalId);
+  await fetchStaffSessions('staff-token', 'today', 1, undefined, '2026-10-06');
+  expect(fetchMock.mock.calls[1][0]).toContain('?date=2026-10-06&page=1&limit=50');
+  expect(fetchMock.mock.calls[1][0]).not.toContain('view=');
+  respond([], { hasMore: false, hospitalId: null });
+  await expect(fetchStaffSessions('staff-token', 'today')).rejects.toBeInstanceOf(ApiError);
 });

@@ -7,7 +7,7 @@ import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import { NavigationPage, stackOptions, tabOptions } from './NavigationPage';
+import { stackOptions, tabOptions } from './NavigationPage';
 import type {
   DashboardStackParams,
   PriorityStackParams,
@@ -21,6 +21,7 @@ import { PriorityRequestsScreen } from '../screens/PriorityRequestsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ReceptionDeskScreen } from '../screens/ReceptionDeskScreen';
 import { OpdSessionsScreen } from '../screens/k_OpdSessionsScreen';
+import { AddEditSessionScreen } from '../screens/k_AddEditSessionScreen';
 import { colors } from '../theme/colors';
 
 const Tabs = createBottomTabNavigator<StaffTabParams>();
@@ -90,7 +91,8 @@ function SessionsNavigator({ accessToken, staff, onSessionExpired }: Access) {
         name="SessionsList"
         options={{ headerShown: false }}
       >
-        {({ navigation }) => <OpdSessionsScreen accessToken={accessToken} hospital={staff?.hospital}
+        {({ navigation, route }) => <OpdSessionsScreen key={route.params?.saveRevision ?? 'initial'} accessToken={accessToken} hospital={staff?.hospital}
+          savedSessionDate={route.params?.savedSessionDate} saveMessage={route.params?.saveMessage}
           onSessionExpired={onSessionExpired} onAdd={() => navigation.navigate('AddEditSession')}
           onEdit={sessionId => navigation.navigate('AddEditSession', { sessionId })} />}
       </Sessions.Screen>
@@ -100,10 +102,15 @@ function SessionsNavigator({ accessToken, staff, onSessionExpired }: Access) {
           title: route.params?.sessionId ? 'Edit session' : 'Add session',
         })}
       >
-        {({ route }) => (
-          <NavigationPage
-            title={route.params?.sessionId ? 'Edit session' : 'Add session'}
-          />
+        {({ route, navigation }) => (
+          <AddEditSessionScreen key={route.params?.sessionId ?? 'create'}
+            accessToken={accessToken} sessionId={route.params?.sessionId}
+            onSessionExpired={onSessionExpired} onCancel={() => navigation.goBack()}
+            onSaved={session => navigation.popTo('SessionsList', {
+              savedSessionDate: session.sessionDate,
+              saveRevision: Date.now(),
+              saveMessage: route.params?.sessionId ? 'Session updated.' : 'Session created.',
+            })} />
         )}
       </Sessions.Screen>
     </Sessions.Navigator>

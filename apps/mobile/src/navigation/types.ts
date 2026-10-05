@@ -53,7 +53,7 @@ export type PatientTabParams = {
   Profile: undefined;
 };
 export type SessionsStackParams = {
-  SessionsList: undefined;
+  SessionsList: { savedSessionDate?: string; saveMessage?: string; saveRevision?: number } | undefined;
   AddEditSession: { sessionId?: string } | undefined;
 };
 export type PriorityStackParams = {

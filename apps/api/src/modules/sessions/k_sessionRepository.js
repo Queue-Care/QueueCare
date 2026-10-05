@@ -230,6 +230,7 @@ export function createStaffSessionRepository(db, { now = () => new Date() } = {}
       return {
         data: rows.slice(0, query.limit).map(toPublic),
         meta: {
+          hospitalId: hospitalId.toString(),
           view: query.view ?? 'date', date, timeZone: SESSION_TIME_ZONE,
           page: query.page, limit: query.limit, hasMore: rows.length > query.limit,
         },

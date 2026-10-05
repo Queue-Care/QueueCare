@@ -220,6 +220,7 @@ test('staff session list/detail use verified identity and hospital scope with re
       assert.equal(result.body.success, true);
       assert.deepEqual(result.body.data.map((s) => s._id), [101, 102, 103].map((n) => id(n).toString()));
       assert.deepEqual(result.body.meta, {
+        hospitalId: hospitalId.toString(),
         view: 'today', date: '2026-10-02', timeZone: 'Asia/Colombo', page: 1, limit: 50, hasMore: false,
       });
       assert.deepEqual(result.body.data[0], {
@@ -299,6 +300,22 @@ test('staff session list/detail use verified identity and hospital scope with re
       assert.deepEqual((await call()).body.data.map((s) => s._id), [id(106).toString()]);
       assert.equal((await call(`/${id(101)}`)).status, 404);
       await db.collection('users').updateOne({ _id: reception }, { $set: { hospitalId } });
+    });
+    await t.test('list metadata derives hospital scope even for a hospital with zero sessions', async () => {
+      const emptyHospital = id(3), staffId = id(32);
+      await db.collection('hospitals').insertOne({ _id: emptyHospital, name: 'Empty hospital', isActive: true });
+      await db.collection('users').insertOne({ _id: staffId, role: 'RECEPTION', status: 'ACTIVE', hospitalId: emptyHospital });
+      const accessToken = await token(staffId, { hospitalId: hospitalId.toString() });
+      for (const path of ['', '?view=upcoming', '?date=2026-10-06&limit=1']) {
+        const result = await call(path, accessToken);
+        assert.equal(result.status, 200);
+        assert.deepEqual(result.body.data, []);
+        assert.equal(result.body.meta.hospitalId, emptyHospital.toString());
+        assert.equal(result.body.meta.hasMore, false);
+      }
+      assert.equal((await call('', staffToken)).body.meta.hospitalId, hospitalId.toString());
+      for (const query of [`?hospitalId=${hospitalId}`, `?hospitalId=${emptyHospital}`, '?hospitalId[$ne]=null'])
+        assert.equal((await call(query, accessToken)).status, 400);
     });
     await t.test('stored malformed calendar dates return a controlled error; missing services remain readable', async () => {
       await db.collection('opdSessions').insertMany([

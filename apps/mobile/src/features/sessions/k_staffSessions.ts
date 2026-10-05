@@ -15,7 +15,7 @@ export type StaffOpdSession = {
   bookedCount: number | null;
   status: 'OPEN' | 'CLOSED' | 'RUNNING' | 'COMPLETED' | 'CANCELLED' | null;
 };
-export type StaffSessionPage = { data: StaffOpdSession[]; hasMore: boolean };
+export type StaffSessionPage = { data: StaffOpdSession[]; hasMore: boolean; hospitalId: string };
 
 function parseSession(value: unknown): StaffOpdSession {
   if (!isRecord(value) ||
@@ -31,15 +31,33 @@ function parseSession(value: unknown): StaffOpdSession {
 }
 
 export async function fetchStaffSessions(token: string | undefined, view: SessionView,
-  page = 1, signal?: AbortSignal): Promise<StaffSessionPage> {
-  const result = await apiRequest(`/staff/sessions?view=${view}&page=${page}&limit=50`, { token, signal });
-  if (!Array.isArray(result.data) || typeof result.meta.hasMore !== 'boolean') throw unreadableResponse();
-  return { data: result.data.map(parseSession), hasMore: result.meta.hasMore };
+  page = 1, signal?: AbortSignal, date?: string): Promise<StaffSessionPage> {
+  const filter = date ? `date=${encodeURIComponent(date)}` : `view=${view}`;
+  const result = await apiRequest(`/staff/sessions?${filter}&page=${page}&limit=50`, { token, signal });
+  if (!Array.isArray(result.data) || typeof result.meta.hasMore !== 'boolean' ||
+      typeof result.meta.hospitalId !== 'string' || !/^[a-f\d]{24}$/i.test(result.meta.hospitalId)) throw unreadableResponse();
+  return { data: result.data.map(parseSession), hasMore: result.meta.hasMore, hospitalId: result.meta.hospitalId };
 }
 
 export async function fetchStaffSession(token: string | undefined, id: string, signal?: AbortSignal) {
   const result = await apiRequest(`/staff/sessions/${encodeURIComponent(id)}`, { token, signal });
   return parseSession(result.data);
+}
+
+export type SessionInput = { serviceId: string; sessionDate: string; startTime: string;
+  endTime: string; capacity: number; doctorOrTeam: string };
+
+export async function saveStaffSession(token: string | undefined, input: SessionInput,
+  sessionId?: string, signal?: AbortSignal) {
+  // Explicit allowlist: callers cannot accidentally submit counters or status.
+  const body = { serviceId: input.serviceId, sessionDate: input.sessionDate,
+    startTime: input.startTime, endTime: input.endTime, capacity: input.capacity,
+    doctorOrTeam: input.doctorOrTeam };
+  const path = sessionId ? `/staff/sessions/${encodeURIComponent(sessionId)}` : '/staff/sessions';
+  const result = await apiRequest(path, { token, method: sessionId ? 'PATCH' : 'POST', body, signal });
+  const saved = parseSession(result.data);
+  if (sessionId && saved._id !== sessionId) throw unreadableResponse();
+  return saved;
 }
 
 export async function closeStaffSessionBookings(token: string | undefined, id: string, signal?: AbortSignal) {

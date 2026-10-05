@@ -26,7 +26,7 @@ let renderer: Renderer.ReactTestRenderer;
 const onAdd = jest.fn(), onEdit = jest.fn(), expired = jest.fn();
 beforeEach(() => {
   jest.clearAllMocks();
-  list.mockResolvedValue({ data: [session], hasMore: false });
+  list.mockResolvedValue({ data: [session], hasMore: false, hospitalId: '000000000000000000000001' });
   detail.mockResolvedValue(session);
   close.mockResolvedValue({ ...session, status: 'CLOSED' });
 });
@@ -41,7 +41,7 @@ function button(label: string) {
 async function press(label: string) { await act(async () => button(label).props.onPress()); }
 function text(value: string) { return renderer.root.findAllByType(Text).some(node => node.props.children === value); }
 test('Today and Upcoming load real helpers and support pagination and refresh', async () => {
-  list.mockResolvedValue({ data: [session], hasMore: true });
+  list.mockResolvedValue({ data: [session], hasMore: true, hospitalId: '000000000000000000000001' });
   await mount();
   expect(list).toHaveBeenCalledWith('staff-token', 'today', 1, expect.any(AbortSignal));
   expect(text('General OPD')).toBe(true);
@@ -59,7 +59,7 @@ test('loading, retry, error and distinct empty states are usable', async () => {
   list.mockRejectedValueOnce(new ApiError('Connection unavailable.'));
   await press('Upcoming');
   expect(text('Connection unavailable.')).toBe(true);
-  list.mockResolvedValue({ data: [], hasMore: false });
+  list.mockResolvedValue({ data: [], hasMore: false, hospitalId: '000000000000000000000001' });
   await press('Try again');
   expect(text('No upcoming sessions')).toBe(true);
   await press('Today');
@@ -83,7 +83,7 @@ test('closure waits for confirmation, prevents duplicates, then refreshes server
   await act(async () => confirm());
   await act(async () => button('Close bookings').props.onPress());
   expect(close).toHaveBeenCalledTimes(1);
-  list.mockResolvedValue({ data: [{ ...session, status: 'CLOSED' }], hasMore: false });
+  list.mockResolvedValue({ data: [{ ...session, status: 'CLOSED' }], hasMore: false, hospitalId: '000000000000000000000001' });
   await act(async () => resolve({ ...session, status: 'CLOSED' }));
   expect(text('Bookings closed')).toBe(true);
   expect(text('Bookings closed. Existing bookings remain valid.')).toBe(true);
@@ -105,6 +105,6 @@ test('cancel and failure keep OPEN state; unauthorized errors invoke the existin
   alert.mockRestore();
 });
 test.each(['CLOSED', 'RUNNING', 'COMPLETED', 'CANCELLED'] as const)('%s sessions do not offer closure', async status => {
-  list.mockResolvedValue({ data: [{ ...session, status }], hasMore: false });
+  list.mockResolvedValue({ data: [{ ...session, status }], hasMore: false, hospitalId: '000000000000000000000001' });
   await mount(); expect(button('Close bookings')).toBeUndefined();
 });
