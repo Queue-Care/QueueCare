@@ -1,6 +1,6 @@
 # Booking-confirmed notifications — M1-13
 
-Member 1's creation step is implemented: a successful booking stores one unread in-app notification in MongoDB. M1-12 and M1-13 are merged through PR #19. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. The next Member 1 task is **M1-16: clarify Hospital Search entry points**.
+Member 1's creation step is implemented: a successful booking stores one unread in-app notification in MongoDB. M1-12 and M1-13 are merged through PR #19. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. M1-16’s [Home search clarification](PATIENT_HOME.md) is implemented. The next Member 1 task is **M1-17: improve the View OPD Sessions action**.
 
 Member 4's M4-06/M4-07 notification service/API is still a scaffold. This implementation uses README section 13.8's notification schema and a small booking-event producer, ready for Member 4 to consume. Notification list/read/read-all endpoints, live screen data, and notification navigation remain pending. I-03's end-to-end acceptance remains pending until that integration is available. No mobile notification will appear from this change alone.
 
