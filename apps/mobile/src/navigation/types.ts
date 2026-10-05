@@ -13,9 +13,8 @@ export type NavigationSession = {
 };
 
 export type PatientAuthParams = {
-  PatientSignIn: undefined;
+  PatientSignIn: { registered?: boolean } | undefined;
   PatientCreateAccount: undefined;
-  VerifyMobile: { verificationId: string };
   ResetPassword: undefined;
 };
 export type StaffAuthParams = {
