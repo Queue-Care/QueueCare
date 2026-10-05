@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParams } from '../navigation/types';
 import { ActionButton } from '../components/ActionButton';
-import { colors, fonts } from '../theme/tokens';
+import { colors, radii, fonts } from '../theme/tokens';
 
 export function WelcomeScreen({
   navigation,
@@ -75,17 +75,17 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
     flexGrow: 1,
-    padding: 24,
+    padding: 22,
     width: '100%',
     maxWidth: 560,
     alignSelf: 'center',
   },
   introduction: { alignItems: 'center', gap: 22 },
   mark: {
-    width: 96,
-    height: 96,
+    width: 84,
+    height: 84,
     backgroundColor: colors.tealTint,
-    borderRadius: 30,
+    borderRadius: radii.mark,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     height: 37,
     borderWidth: 2,
     borderColor: colors.teal,
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   calendarLine: {
     position: 'absolute',
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     top: -7,
     height: 12,
     width: 3,
-    borderRadius: 2,
+    borderRadius: radii.sm,
     backgroundColor: colors.teal,
   },
   cross: {
@@ -121,15 +121,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.display,
-    fontSize: 32,
-    lineHeight: 40,
-    color: colors.ink,
+    fontSize: 30,
+    lineHeight: 36,
+    color: colors.tealDark,
     textAlign: 'center',
   },
   description: {
     fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 25,
+    fontSize: 15,
+    lineHeight: 23,
     color: colors.inkSoft,
     textAlign: 'center',
     maxWidth: 320,

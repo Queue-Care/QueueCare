@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
 
 export const StaffRegistrationScreen = ({ navigation }: any) => {
   const [form, setForm] = useState({
@@ -141,6 +141,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.sageLine,
   },
   backBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -151,21 +152,25 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   backBtnArrow: {
+    fontFamily: fonts.body,
     fontSize: 24,
     color: colors.tealDark,
     lineHeight: 28,
   },
   navTitle: {
+    fontFamily: fonts.display,
     fontSize: 18,
     fontWeight: '700',
     color: colors.tealDark,
   },
   container: {
+    ...surfaces.content,
     paddingHorizontal: 22,
     paddingTop: 16,
     paddingBottom: 24,
   },
   lede: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.inkSoft,
     lineHeight: 20,
@@ -175,12 +180,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: {
+    fontFamily: fonts.body,
     fontSize: 12,
     fontWeight: '600',
     color: colors.ink,
     marginBottom: 6,
   },
   control: {
+    borderRadius: radii.sm,
+    fontFamily: fonts.body,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -191,9 +199,10 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   monoText: {
-    fontFamily: 'monospace',
+    fontFamily: fonts.mono,
   },
   selectControl: {
+    borderRadius: radii.sm,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -205,10 +214,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   selectValue: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.ink,
   },
   chev: {
+    fontFamily: fonts.body,
     fontSize: 10,
     color: colors.inkSoft,
   },
@@ -216,12 +227,14 @@ const styles = StyleSheet.create({
     height: 20,
   },
   primaryBtn: {
+    borderRadius: radii.pill,
     backgroundColor: colors.teal,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryBtnText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',

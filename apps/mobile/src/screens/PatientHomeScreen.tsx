@@ -12,7 +12,7 @@ import { ActionButton } from '../components/ActionButton';
 import { StatusText } from '../components/StatusText';
 import { NextAppointmentCard } from '../components/NextAppointmentCard';
 import { useNextAppointment } from '../features/home/useNextAppointment';
-import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { colors, fonts, surfaces, radii, spacing } from '../theme/tokens';
 
 export type PatientHomeProps = {
   guest: boolean;
@@ -141,22 +141,26 @@ export function PatientHomeScreen({
           <Text accessibilityRole="header" style={styles.heading}>
             Quick actions
           </Text>
-          <ActionButton
-            label="My bookings"
-            accessibilityHint={
-              guest ? 'Sign in to view your bookings' : undefined
-            }
-            onPress={guest ? onSignIn : onBookings}
-            variant="outline"
-          />
-          <ActionButton
-            label="Notifications"
-            accessibilityHint={
-              guest ? 'Sign in to view your notifications' : undefined
-            }
-            onPress={guest ? onSignIn : onAlerts}
-            variant="outline"
-          />
+          <View style={styles.tiles}>
+            <ActionButton
+              label="My bookings"
+              icon="Bookings"
+              accessibilityHint={
+                guest ? 'Sign in to view your bookings' : undefined
+              }
+              onPress={guest ? onSignIn : onBookings}
+              variant="tile"
+            />
+            <ActionButton
+              label="Notifications"
+              icon="Alerts"
+              accessibilityHint={
+                guest ? 'Sign in to view your notifications' : undefined
+              }
+              onPress={guest ? onSignIn : onAlerts}
+              variant="tile"
+            />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -165,10 +169,11 @@ export function PatientHomeScreen({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
+    ...surfaces.content,
     padding: spacing.lg,
     gap: spacing.lg,
     width: '100%',
-    maxWidth: 640,
+    maxWidth: 560,
     alignSelf: 'center',
   },
   introduction: { gap: spacing.sm },
@@ -181,44 +186,46 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   title: {
-    color: colors.ink,
+    color: colors.tealDark,
     fontFamily: fonts.display,
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 30,
+    lineHeight: 36,
   },
   heading: {
     color: colors.ink,
     fontFamily: fonts.body,
-    fontSize: 19,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 24,
     fontWeight: '600',
   },
   description: {
     color: colors.inkSoft,
     fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 25,
+    fontSize: 15,
+    lineHeight: 23,
   },
   section: { gap: spacing.md },
+  tiles: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   card: {
+    ...surfaces.card,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
     borderRadius: radii.md,
-    padding: spacing.lg,
+    padding: 16,
     gap: spacing.md,
   },
   cardTitle: {
     color: colors.ink,
     fontFamily: fonts.body,
-    fontSize: 18,
-    lineHeight: 27,
+    fontSize: 16,
+    lineHeight: 24,
     fontWeight: '600',
   },
   searchCard: {
     backgroundColor: colors.tealTint,
     borderRadius: radii.md,
-    padding: spacing.lg,
+    padding: 16,
     gap: spacing.md,
   },
 });

@@ -81,14 +81,14 @@ const styles = StyleSheet.create({
   brand: { alignItems: 'center', gap: spacing.lg },
   title: {
     fontFamily: fonts.display,
-    fontSize: 44,
+    fontSize: 38,
     color: colors.panel,
     textAlign: 'center',
   },
   tagline: {
     fontFamily: fonts.body,
-    fontSize: 20,
-    lineHeight: 30,
+    fontSize: 16,
+    lineHeight: 24,
     color: colors.tealTint,
     textAlign: 'center',
   },

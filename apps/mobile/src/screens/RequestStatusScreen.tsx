@@ -18,7 +18,7 @@ import {
   reasons,
 } from '../features/patient/api';
 import { usePatientResource } from '../features/patient/usePatientResource';
-import { colors } from '../theme/tokens';
+import { colors, radii } from '../theme/tokens';
 
 export function RequestStatusScreen({
   route,
@@ -121,7 +121,7 @@ export function RequestStatusScreen({
                     style={{
                       width: 22,
                       height: 22,
-                      borderRadius: 11,
+                      borderRadius: radii.circle,
                       backgroundColor: complete
                         ? pending && index === 1
                           ? colors.amber
