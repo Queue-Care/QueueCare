@@ -2,6 +2,12 @@
 
 M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14/M1-15 are merged through PR #22; the current branch also includes the design update through PR #23.
 
+## I-01 booking-read integration — 2026-10-05
+
+M1-17 is merged through PR #26. The missing authenticated `/bookings/me` route now connects Home and My Bookings, with server-side category filtering/pagination and mobile page controls. **74 API tests and 255 mobile tests across 18 suites pass**, along with TypeScript, ESLint (no warnings), and Android/iOS exports in `/private/tmp/queuecare-patient-integration-export`.
+
+New API evidence covers real registration/login → booking → Home/list → saved details, owner isolation, current account role/status, pagination and session-time boundaries. New mobile evidence covers navigation with saved IDs, token forwarding, page/category changes, stale responses and retry. API tests use isolated temporary MongoDB; mobile HTTP is mocked. See [scope, reproduction and outstanding phone checks](PATIENT_INTEGRATION.md). I-01/T-04 remain partial while other modules and physical acceptance are pending.
+
 ## M1-17 follow-up — 2026-10-05
 
 M1-16 is merged through PR #25, alongside PR #24's patient registration/sign-in work. M1-17 moves View OPD sessions next to service selection and gives accurate selected/empty/failure guidance. Two new tests check primary action order, existing 52-point minimum height, scalable labels, and visible-refresh invalidation; the guest/patient route and state tests now assert the guidance too.
