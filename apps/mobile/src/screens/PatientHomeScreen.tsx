@@ -57,6 +57,26 @@ export function PatientHomeScreen({
             Plan your visit. Keep your appointment close.
           </Text>
         </View>
+        <View style={styles.searchCard}>
+          <Text accessibilityRole="header" style={styles.heading}>
+            Find a hospital
+          </Text>
+          <Text style={styles.description}>
+            Search by hospital name or city, then explore OPD services and
+            sessions.
+          </Text>
+          {guest && (
+            <Text style={styles.description}>
+              Browse hospitals without signing in. Sign in when you’re ready to
+              book.
+            </Text>
+          )}
+          <ActionButton
+            label="Search hospitals"
+            accessibilityHint="Opens hospital search with name and city filters"
+            onPress={onSearch}
+          />
+        </View>
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.heading}>
             Your next appointment
@@ -97,7 +117,7 @@ export function PatientHomeScreen({
                 We couldn’t load your appointment
               </StatusText>
               <Text style={styles.description}>
-                Please try again. You can still explore hospitals below.
+                Please try again. Hospital search is still available.
               </Text>
               <ActionButton
                 label="Try again"
@@ -120,23 +140,14 @@ export function PatientHomeScreen({
               </Text>
             </View>
           )}
+          {!guest && state.status !== 'loading' && (
+            <ActionButton
+              label="Refresh appointment"
+              variant="outline"
+              onPress={reload}
+            />
+          )}
         </View>
-        <View style={styles.searchCard}>
-          <Text accessibilityRole="header" style={styles.heading}>
-            Find your next OPD visit
-          </Text>
-          <Text style={styles.description}>
-            Search for a hospital and explore its available sessions.
-          </Text>
-          <ActionButton label="Search hospitals" onPress={onSearch} />
-        </View>
-        {!guest && state.status !== 'loading' && (
-          <ActionButton
-            label="Refresh appointment"
-            variant="outline"
-            onPress={reload}
-          />
-        )}
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.heading}>
             Quick actions
