@@ -1,5 +1,12 @@
 # Issue and fix evidence
 
+## I-01-M1-01 — signed-in Home and My Bookings cannot read saved appointments
+
+- **Found:** 2026-10-05, integration review after PR #26. Both clients request `/bookings/me`, but the API only had POST `/bookings` and GET `/bookings/:bookingId`; `me` failed ID validation.
+- **Fix:** Add the owner-scoped list route before the ID route, category/time filtering and pagination. Connect the Bookings screen to page metadata and Previous/Next/Refresh.
+- **Evidence:** Real registration/JWT login → booking → Home/list/details passes against temporary MongoDB. Tests verify second-patient isolation, permissions, ordering/boundaries, pagination, malformed requests and storage failures. Mobile navigation/transport tests check saved IDs, token use, stale response cancellation and errors. All 74 API / 255 mobile tests, TypeScript, lint and both platform exports pass.
+- **Limit:** Full patient-tab, cancellation/priority/notification/profile integration and phone acceptance remain pending. See [handoff](../PATIENT_INTEGRATION.md).
+
 ## M1-17-01 — make View OPD sessions the clear next action
 
 - **Source:** README usability feedback records hesitation around the View OPD Sessions CTA; M1-17 requests clearer hierarchy and an adequate touch target.
