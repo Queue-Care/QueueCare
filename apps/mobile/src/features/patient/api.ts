@@ -96,6 +96,7 @@ export async function patientApi(
     method?: string;
     body?: unknown;
     signal?: AbortSignal;
+    includeMeta?: boolean;
   } = {},
 ): Promise<unknown> {
   if (!options.public && !options.token?.trim())
@@ -144,7 +145,7 @@ export async function patientApi(
       throw new PatientApiError(
         'We could not read the response. Please try again.',
       );
-    return payload.data;
+    return options.includeMeta ? payload : payload.data;
   } catch (error) {
     if (error instanceof PatientApiError) throw error;
     throw new PatientApiError(
