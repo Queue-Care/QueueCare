@@ -20,6 +20,7 @@ import { PriorityRequestDetailsScreen } from '../screens/PriorityRequestDetailsS
 import { PriorityRequestsScreen } from '../screens/PriorityRequestsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ReceptionDeskScreen } from '../screens/ReceptionDeskScreen';
+import { OpdSessionsScreen } from '../screens/k_OpdSessionsScreen';
 import { colors } from '../theme/colors';
 
 const Tabs = createBottomTabNavigator<StaffTabParams>();
@@ -82,29 +83,17 @@ function DashboardNavigator({
     </Dashboard.Navigator>
   );
 }
-function SessionsList({
-  navigation,
-}: NativeStackScreenProps<SessionsStackParams, 'SessionsList'>) {
-  return (
-    <NavigationPage
-      title="OPD sessions"
-      actions={[
-        {
-          label: 'Add session',
-          onPress: () => navigation.navigate('AddEditSession'),
-        },
-      ]}
-    />
-  );
-}
-function SessionsNavigator() {
+function SessionsNavigator({ accessToken, staff, onSessionExpired }: Access) {
   return (
     <Sessions.Navigator screenOptions={stackOptions}>
       <Sessions.Screen
         name="SessionsList"
-        component={SessionsList}
-        options={{ title: 'OPD sessions' }}
-      />
+        options={{ headerShown: false }}
+      >
+        {({ navigation }) => <OpdSessionsScreen accessToken={accessToken} hospital={staff?.hospital}
+          onSessionExpired={onSessionExpired} onAdd={() => navigation.navigate('AddEditSession')}
+          onEdit={sessionId => navigation.navigate('AddEditSession', { sessionId })} />}
+      </Sessions.Screen>
       <Sessions.Screen
         name="AddEditSession"
         options={({ route }) => ({
@@ -160,7 +149,7 @@ export function StaffNavigator(access: Access) {
           <DashboardNavigator {...access} onPendingCount={setPendingCount} />
         )}
       </Tabs.Screen>
-      <Tabs.Screen name="Sessions" component={SessionsNavigator} />
+      <Tabs.Screen name="Sessions">{() => <SessionsNavigator {...access} />}</Tabs.Screen>
       <Tabs.Screen
         name="Priority"
         options={{

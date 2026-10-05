@@ -161,7 +161,7 @@ test.each(['RECEPTION', 'NURSE'] as const)(
     expect(ref.getRootState()?.routeNames).toEqual(['StaffApp']);
     await press('View sessions');
     expect(ref.getCurrentRoute()?.name).toBe('SessionsList');
-    await press('Add session');
+    await press('Add a session');
     expect(ref.getCurrentRoute()?.name).toBe('AddEditSession');
     await change(() =>
       ref.navigate('StaffApp', {
