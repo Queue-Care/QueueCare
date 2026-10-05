@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -8,107 +10,220 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, surfaces } from '../theme/tokens';
+import { ApiError, errorMessage } from '../api/g_apiClient';
+import { useApiResource } from '../api/g_useApiResource';
+import {
+  deleteNotification,
+  fetchNotifications,
+  formatWhen,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type AppNotification,
+  type NotificationType,
+} from '../features/notifications/g_notifications';
 
-interface NotificationItem {
-  id: string;
-  title: string;
-  sub: string;
-  time: string;
-  isUnread: boolean;
-  isPriority?: boolean;
-  avatarText?: string;
-}
+type Props = {
+  accessToken?: string;
+  onSessionExpired?: () => void;
+  onUnreadCount?: (count: number) => void;
+  // Staff open this screen from the dashboard, so it needs a way back.
+  onBack?: () => void;
+};
 
-export const NotificationsScreen = ({ navigation }: any) => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: '1',
-      title: 'Priority request received',
-      sub: 'Reception at Colombo National is reviewing it now.',
-      time: '10 minutes ago',
-      isUnread: true,
-      isPriority: true,
-    },
-    {
-      id: '2',
-      title: 'Booking confirmed',
-      sub: 'General OPD, 24 Sep at 8:30 AM.',
-      time: 'Yesterday · 6:18 PM',
-      isUnread: true,
-      avatarText: 'OPD',
-    },
-    {
-      id: '3',
-      title: 'Appointment tomorrow',
-      sub: 'Arrive by 8:15 AM and report to reception.',
-      time: 'Yesterday · 7:00 AM',
-      isUnread: true,
-      avatarText: 'CNH',
-    },
-    {
-      id: '4',
-      title: 'Dermatology sessions reopened',
-      sub: 'New slots released for the first week of October.',
-      time: '20 Sep',
-      isUnread: false,
-      avatarText: 'OPD',
-    },
-  ]);
+const avatarText: Record<NotificationType, string> = {
+  BOOKING: 'OPD',
+  REMINDER: '◷',
+  QUEUE: 'Q',
+  PRIORITY: '!',
+  SESSION: 'OPD',
+  SYSTEM: 'i',
+};
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isUnread: false })));
+export const NotificationsScreen = ({
+  accessToken,
+  onSessionExpired,
+  onUnreadCount,
+  onBack,
+}: Props) => {
+  const load = useCallback(
+    (signal: AbortSignal) => fetchNotifications(accessToken, signal),
+    [accessToken],
+  );
+  const { data, loading, error, reload, setData } = useApiResource(load, {
+    pollMs: 15000,
+    onUnauthorized: onSessionExpired,
+  });
+  const unreadCount = data?.unreadCount;
+  useEffect(() => {
+    if (unreadCount !== undefined) onUnreadCount?.(unreadCount);
+  }, [unreadCount, onUnreadCount]);
+
+  const failed = (failure: unknown) => {
+    if (failure instanceof ApiError && failure.status === 401)
+      onSessionExpired?.();
+    Alert.alert('Notifications', errorMessage(failure));
+    reload();
+  };
+  const show = (notifications: AppNotification[]) =>
+    setData({
+      notifications,
+      unreadCount: notifications.filter(item => !item.readAt).length,
+    });
+
+  const markRead = async (item: AppNotification) => {
+    if (!data || item.readAt) return;
+    const readAt = new Date().toISOString();
+    // Shown as read immediately; a failed save reloads the stored state.
+    show(
+      data.notifications.map(current =>
+        current._id === item._id ? { ...current, readAt } : current,
+      ),
+    );
+    try {
+      await markNotificationRead(accessToken, item._id);
+    } catch (failure) {
+      failed(failure);
+    }
   };
 
+  const markAllRead = async () => {
+    if (!data?.unreadCount) return;
+    const readAt = new Date().toISOString();
+    show(
+      data.notifications.map(item => ({
+        ...item,
+        readAt: item.readAt ?? readAt,
+      })),
+    );
+    try {
+      await markAllNotificationsRead(accessToken);
+    } catch (failure) {
+      failed(failure);
+    }
+  };
+
+  const remove = (item: AppNotification) =>
+    Alert.alert('Delete this notification?', item.title, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          if (!data) return;
+          show(data.notifications.filter(current => current._id !== item._id));
+          try {
+            await deleteNotification(accessToken, item._id);
+          } catch (failure) {
+            failed(failure);
+          }
+        },
+      },
+    ]);
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.navHead}>
-        <Text style={styles.navTitle}>Notifications</Text>
-        <TouchableOpacity style={styles.iconBtn} onPress={markAllAsRead}>
+        {onBack ? (
+          <TouchableOpacity
+            style={[styles.iconBtn, styles.backBtn]}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            onPress={onBack}
+          >
+            <Text style={styles.backBtnArrow}>‹</Text>
+          </TouchableOpacity>
+        ) : null}
+        <Text accessibilityRole="header" style={styles.navTitle}>
+          Notifications
+        </Text>
+        <TouchableOpacity
+          style={[styles.iconBtn, !data?.unreadCount && styles.disabled]}
+          accessibilityRole="button"
+          accessibilityLabel="Mark all as read"
+          accessibilityState={{ disabled: !data?.unreadCount }}
+          disabled={!data?.unreadCount}
+          onPress={markAllRead}
+        >
           <Text style={styles.iconBtnCheck}>✓</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.list}>
-          {notifications.map((item) => (
+        {loading && !data ? (
+          <ActivityIndicator style={styles.state} color={colors.teal} />
+        ) : error && !data ? (
+          <View style={styles.state}>
+            <Text style={styles.stateText}>{error}</Text>
             <TouchableOpacity
-              key={item.id}
-              style={[styles.listRow, item.isUnread && styles.rowUnread]}
-              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Try again"
+              onPress={reload}
             >
-              <View
-                style={[
-                  styles.avatar,
-                  item.isPriority ? styles.avatarCoral : styles.avatarTeal,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.avatarText,
-                    item.isPriority
-                      ? styles.avatarTextCoral
-                      : styles.avatarTextTeal,
-                  ]}
-                >
-                  {item.isPriority ? '!' : item.avatarText || 'H'}
-                </Text>
-              </View>
-
-              <View style={styles.contentWrap}>
-                <Text style={styles.titleText}>{item.title}</Text>
-                <Text style={styles.subText}>{item.sub}</Text>
-                <Text style={styles.timestampText}>{item.time}</Text>
-              </View>
-
-              {item.isPriority && item.isUnread && (
-                <View style={styles.priorityBadge}>
-                  <View style={styles.badgeDot} />
-                  <Text style={styles.priorityBadgeText}>New</Text>
-                </View>
-              )}
+              <Text style={styles.stateLink}>Try again</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
+        ) : data && !data.notifications.length ? (
+          <View style={styles.state}>
+            <Text style={styles.stateText}>
+              You have no notifications yet. Booking, priority and session
+              updates will appear here.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {data?.notifications.map(item => {
+              const unread = !item.readAt;
+              const priority = item.type === 'PRIORITY';
+              return (
+                <TouchableOpacity
+                  key={item._id}
+                  style={[styles.listRow, unread && styles.rowUnread]}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.title}. ${item.message}${
+                    unread ? ' Unread.' : ''
+                  }`}
+                  accessibilityHint="Press to mark as read. Long press to delete."
+                  onPress={() => void markRead(item)}
+                  onLongPress={() => remove(item)}
+                >
+                  <View
+                    style={[
+                      styles.avatar,
+                      priority ? styles.avatarCoral : styles.avatarTeal,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.avatarText,
+                        priority
+                          ? styles.avatarTextCoral
+                          : styles.avatarTextTeal,
+                      ]}
+                    >
+                      {avatarText[item.type]}
+                    </Text>
+                  </View>
+
+                  <View style={styles.contentWrap}>
+                    <Text style={styles.titleText}>{item.title}</Text>
+                    <Text style={styles.subText}>{item.message}</Text>
+                    <Text style={styles.timestampText}>
+                      {formatWhen(item.createdAt)}
+                    </Text>
+                  </View>
+
+                  {unread ? (
+                    <View style={styles.priorityBadge}>
+                      <View style={styles.badgeDot} />
+                      <Text style={styles.priorityBadgeText}>New</Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -130,6 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.mist,
   },
   navTitle: {
+    flex: 1,
     fontFamily: fonts.display,
     fontSize: 20,
     fontWeight: '700',
@@ -145,21 +261,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  backBtn: {
+    marginRight: 14,
+  },
+  backBtnArrow: {
+    fontFamily: fonts.body,
+    fontSize: 24,
+    color: colors.tealDark,
+    lineHeight: 28,
+  },
   iconBtnCheck: {
     fontFamily: fonts.body,
     fontSize: 16,
     color: colors.tealDark,
     fontWeight: 'bold',
   },
+  disabled: {
+    opacity: 0.45,
+  },
   scrollContent: {
     ...surfaces.content,
     paddingBottom: 24,
+  },
+  state: {
+    paddingHorizontal: 22,
+    paddingVertical: 32,
+    alignItems: 'center',
+    gap: 10,
+  },
+  stateText: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  stateLink: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.teal,
   },
   list: {
     overflow: 'hidden',
     borderRadius: radii.md,
     backgroundColor: colors.panel,
-    borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: colors.sageLine,
   },
@@ -242,4 +388,3 @@ const styles = StyleSheet.create({
     color: '#A7402C',
   },
 });
-//

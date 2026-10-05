@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   View,
   Text,
   StyleSheet,
@@ -9,103 +10,238 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, surfaces } from '../theme/tokens';
+import { ApiError, errorMessage } from '../api/g_apiClient';
+import { useApiResource } from '../api/g_useApiResource';
+import {
+  decidePriorityRequest,
+  fetchPriorityRequest,
+  formatSession,
+  initials,
+  reasonLabels,
+  statusLabels,
+} from '../features/priority/g_priorityRequests';
 
-export const PriorityRequestDetailsScreen = ({ route, navigation }: any) => {
-  const item = route?.params?.item || {
-    name: 'Kasun Perera',
-    bookingCode: 'OPD-2026-00481',
-    service: 'General OPD',
-    session: '24 Sep 2026 · 8:30 AM',
-    reason: 'Elderly patient',
-    note: '"My father is 78 and cannot stand for long. We will arrive by 8:00 AM."',
+type Props = {
+  route: { params: { requestId: string } };
+  navigation: { goBack: () => void };
+  accessToken?: string;
+  onSessionExpired?: () => void;
+};
+
+export const PriorityRequestDetailsScreen = ({
+  route,
+  navigation,
+  accessToken,
+  onSessionExpired,
+}: Props) => {
+  const { requestId } = route.params;
+  const load = useCallback(
+    (signal: AbortSignal) =>
+      fetchPriorityRequest(accessToken, requestId, signal),
+    [accessToken, requestId],
+  );
+  const {
+    data: item,
+    loading,
+    error,
+    reload,
+    setData,
+  } = useApiResource(load, { onUnauthorized: onSessionExpired });
+  const [saving, setSaving] = useState<'ACCEPTED' | 'DECLINED' | null>(null);
+
+  const decide = async (decision: 'ACCEPTED' | 'DECLINED') => {
+    setSaving(decision);
+    try {
+      setData(await decidePriorityRequest(accessToken, requestId, decision));
+    } catch (failure) {
+      if (failure instanceof ApiError && failure.status === 401)
+        onSessionExpired?.();
+      // Another staff member may have decided first; show the saved decision.
+      else if (failure instanceof ApiError && failure.status === 409) reload();
+      Alert.alert('Could not save the decision', errorMessage(failure));
+    } finally {
+      setSaving(null);
+    }
   };
 
-  const handleDecision = (decision: 'Accepted' | 'Declined') => {
+  const confirm = (decision: 'ACCEPTED' | 'DECLINED') => {
+    const accepting = decision === 'ACCEPTED';
     Alert.alert(
-      `Request ${decision}`,
-      `The patient will be notified and the queue will update automatically.`,
-      [{ text: 'OK', onPress: () => navigation?.goBack() }]
+      accepting ? 'Accept this request?' : 'Decline this request?',
+      accepting
+        ? `${item?.patient.fullName} will be moved to the priority queue and notified.`
+        : `${item?.patient.fullName} will be notified. The booking stays confirmed.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: accepting ? 'Accept' : 'Decline',
+          style: accepting ? 'default' : 'destructive',
+          onPress: () => void decide(decision),
+        },
+      ],
     );
   };
+
+  const pending = item?.status === 'PENDING';
+  const accepted = item?.status === 'ACCEPTED';
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.navHead}>
         <TouchableOpacity
           style={styles.backBtn}
-          onPress={() => navigation?.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Back to priority requests"
+          onPress={() => navigation.goBack()}
         >
           <Text style={styles.backBtnArrow}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Request details</Text>
+        <Text accessibilityRole="header" style={styles.navTitle}>
+          Request details
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <View style={styles.cardTop}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>KP</Text>
+        {loading && !item ? (
+          <ActivityIndicator style={styles.state} color={colors.teal} />
+        ) : null}
+        {error && !item ? (
+          <View style={styles.state}>
+            <Text style={styles.stateText}>{error}</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Try again"
+              onPress={reload}
+            >
+              <Text style={styles.stateLink}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {item ? (
+          <>
+            <View style={styles.card}>
+              <View style={styles.cardTop}>
+                <View style={[styles.avatar, !pending && styles.avatarTeal]}>
+                  <Text
+                    style={[
+                      styles.avatarText,
+                      !pending && styles.avatarTextTeal,
+                    ]}
+                  >
+                    {initials(item.patient.fullName)}
+                  </Text>
+                </View>
+                <View style={styles.cardHeaderInfo}>
+                  <Text style={styles.patientName}>
+                    {item.patient.fullName}
+                  </Text>
+                  <Text style={styles.patientSub}>
+                    {[
+                      item.patient.maskedNic && `NIC ${item.patient.maskedNic}`,
+                      item.patient.phone,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || 'Contact details unavailable'}
+                  </Text>
+                </View>
+                <View
+                  style={accepted ? styles.badgeDone : styles.badgePriority}
+                >
+                  <View
+                    style={[styles.badgeDot, accepted && styles.badgeDotDone]}
+                  />
+                  <Text
+                    style={
+                      accepted ? styles.badgeDoneText : styles.badgePriorityText
+                    }
+                  >
+                    {statusLabels[item.status]}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.kv}>
+                <Text style={styles.k}>Booking</Text>
+                <Text style={[styles.v, styles.mono]}>
+                  {item.booking.bookingCode ?? 'Unavailable'}
+                </Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>Service</Text>
+                <Text style={styles.v}>{item.service.name}</Text>
+              </View>
+              <View style={[styles.kv, styles.kvLast]}>
+                <Text style={styles.k}>Session</Text>
+                <Text style={styles.v}>
+                  {formatSession(item.session.startsAt)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.cardHeaderInfo}>
-              <Text style={styles.patientName}>{item.name}</Text>
-              <Text style={styles.patientSub}>NIC ········234V · +94 77 123 4567</Text>
+
+            <View style={styles.card}>
+              <Text style={styles.cardHeading}>Reason given</Text>
+              <Text style={styles.reasonMain}>{reasonLabels[item.reason]}</Text>
+              {item.note ? (
+                <Text style={styles.reasonQuote}>{`"${item.note}"`}</Text>
+              ) : null}
             </View>
-            <View style={styles.badgePriority}>
-              <View style={styles.badgeDot} />
-              <Text style={styles.badgePriorityText}>Pending</Text>
-            </View>
-          </View>
 
-          <View style={styles.divider} />
+            {pending ? (
+              <>
+                <View style={styles.note}>
+                  <Text style={styles.infoIcon}>ℹ</Text>
+                  <Text style={styles.noteText}>
+                    The patient is notified as soon as you decide, and the queue
+                    order updates immediately.
+                  </Text>
+                </View>
 
-          <View style={styles.kv}>
-            <Text style={styles.k}>Booking</Text>
-            <Text style={[styles.v, styles.mono]}>{item.bookingCode}</Text>
-          </View>
-          <View style={styles.kv}>
-            <Text style={styles.k}>Service</Text>
-            <Text style={styles.v}>{item.service}</Text>
-          </View>
-          <View style={[styles.kv, { marginBottom: 0 }]}>
-            <Text style={styles.k}>Session</Text>
-            <Text style={styles.v}>{item.session || '24 Sep 2026 · 8:30 AM'}</Text>
-          </View>
-        </View>
+                <View style={styles.spacer} />
 
-        <View style={styles.card}>
-          <Text style={styles.cardHeading}>Reason given</Text>
-          <Text style={styles.reasonMain}>{item.reason}</Text>
-          <Text style={styles.reasonQuote}>
-            {item.note ||
-              '"My father is 78 and cannot stand for long. We will arrive by 8:00 AM."'}
-          </Text>
-        </View>
+                <TouchableOpacity
+                  style={[styles.btnPrimary, saving && styles.disabled]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Accept request"
+                  disabled={saving !== null}
+                  onPress={() => confirm('ACCEPTED')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.btnPrimaryText}>
+                    {saving === 'ACCEPTED' ? 'Accepting…' : 'Accept request'}
+                  </Text>
+                </TouchableOpacity>
 
-        <View style={styles.note}>
-          <Text style={styles.infoIcon}>ℹ</Text>
-          <Text style={styles.noteText}>
-            The patient is notified as soon as you decide, and the queue order
-            updates immediately.
-          </Text>
-        </View>
-
-        <View style={styles.spacer} />
-
-        <TouchableOpacity
-          style={styles.btnPrimary}
-          onPress={() => handleDecision('Accepted')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.btnPrimaryText}>Accept request</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.btnDangerGhost}
-          onPress={() => handleDecision('Declined')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.btnDangerGhostText}>Decline request</Text>
-        </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.btnDangerGhost, saving && styles.disabled]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Decline request"
+                  disabled={saving !== null}
+                  onPress={() => confirm('DECLINED')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.btnDangerGhostText}>
+                    {saving === 'DECLINED' ? 'Declining…' : 'Decline request'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.note}>
+                <Text style={styles.infoIcon}>ℹ</Text>
+                <Text style={styles.noteText}>
+                  {accepted
+                    ? 'Request accepted. The patient has been notified and is admitted through the priority queue.'
+                    : 'Request declined. The patient has been notified and keeps the confirmed booking.'}
+                  {item.reviewedAt
+                    ? ` Decided ${formatSession(item.reviewedAt)}.`
+                    : ''}
+                </Text>
+              </View>
+            )}
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -149,9 +285,28 @@ const styles = StyleSheet.create({
   },
   container: {
     ...surfaces.content,
+    flexGrow: 1,
     paddingHorizontal: 22,
     paddingTop: 16,
     paddingBottom: 24,
+  },
+  state: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    gap: 10,
+  },
+  stateText: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  stateLink: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.teal,
   },
   card: {
     borderRadius: radii.md,
@@ -173,11 +328,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarTeal: {
+    backgroundColor: colors.tealTint,
+  },
   avatarText: {
     fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '700',
     color: '#A7402C',
+  },
+  avatarTextTeal: {
+    color: colors.tealDark,
   },
   cardHeaderInfo: {
     flex: 1,
@@ -203,6 +364,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
+  badgeDone: {
+    borderRadius: radii.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.doneBg,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
   badgeDot: {
     borderRadius: radii.circle,
     width: 6,
@@ -210,11 +379,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.coral,
     marginRight: 5,
   },
+  badgeDotDone: {
+    backgroundColor: '#3C8558',
+  },
   badgePriorityText: {
     fontFamily: fonts.body,
     fontSize: 11,
     fontWeight: '600',
     color: '#A7402C',
+  },
+  badgeDoneText: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.doneText,
   },
   divider: {
     height: 1,
@@ -223,6 +401,9 @@ const styles = StyleSheet.create({
   },
   kv: {
     marginBottom: 12,
+  },
+  kvLast: {
+    marginBottom: 0,
   },
   k: {
     fontFamily: fonts.body,
@@ -275,13 +456,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   noteText: {
+    fontFamily: fonts.body,
     flex: 1,
     fontSize: 12,
     color: colors.tealDark,
     lineHeight: 17,
   },
   spacer: {
-    height: 24,
+    flex: 1,
+    minHeight: 24,
   },
   btnPrimary: {
     borderRadius: radii.pill,
@@ -311,5 +494,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#A7402C',
+  },
+  disabled: {
+    opacity: 0.6,
   },
 });

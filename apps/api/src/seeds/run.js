@@ -6,6 +6,7 @@ import { seedHospitals } from './hospitals.js';
 import { seedServices } from './services.js';
 import { seedSessions } from './sessions.js';
 import { isSessionDate } from '../modules/hospitals/sessionQuery.js';
+import { seedPriorityDemo } from './g_priorityDemo.js';
 
 let connection;
 try {
@@ -32,6 +33,15 @@ try {
     const sessions = await seedSessions(connection.db, { date });
     console.log(
       `Inserted ${sessions.upsertedCount} demo OPD sessions for ${sessions.date} (Asia/Colombo). Existing records were preserved.`
+    );
+  }
+  if (process.argv.includes('--priority')) {
+    const reset = process.argv.includes('--reset-priority');
+    const priority = await seedPriorityDemo(connection.db, { reset });
+    console.log(
+      `Inserted ${priority.inserted} of ${priority.total} demo priority requests for ${priority.hospital} on ${priority.date} (Asia/Colombo).${
+        reset ? ' Demo requests were reset to their starting state.' : ''
+      }`
     );
   }
 } catch (error) {
