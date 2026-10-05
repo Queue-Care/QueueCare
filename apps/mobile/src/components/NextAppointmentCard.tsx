@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NextAppointment } from '../features/home/nextAppointment';
-import { colors, fonts, radii, spacing, surfaces, ticketStyles } from '../theme/tokens';
-import { ActionButton } from './ActionButton';
-import { StatusText } from './StatusText';
+import { colors } from '../theme/tokens';
+import { useHomeFonts } from '../theme/homeFonts';
+import { InterfaceIcon } from './InterfaceIcon';
 import { TicketAccent } from './TicketAccent';
 
 export function NextAppointmentCard({
@@ -13,88 +13,90 @@ export function NextAppointmentCard({
   appointment: NextAppointment;
   onView: (bookingId: string) => void;
 }) {
+  const fonts = useHomeFonts();
   const date = new Date(appointment.startsAt);
   const day = date.toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
     timeZone: 'Asia/Colombo',
   });
-  const time = date.toLocaleTimeString('en-GB', {
-    hour: '2-digit',
+  const time = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
     minute: '2-digit',
+    hour12: true,
     timeZone: 'Asia/Colombo',
   });
   return (
-    <View style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="View booking"
+      accessibilityHint={`${appointment.serviceName}, ${appointment.hospitalName}, ${day} at ${time}. Booking ${appointment.bookingCode}.`}
+      onPress={() => onView(appointment.bookingId)}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
       <TicketAccent />
-      <StatusText style={styles.badge}>Next appointment confirmed</StatusText>
-      <Text style={styles.hospital}>{appointment.hospitalName}</Text>
-      <Text style={styles.detail}>{appointment.serviceName}</Text>
+      <Text style={[styles.label, { fontFamily: fonts.semibold }]}>
+        Next appointment
+      </Text>
+      <Text style={[styles.service, { fontFamily: fonts.display }]}>
+        {appointment.serviceName}
+      </Text>
+      <Text style={[styles.hospital, { fontFamily: fonts.body }]}>
+        {appointment.hospitalName}
+      </Text>
+      <View style={styles.divider} />
       <View style={styles.schedule}>
-        <Text style={styles.day}>{day}</Text>
-        <Text style={styles.detail}>{time} · Sri Lanka time</Text>
+        <View style={styles.clock}>
+          <InterfaceIcon name="Clock" color="#EAF4F0" />
+        </View>
+        <Text style={[styles.when, { fontFamily: fonts.body }]}>
+          {day} ? {time}
+        </Text>
       </View>
-      <Text style={styles.identifier}>Booking {appointment.bookingCode}</Text>
-      <ActionButton
-        label="View booking"
-        variant="onDark"
-        onPress={() => onView(appointment.bookingId)}
-      />
-    </View>
+    </Pressable>
   );
 }
 const styles = StyleSheet.create({
-  identifier: ticketStyles.identifier,
   card: {
-    ...ticketStyles.panel,
-    ...surfaces.card,
     backgroundColor: colors.tealDark,
-    borderWidth: 1,
-    borderColor: colors.tealDark,
-    borderRadius: radii.lg,
     padding: 20,
-    gap: spacing.sm,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
   },
-  badge: {
-    alignSelf: 'flex-start',
-    color: colors.tealDark,
-    backgroundColor: colors.tealTint,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.pill,
-    fontFamily: fonts.body,
-    fontSize: 13,
+  label: {
+    color: colors.ticketMuted,
+    fontSize: 11.52,
+    lineHeight: 17,
     fontWeight: '600',
+  },
+  service: {
+    color: colors.panel,
+    fontSize: 33.6,
+    lineHeight: 36.96,
+    fontWeight: '600',
+    marginTop: 4,
   },
   hospital: {
-    color: colors.panel,
-    fontFamily: fonts.display,
-    fontSize: 26,
-    lineHeight: 34,
-    fontWeight: '600',
-    marginTop: spacing.sm,
-  },
-  detail: {
     color: colors.ticketMuted,
-    fontFamily: fonts.body,
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 13.6,
+    lineHeight: 20,
+    marginTop: 6,
   },
-  schedule: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.16)',
-    paddingTop: spacing.md,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-    gap: spacing.xs,
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    marginVertical: 14,
   },
-  day: {
-    color: colors.panel,
-    fontFamily: fonts.body,
-    fontSize: 17,
-    lineHeight: 26,
-    fontWeight: '600',
+  schedule: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  clock: {
+    width: 14,
+    height: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ scale: 0.58 }],
   },
+  when: { color: '#EAF4F0', fontSize: 13.76, lineHeight: 21 },
+  pressed: { opacity: 0.85 },
 });
