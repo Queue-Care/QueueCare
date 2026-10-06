@@ -209,9 +209,15 @@ export function HospitalDetailsScreen({
                 Opening hours
               </Text>
               <Text style={styles.description}>
-                Opening hours haven’t been provided. Please confirm with the
-                hospital before your visit.
+                {state.hospital.openingHours ??
+                  'Opening hours haven’t been provided. Please confirm with the hospital before your visit.'}
               </Text>
+              {state.hospital.openingHours ? (
+                <Text style={styles.description}>
+                  OPD appointment times depend on the selected service and
+                  session.
+                </Text>
+              ) : null}
             </View>
             <ActionButton
               label="Refresh hospital details"

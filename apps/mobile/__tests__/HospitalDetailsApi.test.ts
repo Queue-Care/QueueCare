@@ -72,6 +72,40 @@ test('optional contact data and a successful empty catalog are supported', () =>
     ),
   ).toEqual([]);
 });
+test('reads optional multiline opening hours without inventing hours for older hospitals', () => {
+  const openingHours = 'Monday–Friday: 08:00–17:00\nSunday: Closed';
+  expect(
+    parseHospitalDetails(details, hospitalId).openingHours,
+  ).toBeUndefined();
+  for (const hours of [openingHours, 'x'.repeat(500)]) {
+    expect(
+      parseHospitalDetails(
+        {
+          success: true,
+          data: {
+            ...hospital,
+            openingHours: `  ${hours}\n`,
+          },
+        },
+        hospitalId,
+      ).openingHours,
+    ).toBe(hours);
+  }
+});
+test.each([null, 123, {}, [], '', ' \n ', 'x'.repeat(501)])(
+  'rejects malformed opening hours (%#)',
+  openingHours => {
+    expect(() =>
+      parseHospitalDetails(
+        {
+          success: true,
+          data: { ...hospital, openingHours },
+        },
+        hospitalId,
+      ),
+    ).toThrow(HospitalDetailsError);
+  },
+);
 test.each([
   null,
   { ...details, success: false },
