@@ -288,6 +288,83 @@ test('patient pages read the nested booking details returned by develop', () => 
   ).toThrow();
 });
 
+test.each([true, false])(
+  'Home priority shortcut opens request status (has requests: %s)',
+  async hasRequests => {
+    const ref = createNavigationContainerRef<RootStackParams>();
+    fetchMock.mockImplementation(async (url: string) => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: url.endsWith('/priority-requests/me')
+          ? hasRequests
+            ? [
+                {
+                  _id: 'old',
+                  bookingId: 'booking-1',
+                  reason: 'OTHER',
+                  status: 'DECLINED',
+                  createdAt: '2026-10-01T12:00:00Z',
+                },
+                {
+                  _id: 'new',
+                  bookingId: 'booking-1',
+                  reason: 'MOBILITY',
+                  status: 'PENDING',
+                  createdAt: '2026-10-04T12:00:00Z',
+                },
+              ]
+            : []
+          : url.includes('/bookings/me')
+          ? []
+          : {
+              _id: 'booking-1',
+              bookingCode: 'OPD-101',
+              hospitalName: 'Hospital',
+              serviceName: 'General OPD',
+              startsAt: '2026-10-06T09:00:00+05:30',
+              status: 'CONFIRMED',
+            },
+      }),
+    }));
+    await act(async () => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider>
+          <AppNavigator
+            navigationRef={ref}
+            session={{
+              userId: 'patient-1',
+              role: 'PATIENT',
+              accessToken: 'token',
+            }}
+          />
+        </SafeAreaProvider>,
+      );
+    });
+    await act(async () => {
+      await renderer!.root
+        .findAll(
+          item =>
+            item.props.accessibilityLabel === 'Priority queue' &&
+            typeof item.props.onPress === 'function',
+        )
+        .pop()!
+        .props.onPress();
+    });
+    expect(ref.getCurrentRoute()?.name).toBe('PriorityRequestStatus');
+    expect(
+      renderer!.root
+        .findAllByType(Text)
+        .some(
+          item =>
+            item.props.children ===
+            (hasRequests ? 'Under review' : 'No priority requests yet'),
+        ),
+    ).toBe(true);
+  },
+);
+
 test('patient can open a booking, submit the selected priority reason, and return from status', async () => {
   const booking = {
     _id: 'booking-1',

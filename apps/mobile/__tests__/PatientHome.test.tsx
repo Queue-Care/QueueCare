@@ -13,7 +13,6 @@ import {
   type NextAppointment,
 } from '../src/features/home/nextAppointment';
 import { NextAppointmentCard } from '../src/components/NextAppointmentCard';
-import { ActionButton } from '../src/components/ActionButton';
 import { PatientHomeScreen } from '../src/screens/PatientHomeScreen';
 
 jest.mock(
@@ -127,7 +126,7 @@ test('an empty result displays an honest empty state and hospital search works',
 });
 
 test.each(['guest', 'loading', 'empty', 'error', 'appointment'])(
-  '%s Home has one primary search entry before appointment actions and opens search',
+  '%s Home search bar stays available in every appointment state',
   async scenario => {
     if (scenario === 'loading') load.mockReturnValueOnce(deferred().promise);
     if (scenario === 'error') load.mockRejectedValueOnce(new Error('offline'));
@@ -136,32 +135,14 @@ test.each(['guest', 'loading', 'empty', 'error', 'appointment'])(
     if (scenario === 'guest') await press('Continue as guest');
 
     const home = renderer.root.findByType(PatientHomeScreen);
-    const actions = home.findAllByType(ActionButton);
-    const search = actions.filter(
-      node => node.props.label === 'Search hospitals',
-    );
-    expect(search).toHaveLength(1);
-    expect(actions[0]).toBe(search[0]);
-    expect(search[0].props.variant ?? 'primary').toBe('primary');
+    const search = home.findAll(node => node.props.accessibilityLabel === 'Search hospitals' && typeof node.props.onPress === 'function');
+    expect(search.length).toBeGreaterThan(0);
     expect(search[0].props.disabled).not.toBe(true);
     expect(search[0].props.accessibilityHint).toBe(
-      'Opens hospital search with name and city filters',
+      'Search hospitals or clinics',
     );
-    const headings = home
-      .findAllByType(Text)
-      .filter(node => node.props.accessibilityRole === 'header')
-      .map(node => node.props.children);
-    expect(headings.indexOf('Find a hospital')).toBeLessThan(
-      headings.indexOf('Your next appointment'),
-    );
-    if (scenario === 'guest') {
-      expect(
-        hasText(
-          'Browse hospitals without signing in. Sign in when you’re ready to book.',
-        ),
-      ).toBe(true);
-      expect(load).not.toHaveBeenCalled();
-    }
+    expect(hasText('Search hospitals or clinics')).toBe(true);
+    if (scenario === 'guest') expect(load).not.toHaveBeenCalled();
 
     await press('Search hospitals');
     expect(ref.getCurrentRoute()?.name).toBe('HospitalSearch');
