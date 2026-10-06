@@ -1,16 +1,12 @@
 import { ObjectId } from 'mongodb';
 import { HttpError } from '../../utils/HttpError.js';
+import { ensureNotificationUserRecentIndex } from '../../config/notificationIndexes.js';
 
 const TYPES = ['BOOKING', 'REMINDER', 'QUEUE', 'PRIORITY', 'SESSION', 'SYSTEM'];
 const LIST_LIMIT = 50;
 
 export async function ensureNotificationIndexes(db) {
-  await db
-    .collection('notifications')
-    .createIndex(
-      { userId: 1, createdAt: -1 },
-      { name: 'notification_user_recent' }
-    );
+  await ensureNotificationUserRecentIndex(db);
 }
 
 // Shared producer for in-app notifications (README section 20). No push/SMS/email.

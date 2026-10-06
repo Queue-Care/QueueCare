@@ -1,4 +1,5 @@
 import { COLLECTIONS } from './collections.js';
+import { ensureNotificationUserRecentIndex } from './notificationIndexes.js';
 
 export async function ensureQueueIndexes(db) {
   await db.collection(COLLECTIONS.QUEUE_ENTRIES).createIndex({ bookingId: 1 }, { unique: true });
@@ -42,10 +43,7 @@ export async function createIndexes(db) {
     status: 1,
   });
 
-  await db.collection(COLLECTIONS.NOTIFICATIONS).createIndex({
-    userId: 1,
-    createdAt: -1,
-  });
+  await ensureNotificationUserRecentIndex(db);
 
   console.log('MongoDB indexes created successfully');
 }
