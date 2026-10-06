@@ -12,6 +12,10 @@ The booking-read change below is merged through PR #28. As of 2026-10-06, M1-01 
 
 The [API contract](API.md#patient-home--my-bookings--implemented-booking-list-i-01-read-integration) defines category boundaries, query limits and the lack of a snapshot guarantee during concurrent changes. Reads scan the patient's own bookings, then validate at most 50 selected summaries; production-scale load testing remains pending.
 
+## T-04 follow-up
+
+The booking-alert work is merged through PR #29. The connected API and App journeys now run with `npm run test:patient-flow`; see [automated evidence and the physical acceptance matrix](PATIENT_FLOW_TESTING.md). The results below record the earlier booking-read stage.
+
 ## Verified locally
 
 | Check | Result |

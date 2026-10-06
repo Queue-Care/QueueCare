@@ -2,6 +2,12 @@
 
 M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14/M1-15 are merged through PR #22; the current branch also includes the design update through PR #23.
 
+## T-04 connected patient journey — 2026-10-06
+
+Notification integration is merged through PR #29. Added `npm run test:patient-flow`: the real API discovery journey now creates accounts and obtains JWTs through registration/login, then verifies Home/list/details and notification links in the same flow. The new `PatientBookingJourney.test.tsx` starts the actual App signed out, fills registration/login forms, follows discovery/selection/confirmation/details/Home/Alerts, and checks wrong-login recovery and a session becoming full after selection. Only mobile HTTP is simulated; app state and adapters are real.
+
+**81 API tests and 280 mobile tests across 22 suites, TypeScript and ESLint pass.** The targeted command also passes (one API journey plus three mobile scenarios). This task changes tests/scripts/docs only; exports were not rerun. [Reproduction and the physical acceptance matrix](PATIENT_FLOW_TESTING.md) distinguish API/app evidence from pending phone-to-server verification.
+
 ## I-03 / booking-alert navigation — 2026-10-06
 
 After PR #28 and the Member 4 merge, booking notification creation/list/read and patient detail navigation are tested together. **81 API tests and 277 mobile tests across 21 suites pass**, along with TypeScript, ESLint (no warnings), and Android/iOS exports at `/private/tmp/queuecare-booking-alert-integration-export`. Missing merged dependencies were installed without changing manifests/lockfile.
@@ -79,4 +85,4 @@ See the [functional cases](milestone03/FUNCTIONAL_TEST_CASES.md), [CRUD evidence
 
 Patient registration/JWT sign-in and the in-memory session/profile handoff are now present through PR #24. Persistent session restoration and remaining Member 2 backend flows are incomplete. Member 4 notification APIs and booking-alert navigation are now present; device acceptance remains pending. Physical Expo Go testing, assistive-technology speech/layout checks, usability participants, screenshots, and production network-failure/replica-set failover evidence remain pending. Follow the [confirmation checklist](BOOKING_CONFIRMATION.md) and [accessibility checklist](ACCESSIBILITY.md); do not report mocked mobile transport as completed phone acceptance.
 
-**Next Member 1 work: I-01 patient integration and T-04 end-to-end booking acceptance with the other feature owners.**
+**Next Member 1 work: record T-04 physical Expo Go acceptance, fix observed defects, and complete remaining I-01 integration with the feature owners.**
