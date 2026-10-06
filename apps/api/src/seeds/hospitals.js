@@ -5,6 +5,8 @@ export const demoHospitals = [
   {
     _id: new ObjectId('000000000000000000000101'),
     name: 'Demo Central Hospital',
+    openingHours:
+      'Demo hours (Sri Lanka time):\nMonday–Friday: 08:00–17:00\nSaturday: 08:00–12:00\nSunday: Closed',
     city: 'Colombo',
     address: 'Demo location — not a real hospital',
     isActive: true,
