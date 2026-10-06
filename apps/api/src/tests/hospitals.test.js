@@ -165,12 +165,27 @@ test(
       'explicit demo seed is idempotent and preserves existing data and edits',
       async () => {
         assert.equal((await seedHospitals(db)).upsertedCount, 3);
+        assert.equal(
+          (await collection.findOne({ _id: demoHospitals[0]._id }))
+            .openingHours,
+          demoHospitals[0].openingHours
+        );
         await collection.updateOne(
           { _id: demoHospitals[0]._id },
-          { $set: { name: 'Edited demo name' } }
+          {
+            $set: {
+              name: 'Edited demo name',
+              openingHours: 'Edited demo hours',
+            },
+          }
         );
         assert.equal((await seedHospitals(db)).upsertedCount, 0);
         assert.equal(await collection.countDocuments({}), fixture.length + 3);
+        assert.equal(
+          (await collection.findOne({ _id: demoHospitals[0]._id }))
+            .openingHours,
+          'Edited demo hours'
+        );
         assert.equal(
           (await collection.findOne({ _id: demoHospitals[0]._id })).name,
           'Edited demo name'

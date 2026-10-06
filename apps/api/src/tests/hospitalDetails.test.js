@@ -150,6 +150,40 @@ test(
       }
     );
     await t.test(
+      'optional opening hours are trimmed public text; missing or malformed legacy values stay absent',
+      async () => {
+        const hours = 'Monday–Friday: 08:00–17:00\nSunday: Closed';
+        for (const [stored, expected] of [
+          [`  ${hours}\n`, hours],
+          ['x'.repeat(500), 'x'.repeat(500)],
+          [null, undefined],
+          ['', undefined],
+          [' \n ', undefined],
+          [123, undefined],
+          [{ internalNotes: 'private hours notes' }, undefined],
+          [['08:00', '17:00'], undefined],
+          ['x'.repeat(501), undefined],
+        ]) {
+          await db
+            .collection('hospitals')
+            .updateOne({ _id: active }, { $set: { openingHours: stored } });
+          const { status, body } = await get(active.toString());
+          assert.equal(status, 200);
+          assert.equal(body.data.name, 'Test Hospital');
+          assert.equal(body.data.openingHours, expected);
+          assert.equal('openingHours' in body.data, expected !== undefined);
+          assert.equal('internalNotes' in body.data, false);
+        }
+        await db
+          .collection('hospitals')
+          .updateOne({ _id: active }, { $unset: { openingHours: '' } });
+        assert.equal(
+          'openingHours' in (await get(active.toString())).body.data,
+          false
+        );
+      }
+    );
+    await t.test(
       'services are active, scoped to the selected hospital, projected and stably sorted',
       async () => {
         const { status, body } = await get(`${active}/services`);
