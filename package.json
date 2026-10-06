@@ -15,6 +15,7 @@
     "dev:api": "npm --workspace apps/api run dev",
     "start:api": "npm --workspace apps/api run start",
     "test:api": "npm --workspace apps/api run test",
+    "test:patient-flow": "node --test apps/api/src/tests/discoveryBookingFlow.test.js && npm run test:mobile -- --watchman=false PatientBookingJourney.test.tsx",
     "db:seed:hospitals": "npm --workspace apps/api run seed:hospitals",
     "db:seed:discovery": "npm --workspace apps/api run seed:discovery",
     "db:seed:sessions": "npm --workspace apps/api run seed:sessions --",
