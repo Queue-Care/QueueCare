@@ -13,13 +13,13 @@ import {
 import type {
   PatientAuthParams,
   RootStackParams,
+  NavigationSession,
 } from '../src/navigation/types';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { bookingDetailsPayload } from '../test-utils/bookingFixtures';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from '../src/navigation/AppNavigator';
-import type { NavigationSession } from '../src/navigation/types';
 
 jest.mock(
   'react-native-safe-area-context',
@@ -393,7 +393,21 @@ test('patient can open a booking, submit the selected priority reason, and retur
       return {
         ok: true,
         status: 200,
-        json: async () => ({ success: true, data }),
+        json: async () => ({
+          success: true,
+          data,
+          ...(url.includes('/bookings/me')
+            ? {
+                meta: {
+                  page: 1,
+                  limit: 20,
+                  total: 1,
+                  totalPages: 1,
+                  hasNextPage: false,
+                },
+              }
+            : {}),
+        }),
       };
     },
   );

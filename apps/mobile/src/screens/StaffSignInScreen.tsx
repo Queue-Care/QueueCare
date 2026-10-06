@@ -10,14 +10,53 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, surfaces } from '../theme/tokens';
+import { PasswordField } from '../components/g_PasswordField';
+import { signInStaff, StaffAuthError } from '../features/staff/g_staffAuth';
+import type { StaffSession } from '../features/staff/g_staffAuth';
 
-export const StaffSignInScreen = ({ navigation }: any) => {
-  const [staffId, setStaffId] = useState('CNH-RC-0421');
-  const [password, setPassword] = useState('••••••••••');
-  const [hospital] = useState('Colombo National Hospital');
+export const StaffSignInScreen = ({
+  navigation,
+  route,
+  onAuthenticated,
+}: any) => {
+  const routeStaffId: string | undefined = route?.params?.staffId;
+  const [staffId, setStaffId] = useState(routeStaffId ?? '');
+  // Registration returns here with the new Staff ID while this screen is still mounted.
+  const [appliedStaffId, setAppliedStaffId] = useState(routeStaffId);
+  if (routeStaffId !== appliedStaffId) {
+    setAppliedStaffId(routeStaffId);
+    if (routeStaffId) setStaffId(routeStaffId);
+  }
+  const [password, setPassword] = useState('');
 
-  const handleSignIn = () => {
-    Alert.alert('Staff Sign In', `Signing in with Staff ID: ${staffId}`);
+  const [submitting, setSubmitting] = useState(false);
+  const handleSignIn = async () => {
+    if (submitting) return;
+    if (!staffId.trim() || !password) {
+      Alert.alert('Sign in', 'Enter your Staff ID and password.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const session: StaffSession = await signInStaff(staffId, password);
+      onAuthenticated?.({
+        userId: session.userId,
+        accessToken: session.accessToken,
+        role: session.role,
+        staff: {
+          fullName: session.fullName,
+          staffId: session.staffId,
+          hospital: session.hospital,
+        },
+      });
+    } catch (error) {
+      Alert.alert(
+        'Could not sign in',
+        error instanceof StaffAuthError ? error.message : 'Please try again.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleRequestAccount = () => {
@@ -52,6 +91,8 @@ export const StaffSignInScreen = ({ navigation }: any) => {
           <Text style={styles.label}>Staff ID</Text>
           <TextInput
             style={[styles.control, styles.mono]}
+            accessibilityLabel="Staff ID"
+            autoCorrect={false}
             value={staffId}
             onChangeText={setStaffId}
             autoCapitalize="characters"
@@ -59,32 +100,24 @@ export const StaffSignInScreen = ({ navigation }: any) => {
         </View>
 
         {/* Password Field */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={[styles.control, styles.controlFocused]}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </View>
-
-        {/* Hospital Dropdown */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Hospital</Text>
-          <TouchableOpacity style={styles.controlDropdown} activeOpacity={0.7}>
-            <Text style={styles.dropdownValue}>{hospital}</Text>
-            <Text style={styles.chev}>▼</Text>
-          </TouchableOpacity>
-        </View>
+        <PasswordField
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+        />
 
         {/* Sign In Button */}
         <TouchableOpacity
           style={styles.btnPrimary}
+          accessibilityRole="button"
+          accessibilityLabel="Sign in"
           onPress={handleSignIn}
+          disabled={submitting}
           activeOpacity={0.8}
         >
-          <Text style={styles.btnPrimaryText}>Sign in</Text>
+          <Text style={styles.btnPrimaryText}>
+            {submitting ? 'Signing in…' : 'Sign in'}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -102,7 +135,8 @@ export const StaffSignInScreen = ({ navigation }: any) => {
         <View style={styles.noteWarn}>
           <Text style={styles.warnIcon}>⚠</Text>
           <Text style={styles.warnText}>
-            Staff accounts are approved by the hospital administrator before first use.
+            Use the Staff ID and password you created to sign in to the
+            Reception Desk.
           </Text>
         </View>
 

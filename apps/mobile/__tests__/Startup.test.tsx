@@ -60,8 +60,8 @@ test('keeps Splash visible while the session is loading, then opens Welcome with
 
 test.each([
   ['PATIENT', 'Welcome to QueueCare'],
-  ['RECEPTION', 'Reception dashboard'],
-  ['NURSE', 'Reception dashboard'],
+  ['RECEPTION', 'Reception desk'],
+  ['NURSE', 'Reception desk'],
 ] as const)(
   'a restored %s session opens the appropriate app',
   async (role, title) => {

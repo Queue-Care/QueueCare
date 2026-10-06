@@ -12,9 +12,12 @@ IDs follow root README sections 21 and 33. This table covers Member 1's implemen
 | FR-04 Role-based access (booking portion) | S-17, M1-10, M1-12 | M1-T08, M1-T10, M1-T11 | JWT/current-account checks covered; other protected modules need separate tests |
 | NFR-05 Reliability | M1-10, M1-13 | M1-T05..M1-T09 | Capacity, duplicate and rollback behavior covered; no production failover test claimed |
 | NFR-13 Accessibility | M1-14 | M1-T12 | Code/tests pass; device acceptance pending |
-| NFR-14 / I-03 booking notification creation | M1-13, M4-06, M4-07 | M1-T04, M1-T09 | Persistence covered; Member 4 read/display integration pending |
+| NFR-14 / I-03 booking notification creation | M1-13, M4-06, M4-07 | M1-T04, M1-T09 | Persistence and list/read integration pass (M1-T16); phone acceptance pending |
 | M1-15 discovery/booking regression coverage | M1-04..M1-13 | M1-T01..M1-T11 | Coverage review, added gaps and reproducible evidence complete |
 | Usability feedback: clarify Home hospital search | M1-16 | M1-T13 | Single primary entry and navigation covered; phone and participant acceptance pending |
 | Usability feedback: improve View OPD sessions hierarchy and touch target | M1-17 | M1-T14 | Action placement, minimum target, guidance and navigation covered; phone and participant acceptance pending |
+| Patient navigation and booking reads | I-01 / T-04 (partial), M1-03, M2-09 | M1-T15 | Home/list/detail integration passes; remaining patient modules and phone acceptance pending |
+| Booking-confirmed notification navigation | I-03; booking portion of I-09 | M1-T16 | Producer/list/read/detail flow covered; other notification routes and phone acceptance pending |
+| Register/login → discovery → booking → saved views | T-04 (automated portion) | M1-T17 | Real HTTP/MongoDB journey and actual App with mocked transport pass; physical Expo Go acceptance pending |
 
 See [functional cases](FUNCTIONAL_TEST_CASES.md) and [test setup/limits](../TESTING.md). Member 2/3/4 owners should extend this matrix with evidence from their modules; this table does not certify the whole application.

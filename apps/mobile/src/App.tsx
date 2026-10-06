@@ -14,7 +14,8 @@ export default function App({
 }: {
   loadSession?: SessionLoader;
 }) {
-  const { state, retry, continueSignedOut, signIn } = useAppStartup(loadSession);
+  const { state, retry, continueSignedOut, signIn } =
+    useAppStartup(loadSession);
 
   return (
     <SafeAreaProvider>
@@ -25,6 +26,7 @@ export default function App({
         <AppNavigator
           onSignedIn={signIn}
           onSessionExpired={continueSignedOut}
+          onSignOut={continueSignedOut}
           isRestoring={state.status === 'loading'}
           session={state.status === 'ready' ? state.session : null}
         />

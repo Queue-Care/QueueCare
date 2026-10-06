@@ -57,7 +57,6 @@ export function PatientHomeScreen({
       ).toUpperCase()
     : 'P';
   const tiles = [
-    { label: 'Find a hospital', icon: 'Location', onPress: onSearch },
     {
       label: 'My bookings',
       icon: 'Bookings',
@@ -148,6 +147,19 @@ export function PatientHomeScreen({
             Search hospitals or clinics
           </Text>
         </Pressable>
+        {guest && (
+          <Text
+            style={{
+              color: colors.inkSoft,
+              fontFamily: homeFonts.body,
+              fontSize: 13,
+              lineHeight: 20,
+            }}
+          >
+            Browse hospitals without signing in. Sign in when you’re ready to
+            book.
+          </Text>
+        )}
         <View>
           {guest ? (
             <View style={styles.card}>

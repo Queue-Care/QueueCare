@@ -82,6 +82,7 @@ export type AppNavigatorProps = {
   session?: NavigationSession | null;
   isRestoring?: boolean;
   onSessionExpired?: () => void;
+  onSignOut?: () => void;
   onSignedIn?: (session: NavigationSession) => void;
   navigationRef?: React.Ref<NavigationContainerRef<RootStackParams>>;
 };
@@ -91,6 +92,7 @@ export function AppNavigator({
   isRestoring = false,
   navigationRef,
   onSessionExpired,
+  onSignOut,
   onSignedIn,
 }: AppNavigatorProps) {
   // S-13 will supply the restored, validated session. Selecting a role is not login.
@@ -113,16 +115,22 @@ export function AppNavigator({
                   patient={session.patient}
                   patientId={session.userId}
                   onSessionExpired={onSessionExpired}
+                  onSignOut={onSignOut}
                   onSignIn={() => {}}
                 />
               )}
             </Root.Screen>
           ) : (
-            <Root.Screen
-              name="StaffApp"
-              component={StaffNavigator}
-              options={{ headerShown: false }}
-            />
+            <Root.Screen name="StaffApp" options={{ headerShown: false }}>
+              {() => (
+                <StaffNavigator
+                  accessToken={session.accessToken}
+                  staff={session.staff}
+                  onSessionExpired={onSessionExpired}
+                  onSignOut={onSignOut}
+                />
+              )}
+            </Root.Screen>
           )
         ) : (
           <>
@@ -139,11 +147,13 @@ export function AppNavigator({
             <Root.Screen name="PatientAuth" options={{ headerShown: false }}>
               {() => <PatientAuthNavigator onSignedIn={onSignedIn} />}
             </Root.Screen>
-            <Root.Screen
-              name="StaffAuth"
-              component={StaffAuthNavigator}
-              options={{ headerShown: false }}
-            />
+            <Root.Screen name="StaffAuth" options={{ headerShown: false }}>
+              {() => (
+                <StaffAuthNavigator
+                  onStaffAuthenticated={onSignedIn ?? (() => {})}
+                />
+              )}
+            </Root.Screen>
             <Root.Screen
               name="Guest"
               component={Guest}

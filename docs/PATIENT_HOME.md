@@ -1,6 +1,6 @@
 # M1-03 / M1-16 — Patient Home handoff
 
-The Patient Home frontend and API adapter are implemented. This task is not complete end to end: the backend, JWT restoration, and a real appointment response remain pending. The current prototype is `opd-high-fidelity-screens .html`. The PR #23 design tokens are retained; phone visual comparison remains pending.
+The Patient Home frontend and API adapter are implemented. The I-01 booking-read integration now supplies real appointment summaries through `/bookings/me`; JWT restoration and physical end-to-end acceptance remain pending. The current prototype is `opd-high-fidelity-screens .html`. The PR #23 design tokens are retained; phone visual comparison remains pending.
 
 ## Current behavior
 
@@ -13,14 +13,14 @@ The Patient Home frontend and API adapter are implemented. This task is not comp
 - Loading, successful-empty, and failed requests have separate states. A failed request never appears as “No upcoming appointments.”
 - Retry, pull-to-refresh, and returning to Home request fresh data. Superseded/blurred requests are cancelled, and late responses cannot replace the current account's data.
 
-Hospital Search and Hospital Details now have their own screens and public API integration; see [M1-05 handoff](HOSPITAL_SEARCH.md) and [M1-07 handoff](HOSPITAL_DETAILS.md). Booking list/details and notification frontend screens are present; their backend/authentication integration remains pending. No appointment or hospital data is fabricated in production code.
+Hospital Search and Hospital Details now have their own screens and public API integration; see [M1-05 handoff](HOSPITAL_SEARCH.md) and [M1-07 handoff](HOSPITAL_DETAILS.md). Booking list/details are connected to authenticated backend reads. Notification backend/display integration remains pending. No appointment or hospital data is fabricated in production code.
 
 ## Connect the backend and authentication
 
-1. Implement the endpoint and joined summary described in `docs/API.md`.
+1. The endpoint and joined summary described in `docs/API.md` are implemented. Start the API with database and JWT settings from its setup guide.
 2. Copy `apps/mobile/.env.example` to `apps/mobile/.env`. Set `EXPO_PUBLIC_API_BASE_URL` to the laptop's LAN API address, including `/api/v1`. The Expo process runs in `apps/mobile`; this is where its environment file belongs. Reload Expo Go after changing it.
-3. Member 2's S-13 provider must populate the in-memory `NavigationSession.accessToken` with the current JWT after real validation/restoration. The optional field lets existing navigation fixtures work while authentication is pending; missing tokens produce an error instead of an unauthenticated private request.
-4. Supply the restored session through the existing startup/navigation handoff. On expiry, the authentication provider should clear its session and return to signed-out navigation. Home does not store credentials or implement login/logout.
+3. Use the patient sign-in screen, now connected to JWT login and an in-memory session. Persistent S-13 restoration is still pending; signing in again is required after restart. Missing tokens produce an error instead of an unauthenticated private request.
+4. For future restoration, supply the validated session through the existing startup/navigation handoff. On expiry, the authentication provider should clear its session and return to signed-out navigation. Home does not store credentials or implement login/logout.
 5. Create a real test booking, confirm Home displays it, open its details, cancel it through the eventual booking flow, and return Home to verify refresh.
 
 Only the public API URL belongs in `EXPO_PUBLIC_` configuration. JWTs and backend/Cloudinary secrets do not. See [Expo's environment documentation](https://docs.expo.dev/guides/environment-variables/) for how the public URL is included in the app.

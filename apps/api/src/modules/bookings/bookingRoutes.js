@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ObjectId } from 'mongodb';
 import { authorize } from '../../middleware/authorize.js';
 import { HttpError } from '../../utils/HttpError.js';
+import { parseBookingListQuery } from './bookingList.js';
 
 export function parseBookingBody(body, query = {}) {
   const errors = Object.create(null);
@@ -29,6 +30,24 @@ export function parseBookingBody(body, query = {}) {
 }
 export function bookingRoutes(repository, authenticate) {
   const router = Router();
+  router.get(
+    '/me',
+    authenticate,
+    authorize('PATIENT'),
+    async (request, response) => {
+      const query = parseBookingListQuery(request.query);
+      if (!repository)
+        throw new HttpError(
+          503,
+          'SERVICE_UNAVAILABLE',
+          'Bookings are unavailable.'
+        );
+      const result = await repository.list(request.auth.userId, query);
+      response
+        .set('Cache-Control', 'no-store')
+        .json({ success: true, ...result });
+    }
+  );
   router.post(
     '/',
     authenticate,

@@ -3,16 +3,33 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { hospitalRoutes } from './modules/hospitals/hospitalRoutes.js';
 import { HttpError } from './utils/HttpError.js';
 import { bookingRoutes } from './modules/bookings/bookingRoutes.js';
+import { staffAuthRoutes } from './modules/staff/g_staffAuthRoutes.js';
+import { staffDashboardRoutes } from './modules/staff/g_staffDashboard.js';
+import { staffPriorityRoutes } from './modules/priority/g_priorityRoutes.js';
+import { notificationRoutes } from './modules/notifications/g_notificationRoutes.js';
+import { profileRoutes } from './modules/users/g_profileRoutes.js';
+import { mediaRoutes } from './modules/media/g_mongoMediaStore.js';
 import { patientAuthRoutes } from './modules/auth/patientAuthRoutes.js';
 
 export function createApp({
   hospitalRepository,
   checkDatabase,
   bookingRepository,
+  staffAuthRepository,
+  staffDashboardRepository,
+  priorityRepository,
+  notificationRepository,
+  profileRepository,
+  profileImageStore,
   authenticate,
   patientRegistrationRepository,
   authConfig,
 }) {
+  const requireSignIn =
+    authenticate ??
+    ((_request, _response) => {
+      throw new HttpError(401, 'UNAUTHORIZED', 'Please sign in to continue.');
+    });
   const app = express();
   app.disable('x-powered-by');
   app.set('query parser', 'simple');
@@ -34,20 +51,22 @@ export function createApp({
     });
   });
   app.use('/api/v1/hospitals', hospitalRoutes(hospitalRepository));
+  app.use('/api/v1/staff/auth', staffAuthRoutes(staffAuthRepository));
   app.use(
-    '/api/v1/bookings',
-    bookingRoutes(
-      bookingRepository,
-      authenticate ??
-        ((_request, _response) => {
-          throw new HttpError(
-            401,
-            'UNAUTHORIZED',
-            'Please sign in to continue.'
-          );
-        })
-    )
+    '/api/v1/staff/dashboard',
+    staffDashboardRoutes(staffDashboardRepository, requireSignIn)
   );
+  app.use(
+    '/api/v1/staff/priority-requests',
+    staffPriorityRoutes(priorityRepository, requireSignIn)
+  );
+  app.use(
+    '/api/v1/notifications',
+    notificationRoutes(notificationRepository, requireSignIn)
+  );
+  app.use('/api/v1/me', profileRoutes(profileRepository, requireSignIn));
+  app.use('/api/v1/media', mediaRoutes(profileImageStore));
+  app.use('/api/v1/bookings', bookingRoutes(bookingRepository, requireSignIn));
   app.use((_request, _response, next) =>
     next(
       new HttpError(404, 'NOT_FOUND', 'The requested endpoint was not found.')
