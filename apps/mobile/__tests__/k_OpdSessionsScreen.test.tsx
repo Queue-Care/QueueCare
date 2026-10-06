@@ -17,6 +17,7 @@ jest.mock('../src/theme/homeFonts', () => ({ useHomeFonts: () => ({ body: 'Syste
 jest.mock('../src/features/sessions/k_staffSessions', () => ({
   ...jest.requireActual('../src/features/sessions/k_staffSessions'),
   fetchStaffSessions: jest.fn(), fetchStaffSession: jest.fn(), closeStaffSessionBookings: jest.fn(),
+  fetchStaffSessionMetrics: jest.fn().mockResolvedValue({ waitingCount: 0 }),
 }));
 const list = jest.mocked(fetchStaffSessions), detail = jest.mocked(fetchStaffSession), close = jest.mocked(closeStaffSessionBookings);
 const session: StaffOpdSession = { _id: '000000000000000000000101', hospitalId: '000000000000000000000001',

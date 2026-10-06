@@ -1,5 +1,5 @@
 import { ApiError } from '../src/api/g_apiClient';
-import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, saveStaffSession, sessionDayLabel } from '../src/features/sessions/k_staffSessions';
+import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, fetchStaffSessionMetrics, saveStaffSession, sessionDayLabel } from '../src/features/sessions/k_staffSessions';
 
 const session = { _id: '000000000000000000000101', hospitalId: '000000000000000000000001',
   serviceId: '000000000000000000000011', serviceName: 'General OPD', doctorOrTeam: 'Team',
@@ -7,6 +7,28 @@ const session = { _id: '000000000000000000000101', hospitalId: '0000000000000000
 const originalFetch = globalThis.fetch;
 const originalUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const fetchMock = jest.fn();
+const metrics = { sessionId: session._id, status: 'OPEN', capacity: 50, bookedCount: 4,
+  waitingCount: 0, servingCount: 0, priorityCount: 0, patientsCheckedIn: 0, nowServing: null };
+
+test.each([0, 1, 3])('metrics accepts real waiting count %s and propagates JWT/signal', async waitingCount => {
+  respond({ ...metrics, waitingCount });
+  const controller = new AbortController();
+  expect((await fetchStaffSessionMetrics('staff-token', session._id, controller.signal)).waitingCount).toBe(waitingCount);
+  expect(fetchMock.mock.calls[0][0]).toContain(`/staff/sessions/${session._id}/metrics`);
+  expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer staff-token');
+  controller.abort();
+});
+test.each([undefined, null, '0', -1, 0.5, Number.MAX_SAFE_INTEGER + 1])('metrics rejects malformed waiting count %s', async waitingCount => {
+  respond({ ...metrics, waitingCount });
+  await expect(fetchStaffSessionMetrics('staff-token', session._id)).rejects.toBeInstanceOf(ApiError);
+});
+test.each([
+  { sessionId: 'other' }, { status: 'BAD' }, { status: ['OPEN'] }, { capacity: 0 }, { bookedCount: -1 },
+  { servingCount: null }, { priorityCount: '0' }, { patientsCheckedIn: 0.1 }, { nowServing: 123 },
+])('metrics rejects malformed identity/counter fields %j', async fields => {
+  respond({ ...metrics, ...fields });
+  await expect(fetchStaffSessionMetrics('staff-token', session._id)).rejects.toBeInstanceOf(ApiError);
+});
 beforeEach(() => {
   globalThis.fetch = fetchMock;
   fetchMock.mockReset();

@@ -17,6 +17,24 @@ export type StaffOpdSession = {
 };
 export type StaffSessionPage = { data: StaffOpdSession[]; hasMore: boolean; hospitalId: string };
 
+export type StaffSessionMetrics = {
+  sessionId: string; status: NonNullable<StaffOpdSession['status']>; capacity: number;
+  bookedCount: number; waitingCount: number; servingCount: number; priorityCount: number;
+  patientsCheckedIn: number; nowServing: string | null;
+};
+
+export async function fetchStaffSessionMetrics(token: string | undefined, sessionId: string,
+  signal?: AbortSignal): Promise<StaffSessionMetrics> {
+  const { data } = await apiRequest(`/staff/sessions/${encodeURIComponent(sessionId)}/metrics`, { token, signal });
+  if (!isRecord(data) || data.sessionId !== sessionId ||
+      typeof data.status !== 'string' || !['OPEN', 'CLOSED', 'RUNNING', 'COMPLETED', 'CANCELLED'].includes(data.status) ||
+      !['capacity', 'bookedCount', 'waitingCount', 'servingCount', 'priorityCount', 'patientsCheckedIn'].every(key =>
+        Number.isSafeInteger(data[key]) && (data[key] as number) >= 0) ||
+      (data.capacity as number) <= 0 || (data.bookedCount as number) > (data.capacity as number) ||
+      (data.nowServing !== null && typeof data.nowServing !== 'string')) throw unreadableResponse();
+  return data as StaffSessionMetrics;
+}
+
 function parseSession(value: unknown): StaffOpdSession {
   if (!isRecord(value) ||
       !['_id', 'hospitalId'].every(key => typeof value[key] === 'string' && /^[a-f\d]{24}$/i.test(value[key] as string)) ||

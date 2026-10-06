@@ -8,6 +8,7 @@ import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, sessi
   type SessionView, type StaffOpdSession } from '../features/sessions/k_staffSessions';
 import { colors, radii, surfaces } from '../theme/tokens';
 import { useHomeFonts } from '../theme/homeFonts';
+import { useSessionWaitingCounts } from '../features/sessions/k_useSessionWaitingCounts';
 
 type Props = { accessToken?: string; hospital?: string; onSessionExpired?: () => void;
   savedSessionDate?: string; saveMessage?: string;
@@ -25,10 +26,18 @@ export function OpdSessionsScreen(props: Props) {
 function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView, date, saveMessage }:
   Props & { view: SessionView; page: number; date?: string; onPage: (page: number) => void; onView: (view: SessionView) => void }) {
   const fonts = useHomeFonts();
-  const load = useCallback((signal: AbortSignal) => date
-    ? fetchStaffSessions(accessToken, view, page, signal, date)
-    : fetchStaffSessions(accessToken, view, page, signal), [accessToken, view, page, date]);
+  const listPending = useRef(false);
+  const load = useCallback(async (signal: AbortSignal) => {
+    listPending.current = true;
+    try {
+      const result = await (date ? fetchStaffSessions(accessToken, view, page, signal, date)
+        : fetchStaffSessions(accessToken, view, page, signal));
+      // Give every successful refresh an identity so metrics refresh too.
+      return { ...result };
+    } finally { if (!signal.aborted) listPending.current = false; }
+  }, [accessToken, view, page, date]);
   const { data, loading, error, reload, setData } = useApiResource(load, { onUnauthorized: onSessionExpired });
+  const waiting = useSessionWaitingCounts(data?.data ?? [], accessToken, onSessionExpired, data, listPending);
   const lock = useRef(false);
   const alive = useRef(true);
   const controller = useRef<AbortController | null>(null);
@@ -98,7 +107,17 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
           </View></View>
         <Text style={[styles.sub, bodyFont]}>{sessionDayLabel(session.sessionDate)} · {session.startTime ?? '—'} – {session.endTime ?? '—'}</Text>
         <Text style={[styles.sub, bodyFont]}>{session.doctorOrTeam ?? 'Team unavailable'}</Text>
-        <View style={styles.metrics}><Text style={[styles.booked, bodyFont]}>{session.bookedCount ?? '—'} of {session.capacity ?? '—'} booked</Text></View>
+        <View style={styles.metrics}><Text style={[styles.booked, bodyFont]}>{session.bookedCount ?? '—'} of {session.capacity ?? '—'} booked</Text>
+          {waiting[session._id] ? <View style={styles.waitingBadge} accessible
+            accessibilityLabel={`${session.serviceName ?? 'OPD session'}: ${waiting[session._id].count !== undefined
+              ? `${waiting[session._id].count} ${waiting[session._id].count === 1 ? 'patient' : 'patients'} waiting${waiting[session._id].state === 'stale' ? ', last updated' : ''}`
+              : waiting[session._id].state === 'loading' ? 'Loading waiting count' : 'Waiting count unavailable'}`}>
+            <Text style={[styles.booked, bodyFont]}>{waiting[session._id].count !== undefined
+              ? `${waiting[session._id].count} waiting`
+              : waiting[session._id].state === 'loading' ? 'Loading waiting count…' : 'Waiting count unavailable'}</Text>
+            {waiting[session._id].state === 'stale' ? <Text style={[styles.sub, bodyFont]}>Last updated</Text> : null}
+          </View> : null}
+        </View>
         <View style={styles.actions}>
           <ActionButton label="Edit session" variant="secondary" disabled={!!busy || loading} busy={busy === session._id}
             accessibilityHint={`Edit ${session.serviceName ?? 'OPD session'} on ${sessionDayLabel(session.sessionDate)}`} onPress={() => void edit(session)} />
@@ -132,7 +151,8 @@ const styles = StyleSheet.create({
   tealBadge: { backgroundColor: colors.tealTint },
   neutralBadge: { backgroundColor: colors.amberTint },
   status: { fontSize: 14, color: colors.ink },
-  metrics: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.sageLine },
+  metrics: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.sageLine },
+  waitingBadge: { backgroundColor: colors.tealTint, borderRadius: radii.note, paddingHorizontal: 10, paddingVertical: 6, flexShrink: 1 },
   booked: { fontSize: 15, color: colors.ink },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   state: { paddingVertical: 24, gap: 14 },
