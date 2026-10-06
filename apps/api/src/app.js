@@ -14,6 +14,7 @@ import { staffSessionRoutes } from './modules/sessions/k_sessionRoutes.js';
 import { staffPatientSearchRoutes } from './modules/staff/k_patientSearchRoutes.js';
 import { checkInRoutes } from './modules/bookings/k_checkInRoutes.js';
 import { staffQueueRoutes } from './modules/queue/k_queueRoutes.js';
+import { sessionMetricsRoutes } from './modules/queue/k_sessionMetricsRoutes.js';
 
 export function createApp({
   hospitalRepository,
@@ -25,6 +26,7 @@ export function createApp({
   staffPatientSearchRepository,
   checkInRepository,
   queueRepository,
+  sessionMetricsRepository,
   priorityRepository,
   notificationRepository,
   profileRepository,
@@ -61,6 +63,7 @@ export function createApp({
   app.use('/api/v1/hospitals', hospitalRoutes(hospitalRepository));
   app.use('/api/v1/staff/auth', staffAuthRoutes(staffAuthRepository));
   app.use('/api/v1/staff/sessions', staffQueueRoutes(queueRepository, requireSignIn));
+  app.use('/api/v1/staff/sessions', sessionMetricsRoutes(sessionMetricsRepository, requireSignIn));
   app.use('/api/v1/staff/sessions', staffSessionRoutes(staffSessionRepository, requireSignIn));
   app.use('/api/v1/staff/patients', staffPatientSearchRoutes(staffPatientSearchRepository, requireSignIn));
   app.use(

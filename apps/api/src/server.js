@@ -29,6 +29,7 @@ import { createStaffSessionRepository } from './modules/sessions/k_sessionReposi
 import { createStaffPatientSearchRepository } from './modules/staff/k_patientSearchRepository.js';
 import { createCheckInRepository } from './modules/bookings/k_checkInRepository.js';
 import { createQueueRepository } from './modules/queue/k_queueRepository.js';
+import { createSessionMetricsRepository } from './modules/queue/k_sessionMetricsRepository.js';
 import { ensureQueueIndexes } from './config/indexes.js';
 import {
   createPriorityRepository,
@@ -79,6 +80,7 @@ try {
       staffPatientSearchRepository: createStaffPatientSearchRepository(connection.db),
       checkInRepository: createCheckInRepository(connection.db),
       queueRepository: createQueueRepository(connection.db),
+      sessionMetricsRepository: createSessionMetricsRepository(connection.db),
       staffDashboardRepository: createStaffDashboardRepository(connection.db, {
         priorityRepository,
         notificationRepository,
