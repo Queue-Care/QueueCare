@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, surfaces } from '../theme/tokens';
 import { PasswordField } from '../components/g_PasswordField';
+import { SessionToast } from '../components/k_SessionToast';
 import { signInStaff, StaffAuthError } from '../features/staff/g_staffAuth';
 import type { StaffSession } from '../features/staff/g_staffAuth';
 
@@ -30,15 +30,33 @@ export const StaffSignInScreen = ({
   const [password, setPassword] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [attempted, setAttempted] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [connectionToast, setConnectionToast] = useState<string>();
+  const dismissConnectionToast = useCallback(() => setConnectionToast(undefined), []);
+  const lock = useRef(false);
+  const alive = useRef(true);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; controller.current?.abort(); };
+  }, []);
+  const staffIdError = attempted && !staffId.trim() ? 'Enter your Staff ID.' : fieldErrors.staffId;
+  const passwordError = attempted && !password ? 'Enter your password.' : fieldErrors.password;
+  const valid = !!staffId.trim() && !!password;
   const handleSignIn = async () => {
-    if (submitting) return;
-    if (!staffId.trim() || !password) {
-      Alert.alert('Sign in', 'Enter your Staff ID and password.');
-      return;
-    }
+    if (lock.current) return;
+    setAttempted(true);
+    if (!valid) return;
+    lock.current = true;
+    setFieldErrors({});
+    setAuthError('');
     setSubmitting(true);
+    controller.current = new AbortController();
     try {
-      const session: StaffSession = await signInStaff(staffId, password);
+      const session: StaffSession = await signInStaff(staffId.trim(), password, controller.current.signal);
+      if (!alive.current) return;
       onAuthenticated?.({
         userId: session.userId,
         accessToken: session.accessToken,
@@ -50,12 +68,19 @@ export const StaffSignInScreen = ({
         },
       });
     } catch (error) {
-      Alert.alert(
-        'Could not sign in',
-        error instanceof StaffAuthError ? error.message : 'Please try again.',
-      );
+      if (!alive.current) return;
+      if (error instanceof StaffAuthError && Object.keys(error.fieldErrors).length) {
+        setFieldErrors(error.fieldErrors);
+        return;
+      }
+      if (error instanceof StaffAuthError && ['NETWORK_ERROR', 'TIMEOUT'].includes(error.code))
+        setConnectionToast('Connection problem');
+      else setAuthError(error instanceof StaffAuthError
+        ? error.status === 401 || error.code === 'INVALID_CREDENTIALS' ? 'Invalid Staff ID or password.' : error.message
+        : 'Could not sign in. Please try again.');
     } finally {
-      setSubmitting(false);
+      lock.current = false;
+      if (alive.current) setSubmitting(false);
     }
   };
 
@@ -65,6 +90,7 @@ export const StaffSignInScreen = ({
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <SessionToast message={connectionToast} kind="error" onDismiss={dismissConnectionToast} />
       <View style={styles.navHead}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -75,7 +101,7 @@ export const StaffSignInScreen = ({
         <View style={styles.titleWrap} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {/* Brand Icon Mark */}
         <View style={styles.markTint}>
           <Text style={styles.markIcon}>▦</Text>
@@ -90,28 +116,37 @@ export const StaffSignInScreen = ({
         <View style={styles.field}>
           <Text style={styles.label}>Staff ID</Text>
           <TextInput
-            style={[styles.control, styles.mono]}
+            style={[styles.control, styles.mono, staffIdError && { borderColor: colors.coral }]}
             accessibilityLabel="Staff ID"
+            accessibilityHint="Required"
             autoCorrect={false}
             value={staffId}
-            onChangeText={setStaffId}
+            editable={!submitting}
+            onChangeText={value => { setStaffId(value); setAuthError(''); setFieldErrors(current => ({ ...current, staffId: '' })); }}
             autoCapitalize="characters"
           />
+          {staffIdError ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite"
+            style={{ color: colors.coralStrong, marginTop: 5 }}>{staffIdError}</Text> : null}
         </View>
 
         {/* Password Field */}
         <PasswordField
           label="Password"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={value => { if (!lock.current) { setPassword(value); setAuthError(''); setFieldErrors(current => ({ ...current, password: '' })); } }}
+          error={passwordError}
         />
+
+        {authError ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite"
+          style={{ color: colors.coralStrong, marginBottom: 10 }}>{authError}</Text> : null}
 
         {/* Sign In Button */}
         <TouchableOpacity
-          style={styles.btnPrimary}
+          style={[styles.btnPrimary, submitting && { opacity: 0.6 }]}
           accessibilityRole="button"
           accessibilityLabel="Sign in"
           onPress={handleSignIn}
+          accessibilityState={{ disabled: submitting, busy: submitting }}
           disabled={submitting}
           activeOpacity={0.8}
         >

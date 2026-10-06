@@ -60,6 +60,7 @@ afterEach(async () => {
 test('initial loading text never derives a count from bookings', async () => {
   metrics.mockImplementation(() => new Promise(() => {})); await mount();
   expect(texts()).toContain('Loading waiting count…'); expect(texts()).not.toContain('19 waiting');
+  expect(texts()).toContain('Loading priority count…'); expect(texts()).not.toContain('0 priority waiting');
 });
 test.each([0, 1, 3])('real %s waiting has service accessibility context', async count => {
   metrics.mockResolvedValue(result(count)); await mount(); expect(texts()).toContain(`${count} waiting`);
@@ -68,10 +69,26 @@ test.each([0, 1, 3])('real %s waiting has service accessibility context', async 
 test('failure, stale previous count, and recovery', async () => {
   metrics.mockRejectedValueOnce(new Error('offline')); await mount();
   expect(texts()).toContain('Waiting count unavailable'); expect(texts()).not.toContain('0 waiting');
+  expect(texts()).toContain('Priority count unavailable'); expect(texts()).not.toContain('0 priority waiting');
   await tick(); expect(texts()).toContain('3 waiting');
   metrics.mockRejectedValueOnce(new Error('offline')); await tick();
   expect(texts()).toContain('3 waiting'); expect(texts()).toContain('Last updated');
   metrics.mockResolvedValue(result(5)); await tick(); expect(texts()).toContain('5 waiting'); expect(texts()).not.toContain('Last updated');
+});
+
+test.each([0, 4])('waiting and priority counts use real metrics, including priority %s', async priorityCount => {
+  metrics.mockResolvedValue({ ...result(0), priorityCount }); await mount();
+  expect(texts()).toContain('0 waiting'); expect(texts()).toContain(`${priorityCount} priority waiting`);
+  expect(renderer.root.findAll(node => node.props.accessibilityLabel === `General OPD: ${priorityCount} priority patients waiting`)).not.toHaveLength(0);
+});
+
+test('priority retains a stale value after failure and replaces it on recovery', async () => {
+  metrics.mockResolvedValueOnce({ ...result(7), priorityCount: 2 }); await mount();
+  metrics.mockRejectedValueOnce(new Error('offline')); await tick();
+  expect(texts()).toContain('7 waiting'); expect(texts()).toContain('2 priority waiting');
+  expect(renderer.root.findAll(node => node.props.accessibilityLabel === 'General OPD: 2 priority patients waiting, last updated')).not.toHaveLength(0);
+  metrics.mockResolvedValue({ ...result(0), priorityCount: 0 }); await tick();
+  expect(texts()).toContain('0 priority waiting'); expect(texts()).not.toContain('Last updated');
 });
 test('immediate focus fetch, exact cadence, no overlapping cycles, blur/refocus cleanup', async () => {
   let resolve!: (value: ReturnType<typeof result>) => void;

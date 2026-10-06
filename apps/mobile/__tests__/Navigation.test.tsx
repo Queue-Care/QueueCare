@@ -159,7 +159,7 @@ test.each(['RECEPTION', 'NURSE'] as const)(
   async role => {
     await mount({ session: { userId: 'staff-1', role } });
     expect(ref.getRootState()?.routeNames).toEqual(['StaffApp']);
-    await press('View sessions');
+    await press("View today's OPD sessions");
     expect(ref.getCurrentRoute()?.name).toBe('SessionsList');
     await press('Add a session');
     expect(ref.getCurrentRoute()?.name).toBe('AddEditSession');
@@ -188,7 +188,7 @@ test.each(['RECEPTION', 'NURSE'] as const)(
 
 test('sign-out removes staff history and returns to welcome', async () => {
   await mount({ session: { userId: 'staff-1', role: 'RECEPTION' } });
-  await press('View sessions');
+  await press("View today's OPD sessions");
   await act(async () => {
     renderer.update(tree({ session: null }));
   });

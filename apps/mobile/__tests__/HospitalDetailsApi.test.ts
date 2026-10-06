@@ -133,7 +133,7 @@ test.each([getHospitalDetails, getHospitalServices])(
     ).rejects.toMatchObject({ kind: 'unavailable' });
     await expect(
       load(hospitalId, new AbortController().signal),
-    ).rejects.toMatchObject({ kind: 'network' });
+    ).rejects.toMatchObject({ kind: 'response' });
     await expect(
       load(hospitalId, new AbortController().signal),
     ).rejects.toThrow('Unable to load hospital details');

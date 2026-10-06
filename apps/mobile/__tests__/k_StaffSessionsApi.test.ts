@@ -22,6 +22,11 @@ test.each([undefined, null, '0', -1, 0.5, Number.MAX_SAFE_INTEGER + 1])('metrics
   respond({ ...metrics, waitingCount });
   await expect(fetchStaffSessionMetrics('staff-token', session._id)).rejects.toBeInstanceOf(ApiError);
 });
+
+test.each([undefined, null, '0', -1, 0.5, Number.MAX_SAFE_INTEGER + 1])('metrics rejects malformed priority count %s rather than returning zero', async priorityCount => {
+  respond({ ...metrics, priorityCount });
+  await expect(fetchStaffSessionMetrics('staff-token', session._id)).rejects.toBeInstanceOf(ApiError);
+});
 test.each([
   { sessionId: 'other' }, { status: 'BAD' }, { status: ['OPEN'] }, { capacity: 0 }, { bookedCount: -1 },
   { servingCount: null }, { priorityCount: '0' }, { patientsCheckedIn: 0.1 }, { nowServing: 123 },

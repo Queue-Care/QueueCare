@@ -93,5 +93,5 @@ export function greeting(now = new Date()) {
     }).format(now),
   );
   if (hour < 12) return 'Good morning,';
-  return hour < 17 ? 'Good afternoon,' : 'Good evening,';
+  return hour < 18 ? 'Good afternoon,' : 'Good evening,';
 }

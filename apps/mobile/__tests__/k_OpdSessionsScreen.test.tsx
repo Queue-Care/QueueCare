@@ -26,12 +26,13 @@ const session: StaffOpdSession = { _id: '000000000000000000000101', hospitalId: 
 let renderer: Renderer.ReactTestRenderer;
 const onAdd = jest.fn(), onEdit = jest.fn(), expired = jest.fn();
 beforeEach(() => {
+  jest.useFakeTimers({ now: new Date('2026-10-06T02:00:00Z') });
   jest.clearAllMocks();
   list.mockResolvedValue({ data: [session], hasMore: false, hospitalId: '000000000000000000000001' });
   detail.mockResolvedValue(session);
   close.mockResolvedValue({ ...session, status: 'CLOSED' });
 });
-afterEach(async () => { if (renderer) await act(async () => renderer.unmount()); });
+afterEach(async () => { if (renderer) await act(async () => renderer.unmount()); jest.useRealTimers(); });
 async function mount() {
   await act(async () => { renderer = Renderer.create(<OpdSessionsScreen accessToken="staff-token" onAdd={onAdd}
     onEdit={onEdit} onSessionExpired={expired} />); });
@@ -108,4 +109,35 @@ test('cancel and failure keep OPEN state; unauthorized errors invoke the existin
 test.each(['CLOSED', 'RUNNING', 'COMPLETED', 'CANCELLED'] as const)('%s sessions do not offer closure', async status => {
   list.mockResolvedValue({ data: [{ ...session, status }], hasMore: false, hospitalId: '000000000000000000000001' });
   await mount(); expect(button('Close bookings')).toBeUndefined();
+});
+
+
+test.each([
+  ['2026-10-07', '2026-10-06T06:00:00Z', true],
+  ['2026-10-06', '2026-10-06T02:00:00Z', true],
+  ['2026-10-06', '2026-10-06T06:00:00Z', true],
+  ['2026-10-06', '2026-10-06T06:59:59.999Z', true],
+  ['2026-10-06', '2026-10-06T07:00:00Z', true],
+  ['2026-10-06', '2026-10-06T07:00:00.001Z', false],
+  ['2026-10-05', '2026-10-06T02:00:00Z', false],
+])('session date %s at %s has Edit availability %s', async (sessionDate, now, editable) => {
+  jest.setSystemTime(new Date(now));
+  list.mockResolvedValueOnce({ data: [{ ...session, sessionDate }], hasMore: false, hospitalId: session.hospitalId });
+  await mount(); expect(!!button('Edit session')).toBe(editable);
+  expect(text('General OPD')).toBe(true);
+  expect(button('Close bookings')).toBeDefined();
+});
+
+test('Edit disappears just after scheduled end without changing session or other actions', async () => {
+  jest.setSystemTime(new Date('2026-10-06T06:59:59.999Z'));
+  await mount(); expect(button('Edit session')).toBeDefined();
+  await act(async () => jest.advanceTimersByTime(2));
+  expect(button('Edit session')).toBeUndefined(); expect(button('Close bookings')).toBeDefined();
+  expect(close).not.toHaveBeenCalled(); expect(text('General OPD')).toBe(true);
+});
+
+test('fresh detail prevents stale Edit handoff for ended session', async () => {
+  await mount(); detail.mockResolvedValueOnce({ ...session, sessionDate: '2026-10-05' });
+  await press('Edit session'); expect(onEdit).not.toHaveBeenCalled();
+  expect(text('This session has ended and can no longer be edited.')).toBe(true);
 });

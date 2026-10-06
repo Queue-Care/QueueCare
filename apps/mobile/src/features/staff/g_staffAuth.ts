@@ -9,6 +9,7 @@ export type StaffAccount = {
 export type StaffSession = StaffAccount & { accessToken: string };
 
 export class StaffAuthError extends Error {
+  constructor(message: string, public readonly status = 0, public readonly code = '') { super(message); }
   // Per-field messages from the API's VALIDATION_ERROR response, when present.
   fieldErrors: Record<string, string> = {};
 }
@@ -25,20 +26,23 @@ function apiBase() {
   return base;
 }
 
-async function request(path: string, body: unknown) {
+async function request(path: string, body: unknown, signal?: AbortSignal) {
+  const url = `${apiBase()}${path}`;
   let response: Response;
   try {
-    response = await fetch(`${apiBase()}${path}`, {
+    response = await fetch(url, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      ...(signal ? { signal } : {}),
     });
   } catch {
     throw new StaffAuthError(
       'Could not connect. Check your connection and try again.',
+      0, 'NETWORK_ERROR',
     );
   }
   let payload: unknown;
@@ -56,7 +60,8 @@ async function request(path: string, body: unknown) {
       error && typeof error.message === 'string'
         ? error.message
         : 'We could not complete this action. Please try again.';
-    const failure = new StaffAuthError(message);
+    const failure = new StaffAuthError(message, response.status,
+      error && typeof error.code === 'string' ? error.code : '');
     if (error && object(error.fieldErrors))
       failure.fieldErrors = error.fieldErrors as Record<string, string>;
     throw failure;
@@ -99,11 +104,34 @@ export async function registerStaff(input: {
 export async function signInStaff(
   staffId: string,
   password: string,
+  signal?: AbortSignal,
 ): Promise<StaffSession> {
-  const data = await request('/staff/auth/sign-in', { staffId, password });
-  if (typeof data.accessToken !== 'string' || !data.accessToken)
-    throw new StaffAuthError(
-      'We could not start your staff session. Please try again.',
-    );
-  return { ...parseAccount(data.user), accessToken: data.accessToken };
+  const controller = new AbortController();
+  let timedOut = false;
+  const abort = () => controller.abort();
+  let rejectAborted!: (reason: StaffAuthError) => void;
+  const cancelled = new Promise<never>((_resolve, reject) => { rejectAborted = reject; });
+  const onAbort = () => rejectAborted(new StaffAuthError(timedOut
+    ? 'Sign-in took too long. Check your connection and try again.'
+    : 'Sign-in was cancelled. Please try again.', 0, timedOut ? 'TIMEOUT' : 'CANCELLED'));
+  controller.signal.addEventListener('abort', onAbort);
+  signal?.addEventListener('abort', abort);
+  const timeout = setTimeout(() => { timedOut = true; abort(); }, 15000);
+  try {
+    if (signal?.aborted) abort();
+    const data = await Promise.race([
+      cancelled,
+      controller.signal.aborted ? cancelled
+        : request('/staff/auth/sign-in', { staffId, password }, controller.signal),
+    ]);
+    if (typeof data.accessToken !== 'string' || !data.accessToken)
+      throw new StaffAuthError(
+        'We could not start your staff session. Please try again.',
+      );
+    return { ...parseAccount(data.user), accessToken: data.accessToken };
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener('abort', abort);
+    controller.signal.removeEventListener('abort', onAbort);
+  }
 }

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { SessionToast } from '../components/k_SessionToast';
 import { ApiError, errorMessage } from '../api/g_apiClient';
 import { useApiResource } from '../api/g_useApiResource';
 import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, sessionDayLabel,
@@ -9,21 +10,32 @@ import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, sessi
 import { colors, radii, surfaces } from '../theme/tokens';
 import { useHomeFonts } from '../theme/homeFonts';
 import { useSessionWaitingCounts } from '../features/sessions/k_useSessionWaitingCounts';
+import { endedSessionMessage, sessionEndTimestamp, sessionHasEnded, useSessionEditClock } from '../features/sessions/k_sessionEditing';
 
 type Props = { accessToken?: string; hospital?: string; onSessionExpired?: () => void;
-  savedSessionDate?: string; saveMessage?: string;
+  savedSessionDate?: string; saveMessage?: string; onSaveMessageConsumed?: () => void;
   onAdd: () => void; onEdit: (sessionId: string) => void };
 
 export function OpdSessionsScreen(props: Props) {
   const [view, setView] = useState<SessionView>('today');
   const [page, setPage] = useState(1);
   const [date, setDate] = useState(props.savedSessionDate);
-  return <SessionsPage key={`${view}:${page}:${date ?? ''}`} {...props} date={date}
+  const [successToast, setSuccessToast] = useState(() => props.saveMessage?.replace(/\.$/, ''));
+  const { onSaveMessageConsumed } = props;
+  const consumed = useRef(false);
+  useEffect(() => {
+    if (successToast && !consumed.current) { consumed.current = true; onSaveMessageConsumed?.(); }
+  }, [successToast, onSaveMessageConsumed]);
+  const dismissSuccessToast = useCallback(() => setSuccessToast(undefined), []);
+  return <SafeAreaView style={styles.safe} edges={['top']}>
+    <SessionToast message={successToast} onDismiss={dismissSuccessToast} />
+    <SessionsPage key={`${view}:${page}:${date ?? ''}`} {...props} date={date}
     view={view} page={page} onPage={setPage}
-    onView={next => { setView(next); setPage(1); setDate(undefined); }} />;
+    onView={next => { setView(next); setPage(1); setDate(undefined); }} />
+  </SafeAreaView>;
 }
 
-function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView, date, saveMessage }:
+function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView, date }:
   Props & { view: SessionView; page: number; date?: string; onPage: (page: number) => void; onView: (view: SessionView) => void }) {
   const fonts = useHomeFonts();
   const listPending = useRef(false);
@@ -37,6 +49,7 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
     } finally { if (!signal.aborted) listPending.current = false; }
   }, [accessToken, view, page, date]);
   const { data, loading, error, reload, setData } = useApiResource(load, { onUnauthorized: onSessionExpired });
+  const editTime = useSessionEditClock(data?.data.map(sessionEndTimestamp) ?? []);
   const waiting = useSessionWaitingCounts(data?.data ?? [], accessToken, onSessionExpired, data, listPending);
   const lock = useRef(false);
   const alive = useRef(true);
@@ -52,11 +65,15 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
   };
   const edit = async (session: StaffOpdSession) => {
     if (lock.current) return;
+    if (sessionHasEnded(session)) { setFeedback(endedSessionMessage); return; }
     lock.current = true; setBusy(session._id); setFeedback('');
     controller.current = new AbortController();
     try {
       const detail = await fetchStaffSession(accessToken, session._id, controller.current.signal);
-      if (alive.current) onEdit(detail._id);
+      if (alive.current) {
+        if (sessionHasEnded(detail)) setFeedback(endedSessionMessage);
+        else onEdit(detail._id);
+      }
     } catch (reason) { failure(reason); }
     finally { release(); }
   };
@@ -79,7 +96,7 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
     ], { cancelable: false });
   };
   const bodyFont = { fontFamily: fonts.body };
-  return <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+  return <SafeAreaView style={styles.safe} edges={['left', 'right']}>
     <ScrollView contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.teal} />}>
       <Text accessibilityRole="header" style={[styles.title, { fontFamily: fonts.display }]}>OPD sessions</Text>
@@ -91,7 +108,7 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
           <Text style={[styles.tabText, { fontFamily: fonts.semibold }]}>{option === 'today' ? 'Today' : 'Upcoming'}</Text>
         </Pressable>)}</View>
       <Text style={[styles.sub, bodyFont]}>Session times are shown in Sri Lanka time.</Text>
-      {date ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>{saveMessage} Sessions for {sessionDayLabel(date)}</Text> : null}
+      {date ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>Sessions for {sessionDayLabel(date)}</Text> : null}
       {feedback ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>{feedback}</Text> : null}
       {loading && !data ? <View style={styles.state}><ActivityIndicator color={colors.teal} />
         <Text style={[styles.sub, bodyFont]}>Loading sessions…</Text></View> : null}
@@ -117,10 +134,19 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
               : waiting[session._id].state === 'loading' ? 'Loading waiting count…' : 'Waiting count unavailable'}</Text>
             {waiting[session._id].state === 'stale' ? <Text style={[styles.sub, bodyFont]}>Last updated</Text> : null}
           </View> : null}
+          {waiting[session._id] ? <View style={styles.waitingBadge} accessible
+            accessibilityLabel={`${session.serviceName ?? 'OPD session'}: ${waiting[session._id].priorityCount !== undefined
+              ? `${waiting[session._id].priorityCount} priority patients waiting${waiting[session._id].state === 'stale' ? ', last updated' : ''}`
+              : waiting[session._id].state === 'loading' ? 'Loading priority count' : 'Priority count unavailable'}`}>
+            <Text style={[styles.booked, bodyFont]}>{waiting[session._id].priorityCount !== undefined
+              ? `${waiting[session._id].priorityCount} priority waiting`
+              : waiting[session._id].state === 'loading' ? 'Loading priority count…' : 'Priority count unavailable'}</Text>
+            {waiting[session._id].state === 'stale' ? <Text style={[styles.sub, bodyFont]}>Last updated</Text> : null}
+          </View> : null}
         </View>
         <View style={styles.actions}>
-          <ActionButton label="Edit session" variant="secondary" disabled={!!busy || loading} busy={busy === session._id}
-            accessibilityHint={`Edit ${session.serviceName ?? 'OPD session'} on ${sessionDayLabel(session.sessionDate)}`} onPress={() => void edit(session)} />
+          {!sessionHasEnded(session, editTime) ? <ActionButton label="Edit session" variant="secondary" disabled={!!busy || loading} busy={busy === session._id}
+            accessibilityHint={`Edit ${session.serviceName ?? 'OPD session'} on ${sessionDayLabel(session.sessionDate)}`} onPress={() => void edit(session)} /> : null}
           {session.status === 'OPEN' ? <ActionButton label="Close bookings" variant="outline" disabled={!!busy || loading}
             accessibilityHint={`Stop new bookings for ${session.serviceName ?? 'OPD session'}`} onPress={() => confirmClose(session)} /> : null}
         </View>

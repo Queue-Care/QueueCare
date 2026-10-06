@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { NavigationContext } from '@react-navigation/native';
 import {
   ActivityIndicator,
+  AppState,
   Image,
   RefreshControl,
   ScrollView,
@@ -60,6 +62,30 @@ export function ReceptionDeskScreen({
   onOpenProfile,
 }: Props) {
   const homeFonts = useHomeFonts();
+  const navigation = useContext(NavigationContext);
+  const [greetingTime, setGreetingTime] = useState(() => new Date());
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let focused = navigation?.isFocused() ?? true;
+    let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
+    const update = () => {
+      clearTimeout(timer);
+      if (!focused || !foreground) return;
+      const now = new Date();
+      setGreetingTime(now);
+      // Colombo has a fixed UTC+05:30 offset. Schedule only noon, 18:00, and midnight.
+      const local = new Date(now.getTime() + 330 * 60000);
+      const hour = local.getUTCHours();
+      const boundary = new Date(local);
+      boundary.setUTCHours(hour < 12 ? 12 : hour < 18 ? 18 : 24, 0, 0, 0);
+      timer = setTimeout(update, boundary.getTime() - local.getTime());
+    };
+    update();
+    const focus = navigation?.addListener('focus', () => { focused = true; update(); });
+    const blur = navigation?.addListener('blur', () => { focused = false; clearTimeout(timer); });
+    const subscription = AppState.addEventListener('change', state => { foreground = state === 'active'; update(); });
+    return () => { clearTimeout(timer); focus?.(); blur?.(); subscription.remove(); };
+  }, [navigation]);
   const bodyFont = { fontFamily: homeFonts.body };
   const displayFont = { fontFamily: homeFonts.display, fontWeight: 'normal' as const };
   const semiboldFont = { fontFamily: homeFonts.semibold, fontWeight: 'normal' as const };
@@ -88,7 +114,7 @@ export function ReceptionDeskScreen({
   }, [pending, onPendingCount]);
 
   const waiting = pending ?? 0;
-  const name = data?.staff.fullName ?? staff?.fullName ?? '';
+  const name = staff?.fullName?.trim() || data?.staff.fullName?.trim() || '';
   const hospital = data?.staff.hospital ?? staff?.hospital ?? '';
 
   return (
@@ -129,7 +155,7 @@ export function ReceptionDeskScreen({
 
       <ScrollView contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.teal} />}>
-        <Text style={[styles.greet, bodyFont]}>{greeting()}</Text>
+        <Text style={[styles.greet, bodyFont]}>{name ? `${greeting(greetingTime)} ${name}` : greeting(greetingTime).replace(/,$/, '')}</Text>
         <Text accessibilityRole="header" style={[styles.title, displayFont]}>
           Reception desk
         </Text>
@@ -159,10 +185,12 @@ export function ReceptionDeskScreen({
         {data ? (
           <>
             <View style={styles.kpiRow}>
-              <View style={styles.kpi}>
+              <TouchableOpacity style={styles.kpi} accessibilityRole="button"
+                accessibilityLabel="View today's OPD sessions" disabled={loading}
+                accessibilityState={{ disabled: loading }} onPress={onOpenSessions}>
                 <Text style={[styles.kpiLabel, semiboldFont]}>Sessions today</Text>
                 <Text style={[styles.kpiNumber, displayFont]}>{data.sessionsToday}</Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.kpi}>
                 <Text style={[styles.kpiLabel, semiboldFont]}>Priority waiting</Text>
                 <Text style={[styles.kpiNumber, styles.kpiAlert, displayFont]}>
@@ -190,7 +218,9 @@ export function ReceptionDeskScreen({
           <TouchableOpacity
             style={styles.linkButton}
             accessibilityRole="button"
-            accessibilityLabel="View sessions"
+            accessibilityLabel="View today's OPD sessions"
+            disabled={loading}
+            accessibilityState={{ disabled: loading }}
             onPress={onOpenSessions}
           >
             <Text style={[styles.link, semiboldFont]}>View all</Text>

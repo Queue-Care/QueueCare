@@ -93,6 +93,7 @@ function SessionsNavigator({ accessToken, staff, onSessionExpired }: Access) {
       >
         {({ navigation, route }) => <OpdSessionsScreen key={route.params?.saveRevision ?? 'initial'} accessToken={accessToken} hospital={staff?.hospital}
           savedSessionDate={route.params?.savedSessionDate} saveMessage={route.params?.saveMessage}
+          onSaveMessageConsumed={() => navigation.setParams({ saveMessage: undefined })}
           onSessionExpired={onSessionExpired} onAdd={() => navigation.navigate('AddEditSession')}
           onEdit={sessionId => navigation.navigate('AddEditSession', { sessionId })} />}
       </Sessions.Screen>

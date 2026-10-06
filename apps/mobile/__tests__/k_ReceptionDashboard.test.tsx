@@ -1,9 +1,9 @@
 import React from 'react';
-import { RefreshControl, Text } from 'react-native';
+import { AppState, RefreshControl, Text } from 'react-native';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import Renderer, { act } from 'react-test-renderer';
 import { StaffNavigator } from '../src/navigation/StaffNavigator';
-import type { StaffTabParams } from '../src/navigation/types';
+import type { StaffSummary, StaffTabParams } from '../src/navigation/types';
 import { fetchDashboard, parseDashboard, greeting } from '../src/features/staff/g_staffDashboard';
 
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
@@ -29,6 +29,7 @@ let ref: ReturnType<typeof createNavigationContainerRef<StaffTabParams>>;
 function respond(data = dashboard) { return { ok: true, status: 200, json: async () => ({ success: true, data }) }; }
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test/api/v1';
   globalThis.fetch = request;
   request.mockResolvedValue(respond());
@@ -40,10 +41,10 @@ afterEach(async () => {
   if (originalUrl === undefined) delete process.env.EXPO_PUBLIC_API_BASE_URL;
   else process.env.EXPO_PUBLIC_API_BASE_URL = originalUrl;
 });
-async function mount() {
+async function mount(staff?: StaffSummary) {
   ref = createNavigationContainerRef<StaffTabParams>();
   await act(async () => { renderer = Renderer.create(<NavigationContainer ref={ref}>
-    <StaffNavigator accessToken="staff-token" onSessionExpired={expired} />
+    <StaffNavigator accessToken="staff-token" staff={staff} onSessionExpired={expired} />
   </NavigationContainer>); });
 }
 function texts() { return renderer!.root.findAllByType(Text).map(node => node.props.children); }
@@ -136,10 +137,66 @@ test('server authorization failure invokes existing session-expired handling', a
   expect(texts()).not.toContain('Sessions today');
 });
 test.each([
-  ['View sessions', 'SessionsList'], ['Review priority requests', 'PriorityRequests'],
+  ["View today's OPD sessions", 'SessionsList'], ['Review priority requests', 'PriorityRequests'],
   ['Notifications, 2 unread', 'StaffNotifications'], ['Open profile', 'Profile'],
 ])('%s uses the existing %s route', async (label, route) => {
   await mount();
   await press(label);
   expect(ref.getCurrentRoute()?.name).toBe(route);
+});
+
+
+test('today sessions KPI is accessible, pressable, and targets existing SessionsList', async () => {
+  await mount();
+  const controls = renderer!.root.findAll(node => node.props.accessibilityLabel === "View today's OPD sessions" && typeof node.props.onPress === 'function');
+  expect(controls.length).toBeGreaterThan(1);
+  expect(controls[0].props.accessibilityState.disabled).toBe(false);
+  await act(async () => controls[0].props.onPress());
+  expect(ref.getCurrentRoute()?.name).toBe('SessionsList');
+});
+
+
+test.each([
+  ['2026-10-06T02:30:00Z', 'Good morning, Reception Staff'],
+  ['2026-10-06T07:30:00Z', 'Good afternoon, Reception Staff'],
+  ['2026-10-06T13:30:00Z', 'Good evening, Reception Staff'],
+])('greeting at %s uses Colombo time and real server name', async (now, expected) => {
+  jest.useFakeTimers({ now: new Date(now) });
+  try { await mount(); expect(texts()).toContain(expected); }
+  finally { if (renderer) await act(async () => renderer!.unmount()); renderer = undefined; jest.useRealTimers(); }
+});
+
+test('greeting switches at 18:00 and refreshes on foreground', async () => {
+  jest.useFakeTimers({ now: new Date('2026-10-06T12:29:59Z') });
+  const listener = jest.spyOn(AppState, 'addEventListener');
+  try {
+    await mount(); expect(texts()).toContain('Good afternoon, Reception Staff');
+    await act(async () => jest.advanceTimersByTime(1000)); expect(texts()).toContain('Good evening, Reception Staff');
+    const change = listener.mock.calls.find(call => call[0] === 'change')![1];
+    await act(async () => change('background'));
+    jest.setSystemTime(new Date('2026-10-07T02:30:00Z'));
+    await act(async () => change('active')); expect(texts()).toContain('Good morning, Reception Staff');
+  } finally { if (renderer) await act(async () => renderer!.unmount()); renderer = undefined; listener.mockRestore(); jest.useRealTimers(); }
+});
+
+test('missing name while loading has no comma, fake name, undefined or null', async () => {
+  jest.useFakeTimers({ now: new Date('2026-10-06T02:30:00Z') });
+  request.mockImplementation(() => new Promise(() => {}));
+  try { await mount(); expect(texts()).toContain('Good morning'); expect(texts()).not.toContain('Good morning,'); }
+  finally { if (renderer) await act(async () => renderer!.unmount()); renderer = undefined; jest.useRealTimers(); }
+});
+
+
+test('authenticated full name is used while loading and focus recalculates current greeting', async () => {
+  jest.useFakeTimers({ now: new Date('2026-10-06T02:30:00Z') });
+  request.mockImplementation(() => new Promise(() => {}));
+  try {
+    await mount({ fullName: 'Actual Authenticated Staff', staffId: 'R-02', hospital: 'Hospital One' });
+    expect(texts()).toContain('Good morning, Actual Authenticated Staff');
+    expect(request).toHaveBeenCalledTimes(1);
+    await act(async () => ref.navigate('Priority'));
+    jest.setSystemTime(new Date('2026-10-06T13:30:00Z'));
+    await act(async () => ref.navigate('Dashboard'));
+    expect(texts()).toContain('Good evening, Actual Authenticated Staff');
+  } finally { if (renderer) await act(async () => renderer!.unmount()); renderer = undefined; jest.useRealTimers(); }
 });

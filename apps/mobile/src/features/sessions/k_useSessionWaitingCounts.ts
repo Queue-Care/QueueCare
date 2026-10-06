@@ -5,7 +5,7 @@ import { ApiError } from '../../api/g_apiClient';
 import { fetchStaffSessionMetrics, type StaffOpdSession } from './k_staffSessions';
 
 export const WAITING_POLL_MS = 10000;
-type WaitingState = { count?: number; state: 'loading' | 'fresh' | 'stale' | 'unavailable' };
+type WaitingState = { count?: number; priorityCount?: number; state: 'loading' | 'fresh' | 'stale' | 'unavailable' };
 
 export function useSessionWaitingCounts(sessions: StaffOpdSession[], token?: string,
   onUnauthorized?: () => void, refreshVersion: unknown = 0, listPending?: { current: boolean }) {
@@ -49,11 +49,13 @@ export function useSessionWaitingCounts(sessions: StaffOpdSession[], token?: str
           try {
             const metrics = await fetchStaffSessionMetrics(token, id, signal);
             if (!signal.aborted && active && epoch === generation)
-              setValues(previous => ({ ...previous, [id]: { count: metrics.waitingCount, state: 'fresh' } }));
+              setValues(previous => ({ ...previous, [id]: { count: metrics.waitingCount,
+                priorityCount: metrics.priorityCount, state: 'fresh' } }));
           } catch (reason) {
             if (signal.aborted || !active || epoch !== generation) return;
             setValues(previous => ({ ...previous, [id]: previous[id]?.count !== undefined
-              ? { count: previous[id].count, state: 'stale' } : { state: 'unavailable' } }));
+              ? { count: previous[id].count, priorityCount: previous[id].priorityCount, state: 'stale' }
+              : { state: 'unavailable' } }));
             if (reason instanceof ApiError && reason.status === 401 && !expired) {
               expired = true; unauthorized.current?.(); stop(); return;
             }

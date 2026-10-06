@@ -101,10 +101,11 @@ async function request(
       { headers: { Accept: 'application/json' }, signal: controller.signal },
     );
     if (response.status === 404) throw new HospitalDetailsError('unavailable');
-    if (!response.ok) throw new HospitalDetailsError('network');
+    if (!response.ok) throw new HospitalDetailsError('response');
     return await response.json();
   } catch (error) {
     if (error instanceof HospitalDetailsError) throw error;
+    if (error instanceof SyntaxError) throw new HospitalDetailsError('response');
     throw new HospitalDetailsError('network');
   } finally {
     clearTimeout(timeout);
