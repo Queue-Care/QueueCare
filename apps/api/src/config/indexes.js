@@ -1,5 +1,12 @@
 import { COLLECTIONS } from './collections.js';
 
+export async function ensureQueueIndexes(db) {
+  await db.collection(COLLECTIONS.QUEUE_ENTRIES).createIndex({ bookingId: 1 }, { unique: true });
+  await db.collection(COLLECTIONS.QUEUE_ENTRIES).createIndex(
+    { sessionId: 1, queueNumber: 1 }, { unique: true }
+  );
+}
+
 export async function createIndexes(db) {
   await db.collection(COLLECTIONS.USERS).createIndex(
     { mobile: 1 },
@@ -22,15 +29,7 @@ export async function createIndexes(db) {
     createdAt: -1,
   });
 
-  await db.collection(COLLECTIONS.QUEUE_ENTRIES).createIndex(
-    { bookingId: 1 },
-    { unique: true }
-  );
-
-  await db.collection(COLLECTIONS.QUEUE_ENTRIES).createIndex(
-    { sessionId: 1, queueNumber: 1 },
-    { unique: true }
-  );
+  await ensureQueueIndexes(db);
 
   await db.collection(COLLECTIONS.QUEUE_ENTRIES).createIndex({
     sessionId: 1,

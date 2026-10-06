@@ -27,6 +27,8 @@ import {
 import { createStaffDashboardRepository } from './modules/staff/g_staffDashboard.js';
 import { createStaffSessionRepository } from './modules/sessions/k_sessionRepository.js';
 import { createStaffPatientSearchRepository } from './modules/staff/k_patientSearchRepository.js';
+import { createCheckInRepository } from './modules/bookings/k_checkInRepository.js';
+import { ensureQueueIndexes } from './config/indexes.js';
 import {
   createPriorityRepository,
   ensurePriorityIndexes,
@@ -52,6 +54,7 @@ try {
   await ensureHospitalIndexes(connection.db);
   await ensureStaffAuthIndexes(connection.db);
   await ensureBookingIndexes(connection.db);
+  await ensureQueueIndexes(connection.db);
   await ensureBookingNotificationIndexes(connection.db);
   await ensureNotificationIndexes(connection.db);
   await ensurePriorityIndexes(connection.db);
@@ -73,6 +76,7 @@ try {
       staffAuthRepository: createStaffAuthRepository(connection.db, authConfig),
       staffSessionRepository: createStaffSessionRepository(connection.db),
       staffPatientSearchRepository: createStaffPatientSearchRepository(connection.db),
+      checkInRepository: createCheckInRepository(connection.db),
       staffDashboardRepository: createStaffDashboardRepository(connection.db, {
         priorityRepository,
         notificationRepository,
