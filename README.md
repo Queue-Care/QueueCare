@@ -25,6 +25,8 @@ npm run dev:mobile
 
 Install an Expo Go build compatible with SDK 57 on your phone, connect it to the same network as your computer, and scan the terminal QR code. Android Studio and Xcode are not required for this phone workflow. Dependencies are installed and the initial Expo Go phone launch has been confirmed (S-05). Member 1’s navigation scaffold (S-12) is implemented and locally tested; see [navigation handoff and phone checks](docs/NAVIGATION.md). Splash and Welcome now have dedicated screens with tested startup/recovery behavior; see [Member 1 startup handoff](docs/STARTUP.md). Patient Home now has its frontend, quick actions, and next-appointment API adapter; see [Patient Home handoff](docs/PATIENT_HOME.md). Real authentication, live booking data, and prototype comparison remain pending.
 
+Member 1's Milestone 03 report sections are prepared for group review: [technology-stack justification](docs/milestone03/TECH_STACK.md), [implemented architecture and booking sequence](docs/milestone03/ARCHITECTURE.md), and [updated CRUD evidence](docs/milestone03/CRUD_MATRIX.md). These describe current code and outstanding integrations; device/usability acceptance remains pending.
+
 ## Local API Setup — M1-04
 
 Express startup, MongoDB connectivity, hospital search, and standard errors are implemented. With MongoDB running locally, execute these commands from the **QueueCare repository root** (copy the environment example only on first setup):

@@ -70,3 +70,9 @@ The next Member 1 verification step is implemented locally. `npm run test:patien
 ### M1-06/M1-07 opening hours — 2026-10-06
 
 Completed the remaining opening-hours data/display integration while phone acceptance is pending. The public details API and mobile screen support optional validated multiline text, preserving the missing-hours message for older records. New Demo Central seeds include labelled fictional hours; existing data and edits are preserved. **82 API tests, 291 mobile tests, TypeScript and lint pass.** See [field contract, demo setup and phone checks](HOSPITAL_DETAILS.md#opening-hours-follow-up--2026-10-06). Real hospital-hours verification and physical acceptance remain pending; no configured database was modified.
+
+### A3-01/A3-02 report preparation — 2026-10-06
+
+Member 1's [technology-stack justification](milestone03/TECH_STACK.md) and [implemented architecture with diagrams](milestone03/ARCHITECTURE.md) are written from the current source. They cover frontend/backend/database choices, authentication, booking transactions, polling and media storage, and distinguish implemented behavior from pending integration. The [Member 1 CRUD matrix](milestone03/CRUD_MATRIX.md) now reflects live booking reads and booking-alert read-state updates, with explicit read-only interface limitations. Local document links and whitespace were checked; this documentation-only task did not rerun runtime tests or change application behavior.
+
+**Next:** Member 3/group review of the architecture and stack section, and physical T-04/T-11 acceptance. These report sections can be used for A3-14 consolidation after review; final architecture/release acceptance, other members' evidence and usability results remain pending.
