@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ObjectId } from 'mongodb';
-import { SignJWT } from 'jose';
 import { createApp } from '../app.js';
 import { authenticate } from '../middleware/auth.js';
 import { readAuthConfig } from '../config/auth.js';
@@ -15,17 +14,21 @@ import {
 } from '../modules/bookings/bookingRepository.js';
 import { ensureBookingNotificationIndexes } from '../modules/bookings/bookingNotification.js';
 import { startHttp, startMongo } from './testServer.js';
+import {
+  createPatientRegistrationRepository,
+  ensurePatientRegistrationIndexes,
+} from '../modules/auth/patientRegistration.js';
+import { createNotificationRepository } from '../modules/notifications/g_notificationRepository.js';
 
 test(
-  'real HTTP discovery -> final-place booking -> saved summary, capacity and notification',
+  'real HTTP registration/login -> discovery -> booking -> Home/list/details -> notification',
   { timeout: 60000 },
   async (t) => {
     const { db, client } = await startMongo(t, { replicaSet: true });
     await ensureHospitalIndexes(db);
     await ensureBookingIndexes(db);
     await ensureBookingNotificationIndexes(db);
-    const patientId = new ObjectId(),
-      secondPatientId = new ObjectId();
+    await ensurePatientRegistrationIndexes(db);
     const hospitalId = new ObjectId(),
       serviceId = new ObjectId(),
       sessionId = new ObjectId();
@@ -33,22 +36,6 @@ test(
     const auth = readAuthConfig({
       JWT_SECRET: 'test-only-discovery-flow-secret-never-used-by-the-app',
     });
-    const bearer = (userId) =>
-      new SignJWT({})
-        .setProtectedHeader({ alg: 'HS256' })
-        .setSubject(userId.toString())
-        .setIssuer(auth.issuer)
-        .setAudience(auth.audience)
-        .setIssuedAt(at.getTime() / 1000)
-        .setExpirationTime(at.getTime() / 1000 + 3600)
-        .sign(auth.key);
-    await db.collection('users').insertMany(
-      [patientId, secondPatientId].map((_id) => ({
-        _id,
-        role: 'PATIENT',
-        status: 'ACTIVE',
-      }))
-    );
     await db.collection('hospitals').insertOne({
       _id: hospitalId,
       name: 'Journey Test Hospital',
@@ -81,7 +68,10 @@ test(
         bookingRepository: createBookingRepository(db, client, {
           now: () => at,
         }),
-        authenticate: authenticate(db, auth, { now: () => at }),
+        authenticate: authenticate(db, auth),
+        authConfig: auth,
+        patientRegistrationRepository: createPatientRegistrationRepository(db),
+        notificationRepository: createNotificationRepository(db),
         checkDatabase: () => db.command({ ping: 1 }),
       })
     );
@@ -96,6 +86,36 @@ test(
       });
       return { status: response.status, body: await response.json() };
     }
+    async function registerAndLogin(nic, mobile) {
+      const registration = await request('/auth/patient/register', undefined, {
+        fullName: 'Journey Test Patient',
+        nic,
+        mobile,
+        password: 'Test-only-password123',
+      });
+      assert.equal(registration.status, 201);
+      const rejected = await request('/auth/patient/login', undefined, {
+        nic,
+        password: 'wrong-password',
+      });
+      assert.equal(rejected.status, 401);
+      const login = await request('/auth/patient/login', undefined, {
+        nic,
+        password: 'Test-only-password123',
+      });
+      assert.equal(login.status, 200);
+      assert.equal(login.body.data.patient.fullName, 'Journey Test Patient');
+      return login.body.data;
+    }
+    const patient = await registerAndLogin('200012345678', '0771234567');
+    const other = await registerAndLogin('200012345679', '0771234568');
+    const patientId = new ObjectId(patient.userId);
+    const token = patient.accessToken,
+      otherToken = other.accessToken;
+    assert.deepEqual(
+      (await request('/bookings/me?status=upcoming&limit=1', token)).body.data,
+      []
+    );
     // Follow returned IDs through every public endpoint, rather than supplying independent fixtures per route.
     const search = await request('/hospitals?search=Journey&city=Colombo');
     assert.equal(search.status, 200);
@@ -117,8 +137,6 @@ test(
     assert.equal(await db.collection('bookings').countDocuments(), 0);
     assert.equal(await db.collection('notifications').countDocuments(), 0);
 
-    const token = await bearer(patientId),
-      otherToken = await bearer(secondPatientId);
     const created = await request('/bookings', token, {
       sessionId: selected._id,
     });
@@ -132,6 +150,32 @@ test(
     assert.equal(saved.body.data.service._id, services.body.data[0]._id);
     assert.equal(saved.body.data.session.startsAt, selected.startsAt);
     assert.equal(saved.body.data.session.endsAt, selected.endsAt);
+    const home = await request('/bookings/me?status=upcoming&limit=1', token);
+    assert.equal(home.status, 200);
+    assert.equal(home.body.data[0]._id, created.body.data._id);
+    assert.equal(home.body.data[0].bookingCode, saved.body.data.bookingCode);
+    const list = await request(
+      '/bookings/me?status=upcoming&page=1&limit=20',
+      token
+    );
+    assert.equal(list.status, 200);
+    assert.equal(list.body.meta.total, 1);
+    assert.equal(list.body.data[0]._id, home.body.data[0]._id);
+    const alerts = await request('/notifications', token);
+    assert.equal(alerts.status, 200);
+    assert.equal(alerts.body.meta.unreadCount, 1);
+    assert.equal(alerts.body.data[0].data.bookingId, saved.body.data._id);
+    const fromAlert = await request(
+      `/bookings/${alerts.body.data[0].data.bookingId}`,
+      token
+    );
+    assert.equal(fromAlert.status, 200);
+    assert.equal(fromAlert.body.data.bookingCode, saved.body.data.bookingCode);
+    assert.deepEqual(
+      (await request('/notifications', otherToken)).body.data,
+      []
+    );
+    assert.deepEqual((await request('/bookings/me', otherToken)).body.data, []);
     const after = await request(availabilityPath);
     assert.equal(after.status, 200);
     assert.equal(after.body.data[0].remainingCapacity, 0);

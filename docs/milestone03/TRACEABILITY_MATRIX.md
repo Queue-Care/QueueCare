@@ -18,5 +18,6 @@ IDs follow root README sections 21 and 33. This table covers Member 1's implemen
 | Usability feedback: improve View OPD sessions hierarchy and touch target | M1-17 | M1-T14 | Action placement, minimum target, guidance and navigation covered; phone and participant acceptance pending |
 | Patient navigation and booking reads | I-01 / T-04 (partial), M1-03, M2-09 | M1-T15 | Home/list/detail integration passes; remaining patient modules and phone acceptance pending |
 | Booking-confirmed notification navigation | I-03; booking portion of I-09 | M1-T16 | Producer/list/read/detail flow covered; other notification routes and phone acceptance pending |
+| Register/login → discovery → booking → saved views | T-04 (automated portion) | M1-T17 | Real HTTP/MongoDB journey and actual App with mocked transport pass; physical Expo Go acceptance pending |
 
 See [functional cases](FUNCTIONAL_TEST_CASES.md) and [test setup/limits](../TESTING.md). Member 2/3/4 owners should extend this matrix with evidence from their modules; this table does not certify the whole application.
