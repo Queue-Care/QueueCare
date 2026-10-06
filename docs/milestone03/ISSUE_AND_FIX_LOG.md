@@ -1,5 +1,25 @@
 # Issue and fix evidence
 
+## I-03-M1-01 — booking alert loses its destination in the client
+
+- **Found:** 2026-10-06, after PR #28 and Member 4 integration. The API returns `data.bookingId`, but the mobile notification parser dropped metadata and tapping the row only marked it read.
+- **Fix:** Retain only validated booking-confirmed IDs, show View booking, and route patient Alerts to authenticated Booking Details. Read receipts run independently of navigation; already-read alerts still open. Late receipt errors are ignored after token replacement/unmount.
+- **Evidence:** A real API test follows registration/login → booking → notification list → details → mark-read and checks cross-patient denial and duplicate/read-state persistence. Eleven mobile cases cover valid/invalid metadata, read/unread links, slow/failed receipts, missing details and account replacement. All 81 API and 277 mobile tests, TypeScript, lint and both exports pass.
+- **Limit:** Physical Expo Go acceptance and other notification destinations remain pending. See [phone checklist](../BOOKING_NOTIFICATIONS.md#open-a-saved-booking-from-alerts--2026-10-06).
+
+## I-01-M1-02 — merged Home redesign restores duplicate search
+
+- **Found:** The full mobile suite failed five Home-state regressions. The redesign replaced the search button with a styled Pressable and restored the Find a hospital quick-action tile, reintroducing M1-16's usability issue.
+- **Fix:** Keep the redesigned search control before appointment content; remove the duplicate tile and restore guest guidance. Retain the new fonts, colors and other Home controls. Update assertions to target the accessible button and reading order rather than the previous component type.
+- **Evidence:** All five guest/loading/empty/error/appointment cases pass; phone visual acceptance remains pending.
+
+## I-01-M1-01 — signed-in Home and My Bookings cannot read saved appointments
+
+- **Found:** 2026-10-05, integration review after PR #26. Both clients request `/bookings/me`, but the API only had POST `/bookings` and GET `/bookings/:bookingId`; `me` failed ID validation.
+- **Fix:** Add the owner-scoped list route before the ID route, category/time filtering and pagination. Connect the Bookings screen to page metadata and Previous/Next/Refresh.
+- **Evidence:** Real registration/JWT login → booking → Home/list/details passes against temporary MongoDB. Tests verify second-patient isolation, permissions, ordering/boundaries, pagination, malformed requests and storage failures. Mobile navigation/transport tests check saved IDs, token use, stale response cancellation and errors. All 74 API / 255 mobile tests, TypeScript, lint and both platform exports pass.
+- **Limit:** Full patient-tab, cancellation/priority/notification/profile integration and phone acceptance remain pending. See [handoff](../PATIENT_INTEGRATION.md).
+
 ## M1-17-01 — make View OPD sessions the clear next action
 
 - **Source:** README usability feedback records hesitation around the View OPD Sessions CTA; M1-17 requests clearer hierarchy and an adequate touch target.

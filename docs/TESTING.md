@@ -2,6 +2,20 @@
 
 M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14/M1-15 are merged through PR #22; the current branch also includes the design update through PR #23.
 
+## I-03 / booking-alert navigation — 2026-10-06
+
+After PR #28 and the Member 4 merge, booking notification creation/list/read and patient detail navigation are tested together. **81 API tests and 277 mobile tests across 21 suites pass**, along with TypeScript, ESLint (no warnings), and Android/iOS exports at `/private/tmp/queuecare-booking-alert-integration-export`. Missing merged dependencies were installed without changing manifests/lockfile.
+
+The API test uses real registration/login, MongoDB transactions, notification listing/read persistence, duplicate prevention and cross-patient denial. The mobile tests use real navigation with mocked HTTP and cover link validation, read/unread alerts, delayed/failed receipts and account replacement. The full run also exposed the Home redesign's duplicate search regression; the fix preserves the new styling and restores the single search entry. Tests now assert the accessible control instead of the replaced component type.
+
+Physical acceptance remains pending; see the [notification phone checklist](BOOKING_NOTIFICATIONS.md#open-a-saved-booking-from-alerts--2026-10-06). Other notification destinations, cancellation and patient priority APIs remain separate work.
+
+## I-01 booking-read integration — 2026-10-05
+
+M1-17 is merged through PR #26. The missing authenticated `/bookings/me` route now connects Home and My Bookings, with server-side category filtering/pagination and mobile page controls. **74 API tests and 255 mobile tests across 18 suites pass**, along with TypeScript, ESLint (no warnings), and Android/iOS exports in `/private/tmp/queuecare-patient-integration-export`.
+
+New API evidence covers real registration/login → booking → Home/list → saved details, owner isolation, current account role/status, pagination and session-time boundaries. New mobile evidence covers navigation with saved IDs, token forwarding, page/category changes, stale responses and retry. API tests use isolated temporary MongoDB; mobile HTTP is mocked. See [scope, reproduction and outstanding phone checks](PATIENT_INTEGRATION.md). I-01/T-04 remain partial while other modules and physical acceptance are pending.
+
 ## M1-17 follow-up — 2026-10-05
 
 M1-16 is merged through PR #25, alongside PR #24's patient registration/sign-in work. M1-17 moves View OPD sessions next to service selection and gives accurate selected/empty/failure guidance. Two new tests check primary action order, existing 52-point minimum height, scalable labels, and visible-refresh invalidation; the guest/patient route and state tests now assert the guidance too.
@@ -63,6 +77,6 @@ See the [functional cases](milestone03/FUNCTIONAL_TEST_CASES.md), [CRUD evidence
 
 ## Remaining acceptance work
 
-Patient registration/JWT sign-in and the in-memory session/profile handoff are now present through PR #24. Persistent session restoration, remaining Member 2 backend flows, and Member 4 notification APIs are incomplete. Physical Expo Go testing, assistive-technology speech/layout checks, usability participants, screenshots, and production network-failure/replica-set failover evidence remain pending. Follow the [confirmation checklist](BOOKING_CONFIRMATION.md) and [accessibility checklist](ACCESSIBILITY.md); do not report mocked mobile transport as completed phone acceptance.
+Patient registration/JWT sign-in and the in-memory session/profile handoff are now present through PR #24. Persistent session restoration and remaining Member 2 backend flows are incomplete. Member 4 notification APIs and booking-alert navigation are now present; device acceptance remains pending. Physical Expo Go testing, assistive-technology speech/layout checks, usability participants, screenshots, and production network-failure/replica-set failover evidence remain pending. Follow the [confirmation checklist](BOOKING_CONFIRMATION.md) and [accessibility checklist](ACCESSIBILITY.md); do not report mocked mobile transport as completed phone acceptance.
 
 **Next Member 1 work: I-01 patient integration and T-04 end-to-end booking acceptance with the other feature owners.**

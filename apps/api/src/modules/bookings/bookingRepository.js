@@ -4,6 +4,7 @@ import { HttpError } from '../../utils/HttpError.js';
 import { sessionTimestamp as timestamp } from './sessionTime.js';
 import { readBookingDetails } from './bookingDetails.js';
 import { insertBookingConfirmation } from './bookingNotification.js';
+import { readBookingList } from './bookingList.js';
 
 export async function ensureBookingIndexes(db) {
   await db.collection('bookings').createIndexes([
@@ -58,6 +59,7 @@ export function createBookingRepository(
   } = {}
 ) {
   return {
+    list: (patientId, query) => readBookingList(db, patientId, query, now()),
     getDetails: (patientId, bookingId) =>
       readBookingDetails(db, patientId, bookingId),
     async create(patientId, sessionId) {

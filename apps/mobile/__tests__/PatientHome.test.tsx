@@ -13,7 +13,6 @@ import {
   type NextAppointment,
 } from '../src/features/home/nextAppointment';
 import { NextAppointmentCard } from '../src/components/NextAppointmentCard';
-import { ActionButton } from '../src/components/ActionButton';
 import { PatientHomeScreen } from '../src/screens/PatientHomeScreen';
 
 jest.mock(
@@ -136,23 +135,28 @@ test.each(['guest', 'loading', 'empty', 'error', 'appointment'])(
     if (scenario === 'guest') await press('Continue as guest');
 
     const home = renderer.root.findByType(PatientHomeScreen);
-    const actions = home.findAllByType(ActionButton);
-    const search = actions.filter(
-      node => node.props.label === 'Search hospitals',
+    const search = home.findAll(
+      node =>
+        node.props.accessibilityLabel === 'Search hospitals' &&
+        typeof node.props.style === 'function' &&
+        typeof node.props.onPress === 'function',
     );
     expect(search).toHaveLength(1);
-    expect(actions[0]).toBe(search[0]);
-    expect(search[0].props.variant ?? 'primary').toBe('primary');
+    expect(
+      home.findAll(node => node.props.accessibilityLabel === 'Find a hospital'),
+    ).toHaveLength(0);
+    expect(search[0].props.accessibilityRole).toBe('button');
     expect(search[0].props.disabled).not.toBe(true);
     expect(search[0].props.accessibilityHint).toBe(
       'Opens hospital search with name and city filters',
     );
-    const headings = home
-      .findAllByType(Text)
-      .filter(node => node.props.accessibilityRole === 'header')
-      .map(node => node.props.children);
-    expect(headings.indexOf('Find a hospital')).toBeLessThan(
-      headings.indexOf('Your next appointment'),
+    const labels = home.findAllByType(Text).map(node => node.props.children);
+    expect(labels).toContain('Next appointment');
+    expect(
+      labels.indexOf('Search hospitals or clinics'),
+    ).toBeGreaterThanOrEqual(0);
+    expect(labels.indexOf('Search hospitals or clinics')).toBeLessThan(
+      labels.indexOf('Next appointment'),
     );
     if (scenario === 'guest') {
       expect(
