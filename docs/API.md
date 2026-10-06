@@ -80,7 +80,9 @@ Accept: application/json
 }
 ```
 
-The details response includes `phone` and `imageUrl` when stored. It exposes only the same public hospital fields as search, without internal image IDs, flags, timestamps, or notes.
+The details response includes `phone` and `imageUrl` when stored, plus optional `openingHours`: plain display text of 1–500 characters after trimming. Multiline text is supported. Missing, blank, non-string or oversized stored hours are omitted, so older hospital records still work. Search retains its existing fields. Internal image IDs, flags, timestamps and notes remain excluded.
+
+Example optional field: `"openingHours": "Monday–Friday: 08:00–17:00\nSunday: Closed"`. Store hospital-local days/times and identify the time zone in the text. These are general hours, not session availability or an open-now calculation.
 
 ```http
 GET /api/v1/hospitals/000000000000000000000101/services
@@ -106,7 +108,7 @@ A valid active hospital with no active services returns `{ "success": true, "dat
 { "success": false, "error": { "code": "NOT_FOUND", "message": "Hospital not found.", "fieldErrors": {} } }
 ```
 
-Database failures return HTTP 500 `INTERNAL_ERROR`, never a successful empty catalog or false 404. Hospital and service reads are separate operations, not a transactional snapshot. Session availability and capacity are returned by the M1-08 endpoint below, not inferred from the service catalog. Opening hours are not present in the README's current hospital schema and are not invented by this API. See [M1-06 handoff and M1-07 integration](HOSPITAL_DETAILS.md).
+Database failures return HTTP 500 `INTERNAL_ERROR`, never a successful empty catalog or false 404. Hospital and service reads are separate operations, not a transactional snapshot. Session availability and capacity are returned by the M1-08 endpoint below, not inferred from the service catalog. Opening hours are an optional extension to the original hospital schema; the API only returns stored values and never derives them from sessions. See [M1-06 handoff and M1-07 integration](HOSPITAL_DETAILS.md).
 
 ## Available sessions — implemented (M1-08)
 
