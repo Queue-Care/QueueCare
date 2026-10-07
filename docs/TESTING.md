@@ -2,6 +2,10 @@
 
 M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14/M1-15 are merged through PR #22; the current branch also includes the design update through PR #23.
 
+## Local setup checks — 2026-10-07
+
+Six isolated tests in `apps/api/src/tests/checkSetup.test.js` pass for missing workspace files, invalid mobile URLs, API/JWT validation, credential redaction, unchanged files/environment and media/bind-address warnings. Run `node --test apps/api/src/tests/checkSetup.test.js`. `npm run check:setup` passes against the local base files with a Cloudinary-fallback warning. This command is offline and does not establish service reachability; see [setup limits and connectivity checks](SETUP.md). These are new setup-tool checks, not a new full API/mobile suite run. Prior full-run totals below remain historical.
+
 ## M1-06/M1-07 opening-hours follow-up — 2026-10-06
 
 **82 API tests and 291 mobile tests across 22 suites pass**, plus TypeScript, lint and Android/iOS Metro exports (`/private/tmp/queuecare-opening-hours-export`; bundles, not standalone native builds). Real HTTP/MongoDB tests cover optional opening hours, trimming and length limits, omission of malformed legacy values and non-destructive seeds. Mobile checks cover response validation, multiline display, scalable/wrapping text and refresh back to the missing-hours message. Tests use isolated databases and simulated mobile transport; no configured hospital data or physical-device results were changed. See [setup and acceptance checks](HOSPITAL_DETAILS.md#opening-hours-follow-up--2026-10-06).
