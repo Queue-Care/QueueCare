@@ -4,6 +4,7 @@ import ReactTestRenderer, { act } from 'react-test-renderer';
 import { PasswordField } from '../src/components/g_PasswordField';
 import { StaffSignInScreen } from '../src/screens/StaffSignInScreen';
 import { StaffRegistrationScreen } from '../src/screens/StaffRegistrationScreen';
+import { CreateAccountScreen } from '../src/screens/CreateAccountScreen';
 
 jest.mock(
   'react-native-safe-area-context',
@@ -61,6 +62,28 @@ test('the eye button shows the password and hides it again', async () => {
   expect(input('Password').props.secureTextEntry).toBe(true);
   // Showing or hiding never changes what was typed.
   expect(onChangeText).not.toHaveBeenCalled();
+});
+
+test('patient registration has independent password visibility toggles', async () => {
+  await render(<CreateAccountScreen {...({ navigation: {}, route: {} } as any)} />);
+  const fields = renderer.root.findAllByType(PasswordField);
+  expect(fields).toHaveLength(2);
+  expect(input('Create password').props.secureTextEntry).toBe(true);
+  expect(input('Confirm password').props.secureTextEntry).toBe(true);
+  for (const field of fields) {
+    await act(async () => {
+      field.findAll(item => item.props.accessibilityLabel === 'Show password' &&
+        typeof item.props.onPress === 'function').pop()!.props.onPress();
+    });
+  }
+  expect(input('Create password').props.secureTextEntry).toBe(false);
+  expect(input('Confirm password').props.secureTextEntry).toBe(false);
+  await act(async () => {
+    fields[0].findAll(item => item.props.accessibilityLabel === 'Hide password' &&
+      typeof item.props.onPress === 'function').pop()!.props.onPress();
+  });
+  expect(input('Create password').props.secureTextEntry).toBe(true);
+  expect(input('Confirm password').props.secureTextEntry).toBe(false);
 });
 
 test('staff sign-in and registration both have the eye button', async () => {
