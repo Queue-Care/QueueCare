@@ -2,6 +2,10 @@
 
 M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14/M1-15 are merged through PR #22; the current branch also includes the design update through PR #23.
 
+## Member 1 / Member 3 session-to-booking journey — 2026-10-07
+
+Added `npm run test:staff-patient-flow`: a staff session created through the real HTTP route is discovered, booked, edited, closed and checked in across Member 1 and Member 3 APIs. See [the integration notes and physical checklist](STAFF_PATIENT_INTEGRATION.md). After `npm install` restored the merged `@react-native-community/datetimepicker` dependency, **443 API tests and 453 mobile tests across 29 suites, TypeScript and ESLint pass** at commit `c49ce92` plus this change. Exports and phone acceptance were not rerun.
+
 ## Local setup checks — 2026-10-07
 
 Six isolated tests in `apps/api/src/tests/checkSetup.test.js` pass for missing workspace files, invalid mobile URLs, API/JWT validation, credential redaction, unchanged files/environment and media/bind-address warnings. Run `node --test apps/api/src/tests/checkSetup.test.js`. `npm run check:setup` passes against the local base files with a Cloudinary-fallback warning. This command is offline and does not establish service reachability; see [setup limits and connectivity checks](SETUP.md). These are new setup-tool checks, not a new full API/mobile suite run. Prior full-run totals below remain historical.
