@@ -46,7 +46,7 @@ async function search(query: string) {
   await act(async () => renderer.root.findByType(TextInput).props.onChangeText(query));
 }
 
-test('accessible search opens, filters service and team while typing, and clears or closes', async () => {
+test('Today search opens accessibly, filters doctor/team case-insensitively, and clears or closes', async () => {
   list.mockResolvedValue({ data: [session, { ...session, _id: '000000000000000000000102',
     serviceName: 'Dermatology', doctorOrTeam: 'Dr Perera' }], hasMore: false, hospitalId: session.hospitalId });
   await mount();
@@ -56,20 +56,70 @@ test('accessible search opens, filters service and team while typing, and clears
   await press('Search sessions');
   expect(renderer.root.findByType(TextInput).props.accessibilityLabel).toBe('Search sessions');
   expect(renderer.root.findByType(TextInput).props.placeholder).toBe('Search sessions');
-  await search('  general  ');
+  await search('  opd TEAM  ');
   expect(text('General OPD')).toBe(true); expect(text('Dermatology')).toBe(false);
-  await search('DERM');
+  await search('dr');
   expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(false);
   await search('  PERERA ');
   expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(false);
   await press('Clear search');
   expect(text('General OPD')).toBe(true); expect(text('Dermatology')).toBe(true);
   expect(renderer.root.findByType(TextInput).props.value).toBe('');
-  await search('general'); await press('Close search');
+  await search('opd'); await press('Close search');
   expect(renderer.root.findAllByType(TextInput)).toHaveLength(0);
   expect(text('General OPD')).toBe(true); expect(text('Dermatology')).toBe(true);
   expect(list).toHaveBeenCalledTimes(1);
   expect(detail).not.toHaveBeenCalled(); expect(close).not.toHaveBeenCalled();
+});
+
+test('Today excludes service names and dates, while blank queries retain all sessions including unavailable teams', async () => {
+  list.mockResolvedValue({ data: [session, { ...session, _id: '000000000000000000000102',
+    serviceName: 'Dermatology', doctorOrTeam: null }], hasMore: false, hospitalId: session.hospitalId });
+  await mount(); await press('Search sessions');
+  for (const query of ['General', '2026-10-06', '6 Oct 2026', 'missing doctor']) {
+    await search(query);
+    expect(text('No sessions match your search.')).toBe(true);
+    expect(text('General OPD')).toBe(false); expect(text('Dermatology')).toBe(false);
+  }
+  for (const query of ['', '   ']) {
+    await search(query);
+    expect(text('General OPD')).toBe(true); expect(text('Dermatology')).toBe(true);
+    expect(text('No sessions match your search.')).toBe(false);
+  }
+  expect(list).toHaveBeenCalledTimes(1);
+});
+
+test.each(['  PERERA  ', '7 Oct 2026', '  7 oCT  ', 'Oct', '2026-10-07', '2026-10'])
+  ('Upcoming filters the loaded list by doctor/team or actual calendar date: %s', async query => {
+    await mount();
+    list.mockResolvedValueOnce({ data: [
+      { ...session, serviceName: 'Dermatology', doctorOrTeam: 'Dr Perera', sessionDate: '2026-10-07' },
+      { ...session, _id: '000000000000000000000102', serviceName: 'General OPD',
+        doctorOrTeam: 'Clinic team', sessionDate: '2026-11-01' },
+    ], hasMore: false, hospitalId: session.hospitalId });
+    await press('Upcoming'); await press('Search sessions'); await search(query);
+    expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(false);
+    await press('Clear search');
+    expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(true);
+    await search('   ');
+    expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(true);
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(detail).not.toHaveBeenCalled(); expect(close).not.toHaveBeenCalled();
+  });
+
+test('Upcoming date matching preserves month/year boundary calendar days without timezone shifts', async () => {
+  await mount();
+  list.mockResolvedValueOnce({ data: [
+    { ...session, serviceName: 'Year end', doctorOrTeam: null, sessionDate: '2026-12-31' },
+    { ...session, _id: '000000000000000000000102', serviceName: 'New year',
+      doctorOrTeam: null, sessionDate: '2027-01-01' },
+  ], hasMore: false, hospitalId: session.hospitalId });
+  await press('Upcoming'); await press('Search sessions'); await search('1 Jan 2027');
+  expect(text('New year')).toBe(true); expect(text('Year end')).toBe(false);
+  await search('31 Dec 2026');
+  expect(text('Year end')).toBe(true); expect(text('New year')).toBe(false);
+  await search('2027-01-01');
+  expect(text('New year')).toBe(true); expect(text('Year end')).toBe(false);
 });
 
 test('search no-results state and empty query preserve normal empty states', async () => {
@@ -86,14 +136,14 @@ test('search no-results state and empty query preserve normal empty states', asy
 });
 
 test('switching tabs resets search and filters only the currently loaded tab', async () => {
-  await mount(); await press('Search sessions'); await search('general');
+  await mount(); await press('Search sessions'); await search('opd');
   list.mockResolvedValueOnce({ data: [{ ...session, serviceName: 'Dermatology', sessionDate: '2026-10-07' }],
     hasMore: false, hospitalId: session.hospitalId });
   await press('Upcoming');
   expect(list).toHaveBeenLastCalledWith('staff-token', 'upcoming', 1, expect.any(AbortSignal));
   expect(renderer.root.findAllByType(TextInput)).toHaveLength(0);
   expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(false);
-  await press('Search sessions'); await search('general');
+  await press('Search sessions'); await search('perera');
   expect(text('No sessions match your search.')).toBe(true);
   await press('Today');
   expect(list).toHaveBeenLastCalledWith('staff-token', 'today', 1, expect.any(AbortSignal));

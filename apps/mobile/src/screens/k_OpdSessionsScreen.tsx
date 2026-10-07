@@ -101,7 +101,9 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
   const bodyFont = { fontFamily: fonts.body };
   const query = searchQuery.trim().toLowerCase();
   const visibleSessions = data?.data.filter(session => !query ||
-    [session.serviceName, session.doctorOrTeam].some(value => value?.toLowerCase().includes(query))) ?? [];
+    session.doctorOrTeam?.toLowerCase().includes(query) ||
+    (view === 'upcoming' && [session.sessionDate, sessionDayLabel(session.sessionDate)]
+      .some(value => value.toLowerCase().includes(query)))) ?? [];
   return <SafeAreaView style={styles.safe} edges={['left', 'right']}>
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.teal} />}>
