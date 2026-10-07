@@ -116,7 +116,26 @@ try {
     });
   }
 } catch (error) {
-  console.error(`API startup failed. ${connectionDiagnostic(error)}`);
   if (connection) await connection.client.close();
-  process.exitCode = 1;
+  // Starting the API twice is a slip, not a failure: it is already serving.
+  if (error?.code === 'EADDRINUSE' && (await isQueueCareApi(error.port))) {
+    console.log(
+      `QueueCare API is already running on port ${error.port}, so there is nothing to start. To restart it, stop the other one first (Ctrl+C in its terminal).`
+    );
+  } else {
+    console.error(`API startup failed. ${connectionDiagnostic(error)}`);
+    process.exitCode = 1;
+  }
+}
+
+// True when the busy port answers /health the way this API does.
+async function isQueueCareApi(port) {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/health`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    return (await response.json())?.data?.status === 'ok';
+  } catch {
+    return false;
+  }
 }
