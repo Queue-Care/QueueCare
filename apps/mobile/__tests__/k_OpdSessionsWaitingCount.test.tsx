@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, AppState, RefreshControl, Text } from 'react-native';
+import { Alert, AppState, RefreshControl, Text, TextInput } from 'react-native';
 import Renderer, { act } from 'react-test-renderer';
 import { OpdSessionsScreen } from '../src/screens/k_OpdSessionsScreen';
 import { fetchStaffSessions, fetchStaffSession, fetchStaffSessionMetrics, closeStaffSessionBookings,
@@ -61,6 +61,24 @@ test('initial loading text never derives a count from bookings', async () => {
   metrics.mockImplementation(() => new Promise(() => {})); await mount();
   expect(texts()).toContain('Loading waiting count…'); expect(texts()).not.toContain('19 waiting');
   expect(texts()).toContain('Loading priority count…'); expect(texts()).not.toContain('0 priority waiting');
+});
+
+test('search leaves waiting metrics and polling for the complete loaded list unchanged', async () => {
+  const dermatology = { ...session, _id: '000000000000000000000102', serviceName: 'Dermatology', doctorOrTeam: 'Dr Perera' };
+  list.mockResolvedValue(page([session, dermatology]));
+  await mount(); expect(metrics).toHaveBeenCalledTimes(2);
+  await press('Search sessions');
+  await act(async () => renderer.root.findByType(TextInput).props.onChangeText('team'));
+  expect(texts()).toContain('General OPD'); expect(texts()).not.toContain('Dermatology');
+  expect(texts()).toContain('3 waiting'); expect(texts()).toContain('19');
+  expect(metrics).toHaveBeenCalledTimes(2); expect(list).toHaveBeenCalledTimes(1);
+  await tick();
+  expect(metrics).toHaveBeenCalledTimes(4);
+  expect(metrics).toHaveBeenLastCalledWith('staff-token', dermatology._id, expect.any(AbortSignal));
+  await press('Clear search');
+  expect(texts()).toContain('Dermatology'); expect(texts()).toContain('3 waiting');
+  expect(metrics).toHaveBeenCalledTimes(4); expect(list).toHaveBeenCalledTimes(1);
+  expect(fetchStaffSession).not.toHaveBeenCalled(); expect(closeStaffSessionBookings).not.toHaveBeenCalled();
 });
 test.each([0, 1, 3])('real %s waiting has service accessibility context', async count => {
   metrics.mockResolvedValue(result(count)); await mount(); expect(texts()).toContain(`${count} waiting`);

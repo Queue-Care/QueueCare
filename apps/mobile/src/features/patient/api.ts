@@ -132,6 +132,8 @@ export async function patientApi(
       );
     if (response.status === 401 || response.status === 403)
       throw new PatientApiError('Please sign in again to continue.');
+    if (response.status === 409 && path.endsWith('/priority-requests'))
+      throw new PatientApiError('This booking may already have a pending or accepted priority request, or the session is no longer available. Check Request status before submitting again.');
     if (response.status === 409)
       throw new PatientApiError(
         'This action is no longer available. Refresh your booking and try again.',
