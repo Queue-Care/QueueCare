@@ -150,6 +150,28 @@ test.each(['guest', 'loading', 'empty', 'error', 'appointment'])(
   },
 );
 
+test.each(['guest', 'patient'])(
+  '%s Find a hospital quick action opens hospital search',
+  async scenario => {
+    await mount(scenario === 'guest' ? null : patient);
+    if (scenario === 'guest') await press('Continue as guest');
+    const tile = renderer.root
+      .findByType(PatientHomeScreen)
+      .find(
+        node =>
+          node.props.accessibilityLabel === 'Find a hospital' &&
+          typeof node.props.onPress === 'function',
+      );
+    expect(tile.props.accessibilityHint).toBe(
+      'Opens the same hospital search as the search bar',
+    );
+    await act(async () => {
+      tile.props.onPress();
+    });
+    expect(ref.getCurrentRoute()?.name).toBe('HospitalSearch');
+  },
+);
+
 test('a failed request shows retry rather than no appointments', async () => {
   load
     .mockRejectedValueOnce(new Error('offline'))

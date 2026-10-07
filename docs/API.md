@@ -181,7 +181,7 @@ Success returns HTTP 201:
   "success": true,
   "data": {
     "_id": "000000000000000000000401",
-    "bookingCode": "OPD-74A099F60D3B48C18409D3A835176FA0",
+    "bookingCode": "OPD-7K3QX9",
     "patientId": "000000000000000000000001",
     "sessionId": "000000000000000000000301",
     "status": "CONFIRMED",
@@ -212,7 +212,7 @@ HTTP 200 returns `Cache-Control: no-store` and the following joined DTO:
   "success": true,
   "data": {
     "_id": "000000000000000000000401",
-    "bookingCode": "OPD-74A099F60D3B48C18409D3A835176FA0",
+    "bookingCode": "OPD-7K3QX9",
     "patientId": "000000000000000000000001",
     "sessionId": "000000000000000000000301",
     "status": "CONFIRMED",

@@ -17,6 +17,7 @@ export function ActionButton({
   variant?:
     | 'primary'
     | 'outline'
+    | 'quiet'
     | 'onDark'
     | 'urgent'
     | 'secondary'
@@ -39,6 +40,11 @@ export function ActionButton({
         styles.button,
         styles[variant],
         pressed && !disabled && !busy && styles.pressed,
+        pressed &&
+          !disabled &&
+          !busy &&
+          variant === 'quiet' &&
+          styles.quietPressed,
         (disabled || busy) && styles.disabled,
       ]}
     >
@@ -50,8 +56,9 @@ export function ActionButton({
       <Text
         style={[
           styles.label,
-          ['outline', 'onDark', 'secondary', 'tile'].includes(variant) &&
-            styles.darkLabel,
+          ['outline', 'quiet', 'onDark', 'secondary', 'tile'].includes(
+            variant,
+          ) && styles.darkLabel,
           variant === 'danger' && { color: colors.coralStrong },
           variant === 'tile' && styles.tileLabel,
           (disabled || busy) && styles.disabledLabel,
@@ -94,6 +101,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   outline: { backgroundColor: colors.panel, borderColor: colors.sage },
+  // Lower-emphasis action whose outline still meets 3:1 non-text contrast.
+  quiet: { backgroundColor: colors.panel, borderColor: colors.controlBorder },
+  quietPressed: { backgroundColor: colors.tealTint },
   onDark: { backgroundColor: colors.panel, borderColor: colors.panel },
   secondary: {
     backgroundColor: colors.tealTint,
