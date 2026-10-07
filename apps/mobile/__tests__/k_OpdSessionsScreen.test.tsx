@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, RefreshControl, Text } from 'react-native';
+import { Alert, RefreshControl, Text, TextInput } from 'react-native';
 import Renderer, { act } from 'react-test-renderer';
 import { OpdSessionsScreen } from '../src/screens/k_OpdSessionsScreen';
 import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, type StaffOpdSession } from '../src/features/sessions/k_staffSessions';
@@ -42,6 +42,63 @@ function button(label: string) {
 }
 async function press(label: string) { await act(async () => button(label).props.onPress()); }
 function text(value: string) { return renderer.root.findAllByType(Text).some(node => node.props.children === value); }
+async function search(query: string) {
+  await act(async () => renderer.root.findByType(TextInput).props.onChangeText(query));
+}
+
+test('accessible search opens, filters service and team while typing, and clears or closes', async () => {
+  list.mockResolvedValue({ data: [session, { ...session, _id: '000000000000000000000102',
+    serviceName: 'Dermatology', doctorOrTeam: 'Dr Perera' }], hasMore: false, hospitalId: session.hospitalId });
+  await mount();
+  expect(button('Search sessions')).toBeDefined();
+  expect(text('OPD sessions')).toBe(true);
+  expect(renderer.root.findAllByType(TextInput)).toHaveLength(0);
+  await press('Search sessions');
+  expect(renderer.root.findByType(TextInput).props.accessibilityLabel).toBe('Search sessions');
+  expect(renderer.root.findByType(TextInput).props.placeholder).toBe('Search sessions');
+  await search('  general  ');
+  expect(text('General OPD')).toBe(true); expect(text('Dermatology')).toBe(false);
+  await search('DERM');
+  expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(false);
+  await search('  PERERA ');
+  expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(false);
+  await press('Clear search');
+  expect(text('General OPD')).toBe(true); expect(text('Dermatology')).toBe(true);
+  expect(renderer.root.findByType(TextInput).props.value).toBe('');
+  await search('general'); await press('Close search');
+  expect(renderer.root.findAllByType(TextInput)).toHaveLength(0);
+  expect(text('General OPD')).toBe(true); expect(text('Dermatology')).toBe(true);
+  expect(list).toHaveBeenCalledTimes(1);
+  expect(detail).not.toHaveBeenCalled(); expect(close).not.toHaveBeenCalled();
+});
+
+test('search no-results state and empty query preserve normal empty states', async () => {
+  await mount(); await press('Search sessions'); await search('missing');
+  expect(text('No sessions match your search.')).toBe(true);
+  expect(text('General OPD')).toBe(false); expect(text('No sessions today')).toBe(false);
+  await press('Clear search');
+  expect(text('No sessions match your search.')).toBe(false); expect(text('General OPD')).toBe(true);
+  list.mockResolvedValue({ data: [], hasMore: false, hospitalId: session.hospitalId });
+  await press('Upcoming'); await press('Search sessions'); await search('missing');
+  expect(text('No sessions match your search.')).toBe(true);
+  await search('   ');
+  expect(text('No upcoming sessions')).toBe(true); expect(text('No sessions match your search.')).toBe(false);
+});
+
+test('switching tabs resets search and filters only the currently loaded tab', async () => {
+  await mount(); await press('Search sessions'); await search('general');
+  list.mockResolvedValueOnce({ data: [{ ...session, serviceName: 'Dermatology', sessionDate: '2026-10-07' }],
+    hasMore: false, hospitalId: session.hospitalId });
+  await press('Upcoming');
+  expect(list).toHaveBeenLastCalledWith('staff-token', 'upcoming', 1, expect.any(AbortSignal));
+  expect(renderer.root.findAllByType(TextInput)).toHaveLength(0);
+  expect(text('Dermatology')).toBe(true); expect(text('General OPD')).toBe(false);
+  await press('Search sessions'); await search('general');
+  expect(text('No sessions match your search.')).toBe(true);
+  await press('Today');
+  expect(list).toHaveBeenLastCalledWith('staff-token', 'today', 1, expect.any(AbortSignal));
+  expect(text('General OPD')).toBe(true); expect(text('Dermatology')).toBe(false);
+});
 test('Today and Upcoming load real helpers and support pagination and refresh', async () => {
   list.mockResolvedValue({ data: [session], hasMore: true, hospitalId: '000000000000000000000001' });
   await mount();
