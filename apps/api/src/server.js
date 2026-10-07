@@ -10,6 +10,7 @@ import { connectionDiagnostic } from './config/connectionDiagnostic.js';
 import { readAuthConfig } from './config/auth.js';
 import { createMediaStore } from './config/cloudinary.js';
 import { authenticate } from './middleware/auth.js';
+import { createPatientPriorityRepository, ensurePatientPriorityIndexes } from './modules/priority/patientPriorityRepository.js';
 import { createPatientRegistrationRepository, ensurePatientRegistrationIndexes } from './modules/auth/patientRegistration.js';
 import { ensureBookingNotificationIndexes } from './modules/bookings/bookingNotification.js';
 import {
@@ -61,6 +62,7 @@ try {
   await ensureBookingNotificationIndexes(connection.db);
   await ensureNotificationIndexes(connection.db);
   await ensurePriorityIndexes(connection.db);
+  await ensurePatientPriorityIndexes(connection.db);
   await ensureProfileImageIndexes(connection.db);
   // Profile photos go to Cloudinary when its keys are set, otherwise to MongoDB.
   const profileImageStore = createMongoMediaStore(connection.db);
@@ -88,6 +90,7 @@ try {
         notificationRepository,
       }),
       priorityRepository,
+      patientPriorityRepository: createPatientPriorityRepository(connection.db),
       notificationRepository,
       profileRepository: createProfileRepository(connection.db, { mediaStore }),
       profileImageStore,

@@ -22,7 +22,8 @@
     "db:seed:priority": "npm --workspace apps/api run seed:priority",
     "db:seed:priority:reset": "npm --workspace apps/api run seed:priority:reset",
     "check:db": "npm --workspace apps/api run check:db",
-    "check:setup": "node apps/api/src/config/checkSetup.js"
+    "check:setup": "node apps/api/src/config/checkSetup.js",
+    "test:staff-patient-flow": "node --test apps/api/src/tests/staffPatientBookingFlow.test.js"
   },
   "workspaces": [
     "apps/mobile",
