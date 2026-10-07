@@ -142,9 +142,14 @@ export async function readBookingDetails(db, patientId, bookingId) {
   )
     throw incomplete();
   // Existing bookings remain readable when services are unpublished or sessions stop taking bookings.
+  const priorityRequest = await db.collection('priorityRequests').findOne(
+    { bookingId, patientId, status: { $in: ['PENDING', 'ACCEPTED'] } },
+    { projection: { _id: 1 }, maxTimeMS: 3000 }
+  );
   return {
     _id: booking._id.toString(),
     bookingCode: booking.bookingCode,
+    ...(priorityRequest ? { priorityRequestId: priorityRequest._id.toString() } : {}),
     patientId: patientId.toString(),
     sessionId: session._id.toString(),
     status: booking.status,
