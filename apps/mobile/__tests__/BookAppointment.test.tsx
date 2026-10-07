@@ -188,6 +188,23 @@ afterEach(async () => {
   jest.restoreAllMocks();
   jest.useRealTimers();
 });
+test('an empty selected service can show sessions from other services without changing hospital or date', async () => {
+  load.mockImplementation(async query => query.serviceId ? [] : slots);
+  await mount();
+  expect(text('No upcoming sessions for this date')).toBe(true);
+  await press('Show all services');
+  expect(load).toHaveBeenLastCalledWith(
+    { hospitalId, serviceId: undefined, date }, expect.anything(),
+  );
+  expect(radios()).toHaveLength(3);
+  await select(0);
+  await press('Show selected service');
+  expect(load).toHaveBeenLastCalledWith(
+    { hospitalId, serviceId, date }, expect.anything(),
+  );
+  expect(radios()).toHaveLength(0);
+});
+
 test('shows capacity and masked patient summary; selects exactly one available session', async () => {
   await mount();
   expect(load).toHaveBeenLastCalledWith(

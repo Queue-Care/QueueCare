@@ -57,12 +57,13 @@ export function BookAppointmentScreen({
   onChooseHospital: () => void;
 }) {
   const [date, setDate] = useState(colomboDate);
+  const [showAllServices, setShowAllServices] = useState(false);
   const [dateError, setDateError] = useState('');
   // Pending calendar value; iOS confirms it with "Use date", Android applies it on selection.
   const [picker, setPicker] = useState<Date | null>(null);
   const { state, selected, select, reload, now } = useAvailableSessions({
     hospitalId,
-    serviceId,
+    serviceId: showAllServices ? undefined : serviceId,
     date,
   });
   const focused = useIsFocused();
@@ -262,6 +263,21 @@ export function BookAppointmentScreen({
         <Text accessibilityRole="header" style={styles.heading}>
           Sessions for {date}
         </Text>
+        <View style={styles.card}>
+          <Text style={styles.body}>
+            {serviceId && !showAllServices
+              ? 'Showing sessions for the OPD service you selected.'
+              : 'Showing sessions for all OPD services at this hospital.'}
+          </Text>
+          {serviceId && (
+            <ActionButton
+              label={showAllServices ? 'Show selected service' : 'Show all services'}
+              variant="secondary"
+              disabled={submission.pending}
+              onPress={() => setShowAllServices(current => !current)}
+            />
+          )}
+        </View>
         {state.status === 'loading' ? (
           <View style={styles.card} accessibilityState={{ busy: true }}>
             <ActivityIndicator
@@ -318,7 +334,9 @@ export function BookAppointmentScreen({
                   No upcoming sessions for this date
                 </StatusText>
                 <Text style={styles.body}>
-                  Try another date or check again later.
+                  {serviceId && !showAllServices
+                    ? 'Try Show all services to check other clinics at this hospital, or choose another date.'
+                    : 'Try another date or check again later.'}
                 </Text>
               </View>
             ) : (
