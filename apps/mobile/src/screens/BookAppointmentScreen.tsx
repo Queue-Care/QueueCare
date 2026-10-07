@@ -221,14 +221,14 @@ export function BookAppointmentScreen({
           <ActionButton
             label="Show sessions"
             disabled={submission.pending}
-            variant="outline"
+            variant="secondary"
             onPress={() => chooseDate(draftDate)}
           />
           <View style={styles.dateNavigation}>
             <View style={styles.dateAction}>
               <ActionButton
                 label="Previous day"
-                variant="outline"
+                variant="quiet"
                 disabled={submission.pending || date <= today}
                 onPress={() => {
                   if (date > colomboDate()) chooseDate(shiftDate(date, -1));
@@ -238,7 +238,7 @@ export function BookAppointmentScreen({
             <View style={styles.dateAction}>
               <ActionButton
                 label="Next day"
-                variant="outline"
+                variant="quiet"
                 disabled={submission.pending || date === '9999-12-31'}
                 onPress={() => {
                   if (date !== '9999-12-31') chooseDate(shiftDate(date, 1));
@@ -286,7 +286,7 @@ export function BookAppointmentScreen({
               label="Try again"
               onPress={refresh}
               disabled={submission.pending}
-              variant="outline"
+              variant="secondary"
             />
           </View>
         ) : (
@@ -372,7 +372,7 @@ export function BookAppointmentScreen({
             )}
             <ActionButton
               label="Refresh availability"
-              variant="outline"
+              variant="quiet"
               onPress={refresh}
               disabled={submission.pending}
             />
@@ -415,7 +415,7 @@ export function BookAppointmentScreen({
             {onSessionExpired && (
               <ActionButton
                 label="Sign in again"
-                variant="outline"
+                variant="secondary"
                 onPress={onSessionExpired}
               />
             )}
@@ -457,7 +457,7 @@ export function BookAppointmentScreen({
                 {['duplicate', 'uncertain'].includes(outcome.kind) && (
                   <ActionButton
                     label="Check My bookings"
-                    variant="outline"
+                    variant="secondary"
                     onPress={onBookings}
                   />
                 )}
@@ -465,7 +465,7 @@ export function BookAppointmentScreen({
                   selected?.id === attempt.sessionId && (
                     <ActionButton
                       label="Retry same session"
-                      variant="outline"
+                      variant="quiet"
                       disabled={
                         !patientName ||
                         !submission.authenticated ||
