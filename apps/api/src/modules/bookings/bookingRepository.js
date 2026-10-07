@@ -5,6 +5,7 @@ import { sessionTimestamp as timestamp } from './sessionTime.js';
 import { readBookingDetails } from './bookingDetails.js';
 import { insertBookingConfirmation } from './bookingNotification.js';
 import { readBookingList } from './bookingList.js';
+import { writeAuditLog } from '../audit/g_auditLog.js';
 
 export async function ensureBookingIndexes(db) {
   await db.collection('bookings').createIndexes([
@@ -21,6 +22,12 @@ const unavailable = () =>
     409,
     'SESSION_UNAVAILABLE',
     'This OPD session is no longer available for booking.'
+  );
+const notEditable = () =>
+  new HttpError(
+    409,
+    'BOOKING_NOT_EDITABLE',
+    'This booking can no longer be cancelled.'
   );
 const duplicate = () =>
   new HttpError(
@@ -209,6 +216,91 @@ export function createBookingRepository(
           await transaction.endSession();
         }
       }
+    },
+    // README section 19: cancellation releases capacity atomically and is audited.
+    // Repeating a cancel returns the saved booking without releasing capacity again.
+    async cancel(patientId, bookingId) {
+      const topology = await db.admin().command({ hello: 1 });
+      if (!topology.setName && topology.msg !== 'isdbgrid')
+        throw new HttpError(
+          503,
+          'BOOKING_UNAVAILABLE',
+          'Cancellation requires a transaction-capable database.'
+        );
+      const transaction = client.startSession();
+      try {
+        await transaction.withTransaction(
+          async () => {
+            const options = { session: transaction };
+            const booking = await db
+              .collection('bookings')
+              .findOne({ _id: bookingId, patientId }, options);
+            // Missing and another patient's booking have the same response.
+            if (!booking)
+              throw new HttpError(404, 'NOT_FOUND', 'Booking not found.');
+            if (booking.status === 'CANCELLED') return;
+            if (
+              booking.status !== 'CONFIRMED' ||
+              (booking.checkedInAt !== undefined &&
+                booking.checkedInAt !== null) ||
+              !(booking.sessionId instanceof ObjectId)
+            )
+              throw notEditable();
+            const at = now();
+            const upcoming = await db.collection('opdSessions').findOne(
+              {
+                _id: booking.sessionId,
+                $expr: { $gt: [timestamp('startTime'), at] },
+              },
+              options
+            );
+            if (!upcoming) throw notEditable();
+            // The status filter also conflicts with a concurrent check-in write.
+            const updated = await db
+              .collection('bookings')
+              .updateOne(
+                {
+                  _id: bookingId,
+                  patientId,
+                  status: 'CONFIRMED',
+                  checkedInAt: null,
+                },
+                { $set: { status: 'CANCELLED', updatedAt: at } },
+                options
+              );
+            if (updated.modifiedCount !== 1) throw notEditable();
+            await db
+              .collection('opdSessions')
+              .updateOne(
+                { _id: booking.sessionId, bookedCount: { $gt: 0 } },
+                { $inc: { bookedCount: -1 }, $set: { updatedAt: at } },
+                options
+              );
+            await writeAuditLog(
+              db,
+              {
+                actorUserId: patientId,
+                action: 'BOOKING_CANCELLED',
+                entityType: 'booking',
+                entityId: bookingId,
+                metadata: { sessionId: booking.sessionId },
+                createdAt: at,
+              },
+              options
+            );
+          },
+          {
+            readConcern: { level: 'snapshot' },
+            writeConcern: { w: 'majority' },
+            readPreference: 'primary',
+            maxCommitTimeMS: 5000,
+            timeoutMS: 10000,
+          }
+        );
+      } finally {
+        await transaction.endSession();
+      }
+      return readBookingDetails(db, patientId, bookingId);
     },
   };
 }

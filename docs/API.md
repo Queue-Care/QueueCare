@@ -2,7 +2,7 @@
 
 ## Patient account, bookings, and priority pages
 
-These frontend contracts follow the supplied project plan. Patient registration, booking reads, and patient priority submission/status reads are implemented. Cancellation remains pending. All responses use `{ "success": true, "data": ... }`; errors use an appropriate non-2xx status. Protected endpoints require a patient JWT and must enforce patient ownership on the server.
+These frontend contracts follow the supplied project plan. Patient registration, booking reads, booking cancellation, and patient priority submission/status reads are implemented. All responses use `{ "success": true, "data": ... }`; errors use an appropriate non-2xx status. Protected endpoints require a patient JWT and must enforce patient ownership on the server.
 
 - `POST /api/v1/auth/patient/register`: body `{ fullName, nic, mobile, email?, password }`; data `{ registered: true }`. Never return the password. After success the client opens patient login.
 
@@ -12,7 +12,7 @@ Registration returns HTTP 201 and saves an ACTIVE PATIENT account. Passwords use
 
 - `GET /api/v1/bookings/me?status=upcoming|past`: data is an array of joined booking summaries, with the same fields as the Home summary below. The list accepts CONFIRMED, CANCELLED, COMPLETED, SKIPPED, and RESCHEDULED. Filter/sort on the server according to the requested category.
 - `GET /api/v1/bookings/:bookingId`: the implemented endpoint returns nested `hospital`, `service`, and `session` records, as documented below. Patient pages normalize their names and start time into a booking summary. Flat list summaries are also supported. Optional `patientName`, `maskedNic`, and `priorityRequestId` are only shown if supplied; the current details endpoint does not return patient profile or NIC fields. The ID must match the route.
-- `PATCH /api/v1/bookings/:bookingId/cancel`: successful data may be null or the updated booking. Enforce allowed cancellation transitions and release capacity atomically. The client refetches details after success.
+- `PATCH /api/v1/bookings/:bookingId/cancel`: implemented 2026-10-07; see [Cancel booking](#cancel-booking--implemented-m2-12). The client refetches details after success.
 - `POST /api/v1/bookings/:bookingId/priority-requests`: body `{ reason, note }`, where reason is ELDERLY, MOBILITY, PREGNANT, or OTHER and note is at most 500 characters. Data is a priority request `{ _id, bookingId, reason, status, createdAt, note?, decisionNote? }`. Only CONFIRMED bookings are eligible; prevent duplicate active requests on the server.
 - `GET /api/v1/priority-requests/me`: data is an array of those priority requests. The status page finds its requestId, then reads its associated booking. Status is PENDING, ACCEPTED, or DECLINED. Only staff may make a decision; return the actual decision and optional decisionNote.
 
@@ -249,6 +249,14 @@ HTTP 200 returns `Cache-Control: no-store` and the following joined DTO:
 All known booking and session statuses are readable, including past sessions and inactive hospitals/services. Times use the same Asia/Colombo conversion as booking creation. This is a read of current linked records, not a historical snapshot; separate queries do not guarantee a snapshot across concurrent edits. No capacity or booking fields are changed.
 
 Malformed IDs/query parameters return 400 `VALIDATION_ERROR`; invalid authentication returns 401; inactive/non-patient accounts return 403. Missing or inconsistent linked records return 409 `BOOKING_DETAILS_UNAVAILABLE`. Unconfigured authentication/repository returns 503, and unexpected database failures return generic 500 errors. No private notes, user profile, or NIC fields are returned. Member 2's list/actions/staff access remain pending; register future static `/bookings/me` before the parameter route. See [screen behavior and phone checks](BOOKING_CONFIRMATION.md).
+
+## Cancel booking — implemented (M2-12)
+
+`PATCH /api/v1/bookings/:bookingId/cancel` with a patient bearer token and no body. Only the owning patient may cancel; another patient's or a missing booking returns 404 `NOT_FOUND`, a non-patient 403, and a missing/invalid token 401. A malformed ID or any query parameter returns 400 `VALIDATION_ERROR`.
+
+A `CONFIRMED` booking that has not been checked in and whose session has not started is cancelled in one MongoDB transaction: the booking becomes `CANCELLED`, the session's `bookedCount` is decremented, and an `auditLogs` record with action `BOOKING_CANCELLED` is written. Success returns 200 with the same data as `GET /bookings/:bookingId`. Cancelling an already-cancelled booking returns 200 again without releasing capacity or writing another audit record. Checked-in, completed, skipped or rescheduled bookings, and sessions that have reached their start time, return 409 `BOOKING_NOT_EDITABLE`. A standalone database returns 503.
+
+Limits: the all-status `(patientId, sessionId)` unique index still prevents the same patient from booking that session again after cancelling. A pending priority request for a cancelled booking is not changed. No cancellation notification is created.
 
 ## Patient Home / My Bookings — implemented booking list (I-01 read integration)
 

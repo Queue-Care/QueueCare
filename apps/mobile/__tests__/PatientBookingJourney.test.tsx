@@ -196,6 +196,7 @@ async function register() {
     ['NIC number', identity.nic],
     ['Mobile number', identity.mobile],
     ['Create password', password],
+    ['Confirm password', password],
   ])
     await fill(label, value);
   await press('Create account');
