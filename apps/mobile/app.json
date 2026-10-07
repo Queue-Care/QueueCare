@@ -18,6 +18,9 @@
     },
     "android": {
       "package": "com.queuecare"
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

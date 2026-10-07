@@ -11,6 +11,12 @@ import { notificationRoutes } from './modules/notifications/g_notificationRoutes
 import { profileRoutes } from './modules/users/g_profileRoutes.js';
 import { mediaRoutes } from './modules/media/g_mongoMediaStore.js';
 import { patientAuthRoutes } from './modules/auth/patientAuthRoutes.js';
+import { staffSessionRoutes } from './modules/sessions/k_sessionRoutes.js';
+import { staffPatientSearchRoutes } from './modules/staff/k_patientSearchRoutes.js';
+import { checkInRoutes } from './modules/bookings/k_checkInRoutes.js';
+import { staffQueueRoutes } from './modules/queue/k_queueRoutes.js';
+import { sessionMetricsRoutes } from './modules/queue/k_sessionMetricsRoutes.js';
+import { queueMutationRoutes } from './modules/queue/k_queueMutationRoutes.js';
 
 export function createApp({
   hospitalRepository,
@@ -18,6 +24,12 @@ export function createApp({
   bookingRepository,
   staffAuthRepository,
   staffDashboardRepository,
+  staffSessionRepository,
+  staffPatientSearchRepository,
+  checkInRepository,
+  queueRepository,
+  sessionMetricsRepository,
+  queueMutationRepository,
   priorityRepository,
   notificationRepository,
   profileRepository,
@@ -55,6 +67,11 @@ export function createApp({
   });
   app.use('/api/v1/hospitals', hospitalRoutes(hospitalRepository));
   app.use('/api/v1/staff/auth', staffAuthRoutes(staffAuthRepository));
+  app.use('/api/v1/staff', queueMutationRoutes(queueMutationRepository, requireSignIn));
+  app.use('/api/v1/staff/sessions', staffQueueRoutes(queueRepository, requireSignIn));
+  app.use('/api/v1/staff/sessions', sessionMetricsRoutes(sessionMetricsRepository, requireSignIn));
+  app.use('/api/v1/staff/sessions', staffSessionRoutes(staffSessionRepository, requireSignIn));
+  app.use('/api/v1/staff/patients', staffPatientSearchRoutes(staffPatientSearchRepository, requireSignIn));
   app.use(
     '/api/v1/staff/dashboard',
     staffDashboardRoutes(staffDashboardRepository, requireSignIn)
@@ -69,6 +86,7 @@ export function createApp({
   );
   app.use('/api/v1/me', profileRoutes(profileRepository, requireSignIn));
   app.use('/api/v1/media', mediaRoutes(profileImageStore));
+  app.use('/api/v1/bookings', checkInRoutes(checkInRepository, requireSignIn));
   app.use('/api/v1/bookings', bookingRoutes(bookingRepository, requireSignIn));
   app.use((_request, _response, next) =>
     next(

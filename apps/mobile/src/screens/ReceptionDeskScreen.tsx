@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { NavigationContext } from '@react-navigation/native';
 import {
   ActivityIndicator,
+  AppState,
   Image,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, surfaces } from '../theme/tokens';
 import { useApiResource } from '../api/g_useApiResource';
+import { errorMessage } from '../api/g_apiClient';
+import { useHomeFonts } from '../theme/homeFonts';
 import {
   fetchDashboard,
   greeting,
@@ -56,8 +61,46 @@ export function ReceptionDeskScreen({
   onOpenNotifications,
   onOpenProfile,
 }: Props) {
+  const homeFonts = useHomeFonts();
+  const navigation = useContext(NavigationContext);
+  const [greetingTime, setGreetingTime] = useState(() => new Date());
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let focused = navigation?.isFocused() ?? true;
+    let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
+    const update = () => {
+      clearTimeout(timer);
+      if (!focused || !foreground) return;
+      const now = new Date();
+      setGreetingTime(now);
+      // Colombo has a fixed UTC+05:30 offset. Schedule only noon, 18:00, and midnight.
+      const local = new Date(now.getTime() + 330 * 60000);
+      const hour = local.getUTCHours();
+      const boundary = new Date(local);
+      boundary.setUTCHours(hour < 12 ? 12 : hour < 18 ? 18 : 24, 0, 0, 0);
+      timer = setTimeout(update, boundary.getTime() - local.getTime());
+    };
+    update();
+    const focus = navigation?.addListener('focus', () => { focused = true; update(); });
+    const blur = navigation?.addListener('blur', () => { focused = false; clearTimeout(timer); });
+    const subscription = AppState.addEventListener('change', state => { foreground = state === 'active'; update(); });
+    return () => { clearTimeout(timer); focus?.(); blur?.(); subscription.remove(); };
+  }, [navigation]);
+  const bodyFont = { fontFamily: homeFonts.body };
+  const displayFont = { fontFamily: homeFonts.display, fontWeight: 'normal' as const };
+  const semiboldFont = { fontFamily: homeFonts.semibold, fontWeight: 'normal' as const };
+  const [refreshError, setRefreshError] = useState<string>();
   const load = useCallback(
-    (signal: AbortSignal) => fetchDashboard(accessToken, signal),
+    async (signal: AbortSignal) => {
+      try {
+        const result = await fetchDashboard(accessToken, signal);
+        if (!signal.aborted) setRefreshError(undefined);
+        return result;
+      } catch (cause) {
+        if (!signal.aborted) setRefreshError(errorMessage(cause));
+        throw cause;
+      }
+    },
     [accessToken],
   );
   // README section 17: reception screens refresh every 5–10 seconds while visible.
@@ -71,7 +114,7 @@ export function ReceptionDeskScreen({
   }, [pending, onPendingCount]);
 
   const waiting = pending ?? 0;
-  const name = data?.staff.fullName ?? staff?.fullName ?? '';
+  const name = staff?.fullName?.trim() || data?.staff.fullName?.trim() || '';
   const hospital = data?.staff.hospital ?? staff?.hospital ?? '';
 
   return (
@@ -103,73 +146,84 @@ export function ReceptionDeskScreen({
               style={styles.avatarImage}
             />
           ) : (
-            <Text style={styles.avatarText}>
+            <Text style={[styles.avatarText, semiboldFont]}>
               {name ? initials(name) : '··'}
             </Text>
           )}
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.greet}>{greeting()}</Text>
-        <Text accessibilityRole="header" style={styles.title}>
+      <ScrollView contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.teal} />}>
+        <Text style={[styles.greet, bodyFont]}>{name ? `${greeting(greetingTime)} ${name}` : greeting(greetingTime).replace(/,$/, '')}</Text>
+        <Text accessibilityRole="header" style={[styles.title, displayFont]}>
           Reception desk
         </Text>
-        {hospital ? <Text style={styles.sub}>{hospital}</Text> : null}
+        {hospital ? <Text style={[styles.sub, bodyFont]}>{hospital}</Text> : null}
 
-        {error && !data ? (
+        {(error || refreshError) ? (
           <View style={styles.noteWarn}>
-            <Text style={styles.noteWarnText}>{error}</Text>
+            <Text accessibilityLiveRegion="polite" style={[styles.noteWarnText, bodyFont]}>{error ?? refreshError}</Text>
+            {data ? <Text style={[styles.noteWarnText, bodyFont]}>Showing last loaded dashboard data.</Text> : null}
             <TouchableOpacity
+              style={styles.linkButton}
               accessibilityRole="button"
               accessibilityLabel="Try again"
               onPress={reload}
             >
-              <Text style={styles.link}>Try again</Text>
+              <Text style={[styles.link, semiboldFont]}>Try again</Text>
             </TouchableOpacity>
           </View>
         ) : null}
         {loading && !data ? (
-          <ActivityIndicator style={styles.loader} color={colors.teal} />
+          <View style={styles.loader}>
+            <ActivityIndicator color={colors.teal} />
+            <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>Loading dashboard…</Text>
+          </View>
         ) : null}
 
         {data ? (
           <>
             <View style={styles.kpiRow}>
+              <TouchableOpacity style={styles.kpi} accessibilityRole="button"
+                accessibilityLabel="View today's OPD sessions" disabled={loading}
+                accessibilityState={{ disabled: loading }} onPress={onOpenSessions}>
+                <Text style={[styles.kpiLabel, semiboldFont]}>Sessions today</Text>
+                <Text style={[styles.kpiNumber, displayFont]}>{data.sessionsToday}</Text>
+              </TouchableOpacity>
               <View style={styles.kpi}>
-                <Text style={styles.kpiLabel}>Sessions today</Text>
-                <Text style={styles.kpiNumber}>{data.sessionsToday}</Text>
-              </View>
-              <View style={styles.kpi}>
-                <Text style={styles.kpiLabel}>Priority waiting</Text>
-                <Text style={[styles.kpiNumber, styles.kpiAlert]}>
+                <Text style={[styles.kpiLabel, semiboldFont]}>Priority waiting</Text>
+                <Text style={[styles.kpiNumber, styles.kpiAlert, displayFont]}>
                   {data.priorityWaiting}
                 </Text>
               </View>
             </View>
             <View style={[styles.kpiRow, styles.kpiRowSecond]}>
               <View style={styles.kpi}>
-                <Text style={styles.kpiLabel}>Patients checked in</Text>
-                <Text style={styles.kpiNumber}>{data.patientsCheckedIn}</Text>
+                <Text style={[styles.kpiLabel, semiboldFont]}>Patients checked in</Text>
+                <Text style={[styles.kpiNumber, displayFont]}>{data.patientsCheckedIn}</Text>
               </View>
               <View style={styles.kpi}>
-                <Text style={styles.kpiLabel}>Now serving</Text>
-                <Text style={styles.kpiNumber}>{data.nowServing ?? '—'}</Text>
+                <Text style={[styles.kpiLabel, semiboldFont]}>Now serving</Text>
+                <Text style={[styles.kpiNumber, displayFont]}>{data.nowServing ?? '—'}</Text>
               </View>
             </View>
           </>
         ) : null}
 
         <View style={styles.groupRow}>
-          <Text accessibilityRole="header" style={styles.group}>
+          <Text accessibilityRole="header" style={[styles.group, semiboldFont]}>
             {"Today's sessions"}
           </Text>
           <TouchableOpacity
+            style={styles.linkButton}
             accessibilityRole="button"
-            accessibilityLabel="View sessions"
+            accessibilityLabel="View today's OPD sessions"
+            disabled={loading}
+            accessibilityState={{ disabled: loading }}
             onPress={onOpenSessions}
           >
-            <Text style={styles.link}>View all</Text>
+            <Text style={[styles.link, semiboldFont]}>View all</Text>
           </TouchableOpacity>
         </View>
         {!data ? null : data.sessions.length ? (
@@ -185,15 +239,15 @@ export function ReceptionDeskScreen({
                   ]}
                 >
                   <View style={styles.grow}>
-                    <Text style={styles.rowName}>{session.serviceName}</Text>
-                    <Text style={styles.rowSub}>
+                    <Text style={[styles.rowName, semiboldFont]}>{session.serviceName}</Text>
+                    <Text style={[styles.rowSub, bodyFont]}>
                       {formatTime(session.startsAt)} · {session.bookedCount} of{' '}
                       {session.capacity} booked
                     </Text>
                   </View>
                   <View style={[styles.badge, badge.badge]}>
                     <View style={[styles.badgeDot, badge.dot]} />
-                    <Text style={[styles.badgeText, badge.text]}>
+                    <Text style={[styles.badgeText, badge.text, semiboldFont]}>
                       {session.label}
                     </Text>
                   </View>
@@ -203,7 +257,7 @@ export function ReceptionDeskScreen({
           </View>
         ) : (
           <View style={styles.empty}>
-            <Text style={styles.rowSub}>
+            <Text style={[styles.rowSub, bodyFont]}>
               No OPD sessions are scheduled for today.
             </Text>
           </View>
@@ -217,7 +271,7 @@ export function ReceptionDeskScreen({
           activeOpacity={0.8}
           onPress={onOpenPriority}
         >
-          <Text style={waiting ? styles.btnUrgentText : styles.btnOutlineText}>
+          <Text style={[waiting ? styles.btnUrgentText : styles.btnOutlineText, semiboldFont]}>
             {waiting
               ? `Review ${waiting} priority request${waiting === 1 ? '' : 's'}`
               : 'View priority requests'}
@@ -240,8 +294,8 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   iconBtn: {
     borderRadius: radii.circle,
-    width: 38,
-    height: 38,
+    width: 48,
+    height: 48,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -263,14 +317,14 @@ const styles = StyleSheet.create({
   avatar: {
     borderRadius: radii.circle,
     overflow: 'hidden',
-    width: 38,
-    height: 38,
+    width: 48,
+    height: 48,
     backgroundColor: colors.tealTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: { fontSize: 13, fontWeight: '700', color: colors.tealDark },
-  avatarImage: { width: 38, height: 38 },
+  avatarImage: { width: 48, height: 48 },
   content: {
     ...surfaces.content,
     flexGrow: 1,
@@ -286,8 +340,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 2,
   },
-  sub: { fontFamily: fonts.body, fontSize: 13, color: colors.inkSoft },
-  loader: { marginTop: 32 },
+  sub: { fontFamily: fonts.body, fontSize: 14, color: colors.inkSoft },
+  loader: { marginTop: 32, alignItems: 'center', gap: 8 },
   noteWarn: {
     borderRadius: radii.note,
     backgroundColor: colors.amberTint,
@@ -295,13 +349,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
     gap: 8,
   },
-  noteWarnText: { fontSize: 13, color: '#8A611A', lineHeight: 18 },
-  link: { fontSize: 13, fontWeight: '600', color: colors.teal },
-  kpiRow: { flexDirection: 'row', gap: 12, marginTop: 16, marginBottom: 4 },
+  noteWarnText: { fontSize: 14, color: '#8A611A', lineHeight: 20 },
+  linkButton: { minWidth: 48, minHeight: 48, justifyContent: 'center', alignItems: 'center' },
+  link: { fontSize: 14, fontWeight: '600', color: colors.teal },
+  kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16, marginBottom: 4 },
   kpiRowSecond: { marginTop: 12 },
   kpi: {
     borderRadius: radii.md,
     flex: 1,
+    minWidth: 130,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -310,7 +366,7 @@ const styles = StyleSheet.create({
   },
   kpiLabel: {
     fontFamily: fonts.body,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.inkSoft,
   },
@@ -359,7 +415,7 @@ const styles = StyleSheet.create({
   },
   rowSub: {
     fontFamily: fonts.body,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.inkSoft,
     marginTop: 2,
   },
@@ -378,7 +434,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeDot: { borderRadius: radii.circle, width: 6, height: 6, marginRight: 5 },
-  badgeText: { fontSize: 11, fontWeight: '600' },
+  badgeText: { fontSize: 13, fontWeight: '600' },
   badgeCalled: { backgroundColor: colors.tealTint },
   dotCalled: { backgroundColor: colors.teal },
   textCalled: { color: colors.tealDark },
@@ -391,13 +447,15 @@ const styles = StyleSheet.create({
   spacer: { flex: 1, minHeight: 20 },
   btnUrgent: {
     borderRadius: radii.pill,
-    backgroundColor: colors.coral,
+    backgroundColor: colors.coralStrong,
+    minHeight: 52,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   btnUrgentText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
   btnOutline: {
+    minHeight: 52,
     borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.sage,

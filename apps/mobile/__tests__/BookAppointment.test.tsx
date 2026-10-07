@@ -345,3 +345,11 @@ test('unmount cancels pending requests and removes listeners', async () => {
   expect(signal.aborted).toBe(true);
   expect(removeListener).toHaveBeenCalled();
 });
+
+
+test('full session is labelled Fully booked and cannot initiate a booking', async () => {
+  await mount();
+  expect(text('Fully booked')).toBe(true);
+  const full = radios()[1]; expect(full.props.accessibilityState.disabled).toBe(true);
+  expect(full.props.disabled).toBe(true);
+});
