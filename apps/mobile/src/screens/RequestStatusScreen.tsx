@@ -64,7 +64,10 @@ export function RequestStatusScreen({
   const pending = data?.request.status === 'PENDING';
   const accepted = data?.request.status === 'ACCEPTED';
   return (
-    <PatientPage>
+    <PatientPage
+      refreshing={state.loading && !!state.data}
+      onRefresh={state.reload}
+    >
       <LoadState
         loading={state.loading}
         error={state.error}
@@ -193,11 +196,6 @@ export function RequestStatusScreen({
             ) : null}
           </View>
           <View style={{ flex: 1 }} />
-          <ActionButton
-            label="Refresh status"
-            variant="secondary"
-            onPress={state.reload}
-          />
           <ActionButton
             label="Back to booking"
             variant="outline"

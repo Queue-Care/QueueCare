@@ -73,7 +73,7 @@ Verified on 2026-10-05: **247 mobile tests across 17 suites**, TypeScript, and A
 
 Use the Expo Go commands above, then:
 
-1. Open a hospital with services. Confirm the primary View OPD sessions button is directly below the choices and before opening hours/Refresh hospital details.
+1. Open a hospital with services. Confirm the primary View OPD sessions button is directly below the choices and before opening hours.
 2. Without a selection, confirm the instruction is clear and the button cannot advance. Select two different services in turn; only the latest service name should appear in the guidance and be passed to the next screen.
 3. As a guest, verify the sign-in gate. After signing in as a patient, reopen the hospital, select a service and confirm that its sessions load. Login currently returns Home; resuming a guest's interrupted route is not claimed.
 4. Refresh after selecting a service. Confirm the selection clears and the action cannot proceed during loading or until a new selection. Check empty services and a service-load failure using a controlled test dataset/network setup.
@@ -97,6 +97,6 @@ Saturday: 08:00–12:00
 Sunday: Closed
 ```
 
-Refresh Hospital Details in Expo Go. Confirm the text appears and the session action still requires a service selection. Remove the field and refresh to verify the fallback. Real hospital records need verified hours from their data owner; the demo values must not be used as real care information.
+Pull down to refresh Hospital Details in Expo Go. Confirm the text appears and the session action still requires a service selection. Remove the field and refresh to verify the fallback. Real hospital records need verified hours from their data owner; the demo values must not be used as real care information.
 
 Validation: **82 API tests and 291 mobile tests across 22 suites pass**, plus TypeScript, lint and Android/iOS Metro exports (`/private/tmp/queuecare-opening-hours-export`). These are bundles, not standalone native builds. Coverage includes trimmed/multiline/max-length text, absent and malformed records, seed preservation, mobile validation and refreshed display. Physical large-text/VoiceOver/TalkBack acceptance remains pending.

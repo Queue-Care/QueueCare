@@ -400,12 +400,6 @@ export function BookAppointmentScreen({
                 );
               })
             )}
-            <ActionButton
-              label="Refresh availability"
-              variant="quiet"
-              onPress={refresh}
-              disabled={submission.pending}
-            />
           </>
         )}
         <View style={styles.card}>
