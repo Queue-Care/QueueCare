@@ -6,7 +6,7 @@ Each member adds their own section. Every claim must match the code and the evid
 
 **Scope:** Screens 01 Splash, 02 Welcome, 06 Home, 07 Find a Hospital, 08 Hospital Details, 09 Book Appointment and 10 Booking Confirmed; hospital/service/session discovery APIs; transactional booking creation; booking-confirmed notification. Also repository/release coordination and patient navigation integration.
 
-Prepared 2026-10-07. The automated results below come from that day's run. The physical phone journey is still pending: update the **Before the viva** checklist when it has been run.
+Prepared 2026-10-07. The automated results below come from that day's run. The main booking path was reported passing on a phone on 2026-10-07; the remaining phone rows are still pending.
 
 ### Before the viva
 
@@ -15,7 +15,7 @@ Prepared 2026-10-07. The automated results below come from that day's run. The p
 - [ ] MongoDB is a replica set (Atlas or local `--replSet`). Booking returns `BOOKING_UNAVAILABLE` on a standalone server.
 - [ ] Seed fictional data: `npm run db:seed:discovery` and `npm run db:seed:sessions` (sessions are for tomorrow).
 - [ ] One fictional patient account already registered, plus a second one for the duplicate/full demonstration.
-- [ ] Run the [phone journey](../PATIENT_FLOW_TESTING.md) once on the demo phone and record the result. Keep screenshots ready in case the network fails.
+- [x] Main [phone journey](../PATIENT_FLOW_TESTING.md) (search → book → confirmation → My Bookings → Alerts) reported passing on 2026-10-07. Rerun it on the demo phone on viva day and record the device/OS. Keep screenshots ready in case the network fails.
 - [ ] `npm run test:patient-flow` and `npm run test:staff-patient-flow` pass on the demo laptop, so terminal output can be shown if asked.
 
 ### Demo script (3–5 minutes)
