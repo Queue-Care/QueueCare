@@ -1,7 +1,5 @@
-import { Platform } from 'react-native';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import {
-  ApiError,
   apiRequest,
   isRecord,
   isText,
@@ -126,24 +124,12 @@ export async function uploadProfileImage(
   image: PickedImage,
 ) {
   const formData = new FormData();
-  const name = image.fileName ?? 'profile.jpg';
-  if (Platform.OS === 'web') {
-    // A browser sends the file's bytes; the picker gives a blob: or data: address.
-    let file: Blob;
-    try {
-      file = await (await fetch(image.uri)).blob();
-    } catch {
-      throw new ApiError('We could not read that photo. Choose it again.');
-    }
-    formData.append('image', file, name);
-  } else {
-    // React Native's FormData takes a { uri, name, type } file description.
-    formData.append('image', {
-      uri: image.uri,
-      name,
-      type: image.mimeType ?? 'image/jpeg',
-    } as unknown as Blob);
-  }
+  // React Native's FormData takes a { uri, name, type } file description.
+  formData.append('image', {
+    uri: image.uri,
+    name: image.fileName ?? 'profile.jpg',
+    type: image.mimeType ?? 'image/jpeg',
+  } as unknown as Blob);
   const { data } = await apiRequest('/me/profile-image', {
     token,
     method: 'POST',

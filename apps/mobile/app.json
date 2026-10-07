@@ -10,9 +10,6 @@
       "ios",
       "web"
     ],
-    "web": {
-      "bundler": "metro"
-    },
     "ios": {
       "bundleIdentifier": "com.queuecare"
     },

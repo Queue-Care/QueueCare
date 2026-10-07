@@ -7,7 +7,6 @@
     "start:mobile": "npm --workspace apps/mobile run start",
     "dev:mobile": "npm --workspace apps/mobile run start",
     "ios:mobile": "npm --workspace apps/mobile run ios",
-    "web:mobile": "npm --workspace apps/mobile run web",
     "lint:mobile": "npm --workspace apps/mobile run lint",
     "typecheck:mobile": "npm --workspace apps/mobile run typecheck",
     "test:mobile": "npm --workspace apps/mobile run test -- --runInBand",
