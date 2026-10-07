@@ -8,7 +8,7 @@ The Patient Home frontend and API adapter are implemented. The I-01 booking-read
 - Signed-in Home requests the next appointment through the [booking-list contract](API.md). The card shows hospital, service, date/time in Sri Lanka, booking code, and a View booking action.
 - View booking opens the Bookings tab's BookingDetails route with the booking ID from the response.
 - My bookings and Notifications navigate to their tabs for patients and to sign-in for guests.
-- M1-16 places the single primary Search hospitals action directly after the introduction, before appointment/sign-in content. The Find a hospital heading matches the destination. Copy explains name/city search and that guests can browse without signing in; an accessibility hint describes the destination. Quick actions contain only bookings and notifications.
+- M1-16 places the single primary Search hospitals action directly after the introduction, before appointment/sign-in content. The Find a hospital heading matches the destination. Copy explains name/city search and that guests can browse without signing in; an accessibility hint describes the destination. Quick actions originally contained only bookings, priority and notifications; on 2026-10-07 a Find a hospital tile was added back at the user's request (see below).
 - Appointment refresh is grouped with the appointment content. Search remains available while appointments load or fail.
 - Loading, successful-empty, and failed requests have separate states. A failed request never appears as “No upcoming appointments.”
 - Retry, pull-to-refresh, and returning to Home request fresh data. Superseded/blurred requests are cancelled, and late responses cannot replace the current account's data.
@@ -51,7 +51,7 @@ The prototype's Home (screen 06) contains both a search-bar-shaped entry and a F
 
 Run the command above from the repository root and open Expo Go:
 
-1. Choose Continue as guest. Confirm Find a hospital and its Search hospitals button appear before the sign-in/appointment section, with no competing search tile or input on Home.
+1. Choose Continue as guest. Confirm Find a hospital and its Search hospitals button appear before the sign-in/appointment section. The Find a hospital quick-action tile opens the same Hospital Search screen.
 2. Tap Search hospitals. Confirm it opens Find a hospital with name/city filters without requiring sign-in. Go back and repeat.
 3. With the API configured, search a known demo hospital/city and open its details. Public browsing should work; booking retains its existing sign-in requirement.
 4. Once real authentication is connected, repeat with no appointment, a saved appointment, and an appointment loading/error state. Search must remain available; retry/refresh and booking actions must retain their meanings.
@@ -59,3 +59,7 @@ Run the command above from the repository root and open Expo Go:
 6. Ask a first-time tester, without pointing to a control: “Find a hospital in your city.” Record their first tap, any sign-in confusion, success/failure, device/font settings, and screenshots in milestone evidence.
 
 Automated navigation checks pass for all five Home states. Physical-device and participant results are **pending**; no usability success rate is claimed. M1-17’s [session-action refinement](HOSPITAL_DETAILS.md#m1-17-session-action-refinement) is implemented. **Next: patient-flow integration and phone acceptance (I-01 / T-04).**
+
+## Find a hospital quick action — 2026-10-07
+
+Home now shows four quick actions in a 2×2 grid: **Find a hospital** (location icon), My bookings, Priority queue and Notifications. The new tile opens the same Hospital Search screen as the search bar, for guests and signed-in patients; its accessibility hint says so ("Opens the same hospital search as the search bar"). This restores the prototype's screen 06 tile. The search bar stays first and primary, which keeps M1-16's hierarchy. Two automated tests cover the tile for guests and patients; first-time-user and phone checks are pending.
