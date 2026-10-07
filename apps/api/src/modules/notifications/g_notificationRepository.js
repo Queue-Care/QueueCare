@@ -1,29 +1,12 @@
 import { ObjectId } from 'mongodb';
 import { HttpError } from '../../utils/HttpError.js';
+import { ensureNotificationUserRecentIndex } from '../../config/notificationIndexes.js';
 
 const TYPES = ['BOOKING', 'REMINDER', 'QUEUE', 'PRIORITY', 'SESSION', 'SYSTEM'];
 const LIST_LIMIT = 50;
 
 export async function ensureNotificationIndexes(db) {
-  const notifications = db.collection('notifications');
-  let indexes;
-  try {
-    indexes = await notifications.listIndexes().toArray();
-  } catch (error) {
-    if (error.code !== 26) throw error; // A fresh database has no collection yet.
-    indexes = [];
-  }
-  // Older databases use MongoDB's default name for this same index.
-  // Reuse it instead of creating an equivalent index with another name.
-  const compatible = indexes.some(index =>
-    Object.keys(index.key).length === 2 &&
-    Object.keys(index.key)[0] === 'userId' && index.key.userId === 1 &&
-    Object.keys(index.key)[1] === 'createdAt' && index.key.createdAt === -1 &&
-    !index.unique && !index.sparse && !index.partialFilterExpression && !index.collation
-  );
-  if (!compatible) await notifications.createIndex(
-    { userId: 1, createdAt: -1 }, { name: 'notification_user_recent' }
-  );
+  await ensureNotificationUserRecentIndex(db);
 }
 
 // Shared producer for in-app notifications (README section 20). No push/SMS/email.

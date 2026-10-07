@@ -1,6 +1,6 @@
 # T-04 — patient booking journey verification
 
-As of 2026-10-06, Member 1's M1-01–M1-17 work, booking reads (PR #28), and booking-alert integration (PR #29) are merged. This task adds connected automated journey evidence. **T-04 physical end-to-end acceptance remains pending.**
+As of 2026-10-06, Member 1's M1-01–M1-17 work, booking reads (PR #28), and booking-alert integration (PR #29) are merged. This task adds connected automated journey evidence. **T-04 physical acceptance is partial:** the user reported the main booking path passing on a phone on 2026-10-07 (table below); account creation, wrong-password, second-patient and full/network rows remain pending.
 
 ## Run the automated journey
 
@@ -39,13 +39,14 @@ Set `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env` to the computer's reachable
 | Step | Expected result | Result / evidence |
 | --- | --- | --- |
 | Create a new fictional patient account | Success leads to sign-in, not an authenticated booking screen | Pending |
+| Sign in with the registered NIC and password | Opens the patient app | User confirmed working on 2026-10-07; device/OS and screenshot not recorded |
 | Enter a wrong password, then the correct one | Error remains signed out; correct credentials open Home with the actual patient name | Pending |
-| Search by known hospital name/city and open it | Correct hospital and available service names load | Pending |
-| Select a service and an available future session | Correct IDs/date/time, remaining capacity and signed-in patient appear; Confirm requires a selection | Pending |
-| Confirm once | A persisted confirmation code appears; returning Back does not submit again | Pending |
-| Open View booking | Same saved code, hospital, service and Sri Lanka date/time | Pending |
-| Return Home / My Bookings | Saved appointment appears; Home shows the earliest relevant visit | Pending |
-| Open Alerts and tap Booking confirmed | Opens the same booking and persists read state; tapping again still works | Pending |
+| Search by known hospital name/city and open it | Correct hospital and available service names load | Pass, user-reported 2026-10-07 (Expo Go); device/OS and screenshot not recorded |
+| Select a service and an available future session | Correct IDs/date/time, remaining capacity and signed-in patient appear; Confirm requires a selection | Pass, user-reported 2026-10-07 (Expo Go); device/OS and screenshot not recorded |
+| Confirm once | A persisted confirmation code appears; returning Back does not submit again | Pass, user-reported 2026-10-07 (Expo Go); device/OS and screenshot not recorded |
+| Open View booking | Same saved code, hospital, service and Sri Lanka date/time | Pass, user-reported 2026-10-07 (Expo Go); device/OS and screenshot not recorded |
+| Return Home / My Bookings | Saved appointment appears; Home shows the earliest relevant visit | Pass, user-reported 2026-10-07 (Expo Go); device/OS and screenshot not recorded |
+| Open Alerts and tap Booking confirmed | Opens the same booking and persists read state; tapping again still works | Pass, user-reported 2026-10-07 (Expo Go); device/OS and screenshot not recorded |
 | Sign out and sign in as a second test patient | First patient's bookings and alerts are absent | Pending |
 | Repeat with a full session / interrupted network | Clear full/error/uncertain state, no invented success and no automatic duplicate submission | Pending |
 

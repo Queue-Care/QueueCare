@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { ObjectId } from 'mongodb';
 import { HttpError } from '../../utils/HttpError.js';
 import { colomboDate } from '../hospitals/sessionQuery.js';
 import { requireStaff } from '../priority/g_priorityRoutes.js';
+import { readStaffHospitalScope } from './k_staffHospitalScope.js';
 
 const SESSION_LIMIT = 20;
 
@@ -12,48 +12,57 @@ export function createStaffDashboardRepository(
 ) {
   return {
     async summary(staffUserId) {
+      const hospitalId = await readStaffHospitalScope(db, staffUserId);
+      const hospital = await db.collection('hospitals').findOne(
+        { _id: hospitalId, isActive: true }, { projection: { _id: 1 }, maxTimeMS: 3000 }
+      );
+      if (!hospital) throw new HttpError(403, 'FORBIDDEN', 'An active linked hospital is required.');
       const staff = await db
         .collection('users')
-        .findOne({ _id: staffUserId }, { maxTimeMS: 3000 });
+        .findOne({ _id: staffUserId, hospitalId, status: 'ACTIVE' }, { maxTimeMS: 3000 });
       if (!staff) throw new HttpError(404, 'NOT_FOUND', 'Account not found.');
       const at = now();
       const date = colomboDate(at);
-      const hospitalId =
-        staff.hospitalId instanceof ObjectId ? staff.hospitalId : null;
+      const today = { hospitalId, sessionDate: new Date(`${date}T00:00:00.000Z`),
+        $expr: { $eq: [{ $type: '$sessionDate' }, 'date'] } };
+      // Join against all of today's hospital sessions, independently of the
+      // dashboard's display limit and without building an unbounded ID array.
+      const inTodaysSessions = [
+        { $lookup: { from: 'opdSessions', localField: 'sessionId', foreignField: '_id',
+          pipeline: [{ $match: today }, { $project: { _id: 1 } }], as: 'session' } },
+        { $match: { 'session.0': { $exists: true } } },
+      ];
       const sessions = await db
         .collection('opdSessions')
         .find(
-          {
-            sessionDate: new Date(`${date}T00:00:00.000Z`),
-            ...(hospitalId ? { hospitalId } : {}),
-          },
+          today,
           { maxTimeMS: 3000 }
         )
         .sort({ startTime: 1, _id: 1 })
         .limit(SESSION_LIMIT)
         .toArray();
-      const sessionIds = sessions.map((session) => session._id);
-      const [services, checkedIn, serving, priorityWaiting, unread] =
+      const [sessionsToday, services, checkedIn, serving, priorityWaiting, unread] =
         await Promise.all([
+          db.collection('opdSessions').countDocuments(today, { maxTimeMS: 3000 }),
           db
             .collection('opdServices')
             .find(
-              { _id: { $in: sessions.map((session) => session.serviceId) } },
-              { projection: { name: 1 } }
+              { hospitalId, _id: { $in: sessions.map((session) => session.serviceId) } },
+              { projection: { name: 1 }, maxTimeMS: 3000 }
             )
             .toArray(),
-          db.collection('bookings').countDocuments({
-            sessionId: { $in: sessionIds },
-            checkedInAt: { $type: 'date' },
-          }),
+          db.collection('bookings').aggregate([
+            { $match: { checkedInAt: { $type: 'date' } } },
+            ...inTodaysSessions, { $count: 'total' },
+          ], { maxTimeMS: 3000 }).next(),
           db
             .collection('queueEntries')
-            .find({
-              sessionId: { $in: sessionIds },
-              status: { $in: ['CALLED', 'IN_CONSULTATION'] },
-            })
-            .sort({ calledAt: -1 })
-            .limit(1)
+            .aggregate([
+              { $match: { status: { $in: ['CALLED', 'IN_CONSULTATION'] } } },
+              ...inTodaysSessions,
+              { $sort: { calledAt: -1, _id: -1 } }, { $limit: 1 },
+              { $project: { queueNumber: 1 } },
+            ], { maxTimeMS: 3000 })
             .next(),
           priorityRepository.pendingCount(staffUserId),
           notificationRepository.unreadCount(staffUserId),
@@ -103,9 +112,9 @@ export function createStaffDashboardRepository(
           profileImageUrl: staff.profileImageUrl ?? null,
         },
         date,
-        sessionsToday: todaysSessions.length,
+        sessionsToday,
         priorityWaiting,
-        patientsCheckedIn: checkedIn,
+        patientsCheckedIn: checkedIn?.total ?? 0,
         nowServing: Number.isInteger(serving?.queueNumber)
           ? `A-${String(serving.queueNumber).padStart(3, '0')}`
           : null,
@@ -119,6 +128,10 @@ export function createStaffDashboardRepository(
 export function staffDashboardRoutes(repository, authenticate) {
   const router = Router();
   router.get('/', authenticate, requireStaff, async (request, response) => {
+    const fieldErrors = Object.fromEntries(Object.keys(request.query).map(key =>
+      [key, 'Unsupported query parameter.']));
+    if (Object.keys(fieldErrors).length)
+      throw new HttpError(400, 'VALIDATION_ERROR', 'Check the dashboard request.', fieldErrors);
     if (!repository)
       throw new HttpError(
         503,

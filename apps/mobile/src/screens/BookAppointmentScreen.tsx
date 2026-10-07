@@ -315,7 +315,7 @@ export function BookAppointmentScreen({
                 const checked = selected?.id === session.id;
                 const capacity =
                   session.remainingCapacity === 0
-                    ? 'Full'
+                    ? 'Fully booked'
                     : `${session.remainingCapacity} ${
                         session.remainingCapacity === 1 ? 'slot' : 'slots'
                       } left`;

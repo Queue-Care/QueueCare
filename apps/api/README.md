@@ -1,6 +1,6 @@
 # QueueCare API
 
-The API supports hospital discovery, session availability, patient booking summaries, staff account registration/sign-in, the reception dashboard, staff priority-request decisions, in-app notifications, and profile updates. Staff registration stores the staff profile in MongoDB's `users` collection, hashes passwords with Node scrypt, and issues a 24-hour JWT after Staff ID/password sign-in. Staff accounts created through this endpoint are active immediately. Booking-list/edit APIs and staff session writes are still pending.
+The API supports hospital discovery, session availability, patient booking summaries, staff account registration/sign-in, the reception dashboard, staff priority-request decisions, in-app notifications, and profile updates. Staff registration stores the staff profile in MongoDB's `users` collection, hashes passwords with Node scrypt, and issues a 24-hour JWT after Staff ID/password sign-in. Staff accounts created through this endpoint are active immediately. Patient registration/login, booking creation and owned booking-list/detail APIs are implemented. Booking edits and staff session writes remain pending. See the [complete local setup guide](../../docs/SETUP.md).
 
 ## Staff accounts
 
@@ -82,14 +82,13 @@ The secrets are server-side only; never put them in `apps/mobile/.env`.
 Use Node.js 22.13 or newer and a running MongoDB instance. All commands below run in the **QueueCare repository root**, where the root `package.json` is located.
 
 ```bash
-npm install
-cp apps/api/.env.example apps/api/.env
-npm run dev:api
+npm ci
+if [ ! -e apps/api/.env ]; then cp apps/api/.env.example apps/api/.env; fi
 ```
 
-Copy the example only on first setup; keep existing local settings if `.env` already exists. The default database is `opd_queue` on `127.0.0.1:27017`. For another MongoDB instance, set `MONGODB_URI` and `MONGODB_DB_NAME` in `apps/api/.env`. Never commit credentials. The API loads this workspace's `.env` even when started with the root npm scripts.
+Configure the database and a random JWT_SECRET before starting; follow [the setup guide](../../docs/SETUP.md), then run `npm run check:setup`, `npm run check:db` and `npm run dev:api`. Copy the example only on first setup; keep existing local settings if `.env` already exists. The default database is `opd_queue` on `127.0.0.1:27017`. For another MongoDB instance, set `MONGODB_URI` and `MONGODB_DB_NAME` in `apps/api/.env`. Never commit credentials. The API loads this workspace's `.env` even when started with the root npm scripts.
 
-MongoDB must already be running before starting the API. Set a random `JWT_SECRET` of at least 32 bytes in `apps/api/.env`; registration and staff sign-in require it. Startup checks the database connection and creates hospital, service, session, staff identity, and booking indexes. The server listens on port 4000 by default. `npm run start:api` runs without the development file watcher. Ctrl+C stops the API and closes its MongoDB connection.
+MongoDB must already be running before starting the API. Set a random `JWT_SECRET` of at least 32 bytes in `apps/api/.env`; patient and staff sign-in require it. Startup checks the database connection and creates hospital, service, session, staff identity, and booking indexes. The server listens on port 4000 by default. `npm run start:api` runs without the development file watcher. Ctrl+C stops the API and closes its MongoDB connection.
 
 In another terminal at the repository root, optionally add **three fictional demo hospitals**:
 
@@ -124,7 +123,7 @@ The `jose` dependency is pinned to its publisher’s official GitHub v6.2.12 rel
 
 Keep the phone and computer on the same network. The API binds to `0.0.0.0` by default so it can accept phone requests. Set the mobile environment variable `EXPO_PUBLIC_API_BASE_URL` to `http://<computer-LAN-IP>:4000/api/v1` in `apps/mobile/.env` and restart Expo. `localhost` on a physical phone refers to the phone itself.
 
-The Hospital Search screen now uses this public endpoint; follow the [M1-05 phone checklist](../../docs/HOSPITAL_SEARCH.md). Patient Home's booking request still needs the pending authentication and booking endpoints; starting this API does not complete that flow.
+The Hospital Search screen now uses this public endpoint; follow the [M1-05 phone checklist](../../docs/HOSPITAL_SEARCH.md). Patient Home and My Bookings use the connected authenticated booking-list endpoint. Full phone acceptance remains pending.
 
 ## Troubleshoot MongoDB connections
 
@@ -155,10 +154,10 @@ npm run test:api
 
 Integration tests require `mongod` on PATH (or set `MONGOD_BINARY` to its executable path) and permission to listen on localhost. Each run launches its own MongoDB process with a fresh temporary directory and an ephemeral HTTP port, then cleans them up. Tests never use `MONGODB_URI` or modify your development database.
 
-All 64 API tests pass as of M1-15. Coverage includes real MongoDB name/city filtering, hospital details, parent-scoped active services, inactive hospital exclusion, literal regex characters, pagination, public response fields, ID/query validation, health/error responses, shared connections, and safe repeatable seeding. Session tests additionally cover Sri Lanka date boundaries, future-start filtering, active service scope, full/overfull capacity, malformed records, and non-destructive session seeds. Booking tests launch a temporary single-node replica set and verify simultaneous final-slot/duplicate requests, rollback, concurrent eligibility changes, JWT validation, role/status enforcement, strict request bodies, and safe standalone rejection.
+The recorded full API run for the opening-hours task passed 82 tests on 2026-10-06 (historical evidence). Coverage includes real MongoDB name/city filtering, hospital details, parent-scoped active services, inactive hospital exclusion, literal regex characters, pagination, public response fields, ID/query validation, health/error responses, shared connections, and safe repeatable seeding. Session tests additionally cover Sri Lanka date boundaries, future-start filtering, active service scope, full/overfull capacity, malformed records, and non-destructive session seeds. Booking tests launch a temporary single-node replica set and verify simultaneous final-slot/duplicate requests, rollback, concurrent eligibility changes, JWT validation, role/status enforcement, strict request bodies, and safe standalone rejection.
 
 Booking-summary tests also verify owner isolation, role/status checks, public projection, status changes, inactive parents, malformed linked data, and reading a transactionally created booking. See [M1-12 screen/API handoff](../../docs/BOOKING_CONFIRMATION.md).
 
-Notification tests verify the recipient/record contract, no duplicates on concurrent requests or transaction retry, preservation of read state, partial-index scope, and rollback of booking/capacity when notification insertion fails. Notification list/read/read-all APIs remain Member 4’s pending work; see [booking notification handoff](../../docs/BOOKING_NOTIFICATIONS.md).
+Notification tests verify the recipient/record contract, no duplicates on concurrent requests or transaction retry, preservation of read state, partial-index scope, and rollback of booking/capacity when notification insertion fails. Member 4’s notification list/read/read-all APIs and booking-alert navigation are integrated; see [booking notification handoff](../../docs/BOOKING_NOTIFICATIONS.md).
 
 M1-15 adds the connected discovery-to-booking HTTP journey, the session-start boundary between eligibility and write, and safe booking-summary storage-failure handling. See [test results and requirements evidence](../../docs/TESTING.md).

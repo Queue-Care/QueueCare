@@ -25,6 +25,13 @@ import {
   ensureStaffAuthIndexes,
 } from './modules/staff/g_staffAuthRepository.js';
 import { createStaffDashboardRepository } from './modules/staff/g_staffDashboard.js';
+import { createStaffSessionRepository } from './modules/sessions/k_sessionRepository.js';
+import { createStaffPatientSearchRepository } from './modules/staff/k_patientSearchRepository.js';
+import { createCheckInRepository } from './modules/bookings/k_checkInRepository.js';
+import { createQueueRepository } from './modules/queue/k_queueRepository.js';
+import { createSessionMetricsRepository } from './modules/queue/k_sessionMetricsRepository.js';
+import { createQueueMutationRepository } from './modules/queue/k_queueMutationRepository.js';
+import { ensureQueueIndexes } from './config/indexes.js';
 import {
   createPriorityRepository,
   ensurePriorityIndexes,
@@ -50,6 +57,7 @@ try {
   await ensureHospitalIndexes(connection.db);
   await ensureStaffAuthIndexes(connection.db);
   await ensureBookingIndexes(connection.db);
+  await ensureQueueIndexes(connection.db);
   await ensureBookingNotificationIndexes(connection.db);
   await ensureNotificationIndexes(connection.db);
   await ensurePriorityIndexes(connection.db);
@@ -69,6 +77,12 @@ try {
         connection.client
       ),
       staffAuthRepository: createStaffAuthRepository(connection.db, authConfig),
+      staffSessionRepository: createStaffSessionRepository(connection.db),
+      staffPatientSearchRepository: createStaffPatientSearchRepository(connection.db),
+      checkInRepository: createCheckInRepository(connection.db),
+      queueRepository: createQueueRepository(connection.db),
+      sessionMetricsRepository: createSessionMetricsRepository(connection.db),
+      queueMutationRepository: createQueueMutationRepository(connection.db),
       staffDashboardRepository: createStaffDashboardRepository(connection.db, {
         priorityRepository,
         notificationRepository,

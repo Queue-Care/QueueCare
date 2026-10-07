@@ -2,6 +2,18 @@
 
 M1-04..M1-13 already have API and mobile tests. M1-15 reviews those tests, adds the missing connected API journey and failure/race cases, and fixes the account-switch navigation defect exposed by a new regression test. M1-14/M1-15 are merged through PR #22; the current branch also includes the design update through PR #23.
 
+## Member 1 / Member 3 session-to-booking journey — 2026-10-07
+
+Added `npm run test:staff-patient-flow`: a staff session created through the real HTTP route is discovered, booked, edited, closed and checked in across Member 1 and Member 3 APIs. See [the integration notes and physical checklist](STAFF_PATIENT_INTEGRATION.md). After `npm install` restored the merged `@react-native-community/datetimepicker` dependency, **443 API tests and 453 mobile tests across 29 suites, TypeScript and ESLint pass** at commit `c49ce92` plus this change. Exports and phone acceptance were not rerun.
+
+## Local setup checks — 2026-10-07
+
+Six isolated tests in `apps/api/src/tests/checkSetup.test.js` pass for missing workspace files, invalid mobile URLs, API/JWT validation, credential redaction, unchanged files/environment and media/bind-address warnings. Run `node --test apps/api/src/tests/checkSetup.test.js`. `npm run check:setup` passes against the local base files with a Cloudinary-fallback warning. This command is offline and does not establish service reachability; see [setup limits and connectivity checks](SETUP.md). These are new setup-tool checks, not a new full API/mobile suite run. Prior full-run totals below remain historical.
+
+## M1-06/M1-07 opening-hours follow-up — 2026-10-06
+
+**82 API tests and 291 mobile tests across 22 suites pass**, plus TypeScript, lint and Android/iOS Metro exports (`/private/tmp/queuecare-opening-hours-export`; bundles, not standalone native builds). Real HTTP/MongoDB tests cover optional opening hours, trimming and length limits, omission of malformed legacy values and non-destructive seeds. Mobile checks cover response validation, multiline display, scalable/wrapping text and refresh back to the missing-hours message. Tests use isolated databases and simulated mobile transport; no configured hospital data or physical-device results were changed. See [setup and acceptance checks](HOSPITAL_DETAILS.md#opening-hours-follow-up--2026-10-06).
+
 ## T-04 connected patient journey — 2026-10-06
 
 Notification integration is merged through PR #29. Added `npm run test:patient-flow`: the real API discovery journey now creates accounts and obtains JWTs through registration/login, then verifies Home/list/details and notification links in the same flow. The new `PatientBookingJourney.test.tsx` starts the actual App signed out, fills registration/login forms, follows discovery/selection/confirmation/details/Home/Alerts, and checks wrong-login recovery and a session becoming full after selection. Only mobile HTTP is simulated; app state and adapters are real.

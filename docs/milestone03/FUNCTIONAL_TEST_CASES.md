@@ -1,6 +1,6 @@
 # Member 1 functional test evidence
 
-This is Member 1's automated evidence, recorded for M1-15 on 2026-10-04. It does not mark other members' features or physical-phone acceptance complete. Reproduction and environment details: [testing guide](../TESTING.md).
+Updated 2026-10-07 for A3-05. This summary retains the existing case IDs and historical automated results. The [complete procedures](MEMBER1_TEST_PROCEDURES.md) provide preconditions, steps, expected/actual results, executable evidence links and rerun-record fields for every case. Latest recorded full-suite evidence: 82 API / 291 mobile tests on 2026-10-06; no new runtime tests were executed for this documentation task. Other members' features and physical-phone acceptance are not marked complete. [Environment and result history](../TESTING.md).
 
 | Case | Scenario and expected result | Automated evidence | Result |
 | --- | --- | --- | --- |
@@ -21,5 +21,10 @@ This is Member 1's automated evidence, recorded for M1-15 on 2026-10-04. It does
 | M1-T15 | Real registration/login token → booking → owned Home/list/details; category boundaries, stable pages, malformed filters, account permissions and database failures | API `bookingList.test.js`; mobile `BookingList.test.tsx` | Pass in separate API/mobile layers; full phone flow pending |
 | M1-T16 | Committed booking produces one owned alert; list → details → read works; duplicate POST retains read state; invalid links and late receipt failures cannot redirect another account | API `bookingList.test.js`; mobile `BookingNotifications.test.tsx` | Pass in separate layers; physical phone acceptance pending |
 | M1-T17 | Actual App starts signed out, registers/logs in, discovers/selects/books, opens saved details/Home/alert; wrong-login recovery and full-after-selection fail safely | API `discoveryBookingFlow.test.js`; mobile `PatientBookingJourney.test.tsx`; `npm run test:patient-flow` | Pass in API/app layers; physical matrix in PATIENT_FLOW_TESTING.md remains pending |
+| M1-T18 | Optional multiline opening hours; invalid/absent data omitted; existing seeds preserved; refresh removes outdated hours | API `hospitalDetails.test.js`, `hospitals.test.js`; mobile `HospitalDetailsApi.test.ts`, `HospitalDetails.test.tsx` | Pass; verified real hours and phone layout pending |
+| M1-T19 | Splash while loading; signed-out routing; retry/continue after error; ignore obsolete loader results | Mobile `Startup.test.tsx` (existing tests) | Historical automated pass; persistent restoration not implemented |
+| M1-T20 | Welcome registration/existing-account/guest routes; role choice does not authenticate; private booking sign-in gate | Mobile `Navigation.test.tsx` (existing tests) | Historical automated pass; full physical flow pending |
 
 Manual acceptance still needed: real sign-in → discovery → booking → summary on Expo Go; phone/API connectivity failures; TalkBack/VoiceOver order and large text; notification visibility after Member 4 integration. No participant or physical-device result is inferred from these tests.
+
+Phone sign-in was confirmed working by the user on 2026-10-07 after the local configuration fix. This single observed step does not establish wrong-password recovery, the full booking journey or accessibility acceptance. See the [device result record](../PATIENT_FLOW_TESTING.md#physical-expo-go-acceptance--to-execute-and-record).
