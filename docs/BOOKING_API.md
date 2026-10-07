@@ -1,6 +1,6 @@
 # Booking creation — M1-10
 
-M1-10/M1-11 are merged in local history (PR #18). M1-10 adds protected `POST /api/v1/bookings`, unique booking indexes, and a MongoDB transaction that reserves one place and inserts one booking together; M1-13 now includes its unread notification in that transaction. M1-11’s [mobile confirmation action](CONFIRM_APPOINTMENT.md) now calls this endpoint. M1-12’s [Booking Confirmation screen](BOOKING_CONFIRMATION.md) is implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. **Next: M1-14 — accessibility refinements.**
+M1-10/M1-11 are merged in local history (PR #18). M1-10 adds protected `POST /api/v1/bookings`, unique booking indexes, and a MongoDB transaction that reserves one place and inserts one booking together; M1-13 now includes its unread notification in that transaction. M1-11’s [mobile confirmation action](CONFIRM_APPOINTMENT.md) now calls this endpoint. M1-12’s [Booking Confirmation screen](BOOKING_CONFIRMATION.md) is implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. M1-16’s [Home search clarification](PATIENT_HOME.md) is implemented. M1-17’s [session-action refinement](HOSPITAL_DETAILS.md#m1-17-session-action-refinement) is implemented. **Next: patient-flow integration and phone acceptance (I-01 / T-04).**
 
 ## Request and result
 
@@ -82,4 +82,4 @@ Set `MONGODB_URI=mongodb://127.0.0.1:27018/opd_queue?replicaSet=queuecareDev` in
 
 `npm run test:api` includes real temporary MongoDB replica-set tests for concurrent final-slot booking, simultaneous duplicate requests, transaction rollback after insertion failure, session closure/hospital deactivation during a transaction, strict payloads, and JWT/account authorization. The test helper owns a fresh temporary directory and process, and does not use `apps/api/.env` or modify development/Atlas data.
 
-All 61 API tests pass, including notification atomicity, duplicate protection, and transient-retry coverage. Verification status is recorded in [the development plan](DEVELOPMENT_PLAN.md).
+All 64 API tests pass as of M1-15, including notification atomicity, duplicate protection, and transient-retry coverage. Verification status is recorded in [the development plan](DEVELOPMENT_PLAN.md).

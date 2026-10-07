@@ -96,6 +96,7 @@ export async function patientApi(
     method?: string;
     body?: unknown;
     signal?: AbortSignal;
+    includeMeta?: boolean;
   } = {},
 ): Promise<unknown> {
   if (!options.public && !options.token?.trim())
@@ -121,6 +122,14 @@ export async function patientApi(
       },
       ...(options.body ? { body: JSON.stringify(options.body) } : {}),
     });
+    if (response.status === 401 && path === '/auth/patient/login')
+      throw new PatientApiError('NIC or password is incorrect.');
+    if (response.status === 403 && path === '/auth/patient/login')
+      throw new PatientApiError('This account is not active.');
+    if (response.status === 409 && path === '/auth/patient/register')
+      throw new PatientApiError(
+        'An account with these details already exists. Please sign in.',
+      );
     if (response.status === 401 || response.status === 403)
       throw new PatientApiError('Please sign in again to continue.');
     if (response.status === 409)
@@ -136,7 +145,7 @@ export async function patientApi(
       throw new PatientApiError(
         'We could not read the response. Please try again.',
       );
-    return payload.data;
+    return options.includeMeta ? payload : payload.data;
   } catch (error) {
     if (error instanceof PatientApiError) throw error;
     throw new PatientApiError(

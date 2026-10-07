@@ -14,7 +14,8 @@ export default function App({
 }: {
   loadSession?: SessionLoader;
 }) {
-  const { state, retry, continueSignedOut } = useAppStartup(loadSession);
+  const { state, retry, continueSignedOut, signIn } =
+    useAppStartup(loadSession);
 
   return (
     <SafeAreaProvider>
@@ -23,7 +24,9 @@ export default function App({
         <SplashScreen error onRetry={retry} onContinue={continueSignedOut} />
       ) : (
         <AppNavigator
+          onSignedIn={signIn}
           onSessionExpired={continueSignedOut}
+          onSignOut={continueSignedOut}
           isRestoring={state.status === 'loading'}
           session={state.status === 'ready' ? state.session : null}
         />

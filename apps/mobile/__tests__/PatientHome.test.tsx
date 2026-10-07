@@ -13,6 +13,7 @@ import {
   type NextAppointment,
 } from '../src/features/home/nextAppointment';
 import { NextAppointmentCard } from '../src/components/NextAppointmentCard';
+import { PatientHomeScreen } from '../src/screens/PatientHomeScreen';
 
 jest.mock(
   'react-native-safe-area-context',
@@ -108,7 +109,7 @@ test('loads the next appointment, displays Sri Lanka time, and opens its booking
     .findAllByType(Text)
     .map(node => node.props.children);
   expect(
-    labels.some(label => Array.isArray(label) && label.includes('09:00')),
+    labels.some(label => Array.isArray(label) && label.includes('9:00 AM')),
   ).toBe(true);
   await press('View booking');
   expect(ref.getCurrentRoute()).toMatchObject({
@@ -123,6 +124,31 @@ test('an empty result displays an honest empty state and hospital search works',
   await press('Search hospitals');
   expect(ref.getCurrentRoute()?.name).toBe('HospitalSearch');
 });
+
+test.each(['guest', 'loading', 'empty', 'error', 'appointment'])(
+  '%s Home search bar stays available in every appointment state',
+  async scenario => {
+    if (scenario === 'loading') load.mockReturnValueOnce(deferred().promise);
+    if (scenario === 'error') load.mockRejectedValueOnce(new Error('offline'));
+    if (scenario === 'appointment') load.mockResolvedValueOnce(appointment);
+    await mount(scenario === 'guest' ? null : patient);
+    if (scenario === 'guest') await press('Continue as guest');
+
+    const home = renderer.root.findByType(PatientHomeScreen);
+    const search = home.findAll(node => node.props.accessibilityLabel === 'Search hospitals' && typeof node.props.onPress === 'function');
+    expect(search.length).toBeGreaterThan(0);
+    expect(search[0].props.disabled).not.toBe(true);
+    expect(search[0].props.accessibilityHint).toBe(
+      'Search hospitals or clinics',
+    );
+    expect(hasText('Search hospitals or clinics')).toBe(true);
+    if (scenario === 'guest') expect(load).not.toHaveBeenCalled();
+
+    await press('Search hospitals');
+    expect(ref.getCurrentRoute()?.name).toBe('HospitalSearch');
+    if (scenario === 'guest') expect(load).not.toHaveBeenCalled();
+  },
+);
 
 test('a failed request shows retry rather than no appointments', async () => {
   load

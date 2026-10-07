@@ -1,11 +1,16 @@
 import { createServer } from 'node:http';
 import { once } from 'node:events';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import dotenv from 'dotenv';
 import { createApp } from './app.js';
 import { readConfig } from './config/env.js';
 import { connectMongo } from './config/mongodb.js';
 import { connectionDiagnostic } from './config/connectionDiagnostic.js';
 import { readAuthConfig } from './config/auth.js';
+import { createMediaStore } from './config/cloudinary.js';
 import { authenticate } from './middleware/auth.js';
+import { createPatientRegistrationRepository, ensurePatientRegistrationIndexes } from './modules/auth/patientRegistration.js';
 import { ensureBookingNotificationIndexes } from './modules/bookings/bookingNotification.js';
 import {
   createBookingRepository,
@@ -15,22 +20,77 @@ import {
   createHospitalRepository,
   ensureHospitalIndexes,
 } from './modules/hospitals/hospitalRepository.js';
+import {
+  createStaffAuthRepository,
+  ensureStaffAuthIndexes,
+} from './modules/staff/g_staffAuthRepository.js';
+import { createStaffDashboardRepository } from './modules/staff/g_staffDashboard.js';
+import { createStaffSessionRepository } from './modules/sessions/k_sessionRepository.js';
+import { createStaffPatientSearchRepository } from './modules/staff/k_patientSearchRepository.js';
+import { createCheckInRepository } from './modules/bookings/k_checkInRepository.js';
+import { createQueueRepository } from './modules/queue/k_queueRepository.js';
+import { createSessionMetricsRepository } from './modules/queue/k_sessionMetricsRepository.js';
+import { createQueueMutationRepository } from './modules/queue/k_queueMutationRepository.js';
+import { ensureQueueIndexes } from './config/indexes.js';
+import {
+  createPriorityRepository,
+  ensurePriorityIndexes,
+} from './modules/priority/g_priorityRepository.js';
+import {
+  createNotificationRepository,
+  ensureNotificationIndexes,
+} from './modules/notifications/g_notificationRepository.js';
+import { createProfileRepository } from './modules/users/g_profileRepository.js';
+import {
+  createMongoMediaStore,
+  ensureProfileImageIndexes,
+} from './modules/media/g_mongoMediaStore.js';
+
+dotenv.config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../.env') });
 
 let connection;
 try {
   const config = readConfig();
   const authConfig = readAuthConfig();
   connection = await connectMongo(config);
+  await ensurePatientRegistrationIndexes(connection.db);
   await ensureHospitalIndexes(connection.db);
+  await ensureStaffAuthIndexes(connection.db);
   await ensureBookingIndexes(connection.db);
+  await ensureQueueIndexes(connection.db);
   await ensureBookingNotificationIndexes(connection.db);
+  await ensureNotificationIndexes(connection.db);
+  await ensurePriorityIndexes(connection.db);
+  await ensureProfileImageIndexes(connection.db);
+  // Profile photos go to Cloudinary when its keys are set, otherwise to MongoDB.
+  const profileImageStore = createMongoMediaStore(connection.db);
+  const mediaStore = createMediaStore() ?? profileImageStore;
+  const priorityRepository = createPriorityRepository(connection.db);
+  const notificationRepository = createNotificationRepository(connection.db);
   const server = createServer(
     createApp({
+      patientRegistrationRepository: createPatientRegistrationRepository(connection.db),
+      authConfig,
       hospitalRepository: createHospitalRepository(connection.db),
       bookingRepository: createBookingRepository(
         connection.db,
         connection.client
       ),
+      staffAuthRepository: createStaffAuthRepository(connection.db, authConfig),
+      staffSessionRepository: createStaffSessionRepository(connection.db),
+      staffPatientSearchRepository: createStaffPatientSearchRepository(connection.db),
+      checkInRepository: createCheckInRepository(connection.db),
+      queueRepository: createQueueRepository(connection.db),
+      sessionMetricsRepository: createSessionMetricsRepository(connection.db),
+      queueMutationRepository: createQueueMutationRepository(connection.db),
+      staffDashboardRepository: createStaffDashboardRepository(connection.db, {
+        priorityRepository,
+        notificationRepository,
+      }),
+      priorityRepository,
+      notificationRepository,
+      profileRepository: createProfileRepository(connection.db, { mediaStore }),
+      profileImageStore,
       authenticate: authenticate(connection.db, authConfig),
       checkDatabase: () => connection.db.command({ ping: 1 }),
     })

@@ -1,106 +1,185 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   createBottomTabNavigator,
-  type BottomTabScreenProps,
+  type BottomTabNavigationProp,
 } from '@react-navigation/bottom-tabs';
 import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import { NavigationPage, stackOptions, tabOptions } from './NavigationPage';
+import { stackOptions, tabOptions } from './NavigationPage';
 import type {
+  DashboardStackParams,
   PriorityStackParams,
   SessionsStackParams,
+  StaffSummary,
   StaffTabParams,
 } from './types';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { PriorityRequestDetailsScreen } from '../screens/PriorityRequestDetailsScreen';
+import { PriorityRequestsScreen } from '../screens/PriorityRequestsScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
+import { ReceptionDeskScreen } from '../screens/ReceptionDeskScreen';
+import { OpdSessionsScreen } from '../screens/k_OpdSessionsScreen';
+import { AddEditSessionScreen } from '../screens/k_AddEditSessionScreen';
+import { colors } from '../theme/colors';
 
 const Tabs = createBottomTabNavigator<StaffTabParams>();
+const Dashboard = createNativeStackNavigator<DashboardStackParams>();
 const Sessions = createNativeStackNavigator<SessionsStackParams>();
 const Priority = createNativeStackNavigator<PriorityStackParams>();
 
-function ReceptionDashboard({
-  navigation,
-}: BottomTabScreenProps<StaffTabParams, 'Dashboard'>) {
+type Access = {
+  accessToken?: string;
+  staff?: StaffSummary;
+  onSessionExpired?: () => void;
+  onSignOut?: () => void;
+};
+type Pending = { onPendingCount: (count: number) => void };
+
+function DashboardNavigator({
+  accessToken,
+  staff,
+  onSessionExpired,
+  onPendingCount,
+}: Access & Pending) {
   return (
-    <NavigationPage
-      title="Reception dashboard"
-      actions={[
-        {
-          label: 'View sessions',
-          onPress: () => navigation.navigate('Sessions'),
-        },
-        {
-          label: 'Priority requests',
-          onPress: () => navigation.navigate('Priority'),
-        },
-      ]}
-    />
+    <Dashboard.Navigator
+      screenOptions={{ ...stackOptions, headerShown: false }}
+    >
+      <Dashboard.Screen name="ReceptionDashboard">
+        {({
+          navigation,
+        }: NativeStackScreenProps<
+          DashboardStackParams,
+          'ReceptionDashboard'
+        >) => {
+          const tabs =
+            navigation.getParent<BottomTabNavigationProp<StaffTabParams>>();
+          return (
+            <ReceptionDeskScreen
+              accessToken={accessToken}
+              staff={staff}
+              onSessionExpired={onSessionExpired}
+              onPendingCount={onPendingCount}
+              onOpenSessions={() => tabs.navigate('Sessions')}
+              onOpenPriority={() => tabs.navigate('Priority')}
+              onOpenProfile={() => tabs.navigate('Profile')}
+              onOpenNotifications={() =>
+                navigation.navigate('StaffNotifications')
+              }
+            />
+          );
+        }}
+      </Dashboard.Screen>
+      <Dashboard.Screen name="StaffNotifications">
+        {({ navigation }) => (
+          <NotificationsScreen
+            accessToken={accessToken}
+            onSessionExpired={onSessionExpired}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      </Dashboard.Screen>
+    </Dashboard.Navigator>
   );
 }
-function SessionsList({
-  navigation,
-}: NativeStackScreenProps<SessionsStackParams, 'SessionsList'>) {
-  return (
-    <NavigationPage
-      title="OPD sessions"
-      actions={[
-        {
-          label: 'Add session',
-          onPress: () => navigation.navigate('AddEditSession'),
-        },
-      ]}
-    />
-  );
-}
-function SessionsNavigator() {
+function SessionsNavigator({ accessToken, staff, onSessionExpired }: Access) {
   return (
     <Sessions.Navigator screenOptions={stackOptions}>
       <Sessions.Screen
         name="SessionsList"
-        component={SessionsList}
-        options={{ title: 'OPD sessions' }}
-      />
+        options={{ headerShown: false }}
+      >
+        {({ navigation, route }) => <OpdSessionsScreen key={route.params?.saveRevision ?? 'initial'} accessToken={accessToken} hospital={staff?.hospital}
+          savedSessionDate={route.params?.savedSessionDate} saveMessage={route.params?.saveMessage}
+          onSaveMessageConsumed={() => navigation.setParams({ saveMessage: undefined })}
+          onSessionExpired={onSessionExpired} onAdd={() => navigation.navigate('AddEditSession')}
+          onEdit={sessionId => navigation.navigate('AddEditSession', { sessionId })} />}
+      </Sessions.Screen>
       <Sessions.Screen
         name="AddEditSession"
         options={({ route }) => ({
           title: route.params?.sessionId ? 'Edit session' : 'Add session',
         })}
       >
-        {({ route }) => (
-          <NavigationPage
-            title={route.params?.sessionId ? 'Edit session' : 'Add session'}
-          />
+        {({ route, navigation }) => (
+          <AddEditSessionScreen key={route.params?.sessionId ?? 'create'}
+            accessToken={accessToken} sessionId={route.params?.sessionId}
+            onSessionExpired={onSessionExpired} onCancel={() => navigation.goBack()}
+            onSaved={session => navigation.popTo('SessionsList', {
+              savedSessionDate: session.sessionDate,
+              saveRevision: Date.now(),
+              saveMessage: route.params?.sessionId ? 'Session updated.' : 'Session created.',
+            })} />
         )}
       </Sessions.Screen>
     </Sessions.Navigator>
   );
 }
-function PriorityNavigator() {
+function PriorityNavigator({
+  accessToken,
+  onSessionExpired,
+  onPendingCount,
+}: Access & Pending) {
   return (
-    <Priority.Navigator screenOptions={stackOptions}>
-      <Priority.Screen
-        name="PriorityRequests"
-        options={{ title: 'Priority requests' }}
-      >
-        {() => <NavigationPage title="Priority requests" />}
+    <Priority.Navigator screenOptions={{ ...stackOptions, headerShown: false }}>
+      <Priority.Screen name="PriorityRequests">
+        {({ navigation }) => (
+          <PriorityRequestsScreen
+            navigation={navigation}
+            accessToken={accessToken}
+            onSessionExpired={onSessionExpired}
+            onPendingCount={onPendingCount}
+          />
+        )}
       </Priority.Screen>
-      <Priority.Screen
-        name="PriorityRequestDetails"
-        options={{ title: 'Request details' }}
-      >
-        {() => <NavigationPage title="Priority request details" />}
+      <Priority.Screen name="PriorityRequestDetails">
+        {({ navigation, route }) => (
+          <PriorityRequestDetailsScreen
+            navigation={navigation}
+            route={route}
+            accessToken={accessToken}
+            onSessionExpired={onSessionExpired}
+          />
+        )}
       </Priority.Screen>
     </Priority.Navigator>
   );
 }
-export function StaffNavigator() {
+export function StaffNavigator(access: Access) {
+  // Shown on the Priority tab, as in the prototype's tab bar.
+  const [pendingCount, setPendingCount] = useState(0);
   return (
     <Tabs.Navigator screenOptions={tabOptions}>
-      <Tabs.Screen name="Dashboard" component={ReceptionDashboard} />
-      <Tabs.Screen name="Sessions" component={SessionsNavigator} />
-      <Tabs.Screen name="Priority" component={PriorityNavigator} />
+      <Tabs.Screen name="Dashboard">
+        {() => (
+          <DashboardNavigator {...access} onPendingCount={setPendingCount} />
+        )}
+      </Tabs.Screen>
+      <Tabs.Screen name="Sessions">{() => <SessionsNavigator {...access} />}</Tabs.Screen>
+      <Tabs.Screen
+        name="Priority"
+        options={{
+          tabBarBadge: pendingCount || undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.coral },
+          tabBarAccessibilityLabel: pendingCount
+            ? `Priority, ${pendingCount} pending`
+            : 'Priority',
+        }}
+      >
+        {() => (
+          <PriorityNavigator {...access} onPendingCount={setPendingCount} />
+        )}
+      </Tabs.Screen>
       <Tabs.Screen name="Profile">
-        {() => <NavigationPage title="Staff profile" />}
+        {() => (
+          <ProfileScreen
+            accessToken={access.accessToken}
+            onSignOut={access.onSignOut}
+            onSessionExpired={access.onSessionExpired}
+          />
+        )}
       </Tabs.Screen>
     </Tabs.Navigator>
   );

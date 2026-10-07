@@ -82,6 +82,8 @@ export type AppNavigatorProps = {
   session?: NavigationSession | null;
   isRestoring?: boolean;
   onSessionExpired?: () => void;
+  onSignOut?: () => void;
+  onSignedIn?: (session: NavigationSession) => void;
   navigationRef?: React.Ref<NavigationContainerRef<RootStackParams>>;
 };
 
@@ -90,15 +92,19 @@ export function AppNavigator({
   isRestoring = false,
   navigationRef,
   onSessionExpired,
+  onSignOut,
+  onSignedIn,
 }: AppNavigatorProps) {
   // S-13 will supply the restored, validated session. Selecting a role is not login.
   if (isRestoring) return <SplashScreen />;
+  // Reset container-owned history on identity changes, but retain it on token refresh.
   return (
-    <NavigationContainer ref={navigationRef} theme={theme}>
-      <Root.Navigator
-        key={session ? `${session.userId}:${session.role}` : 'signed-out'}
-        screenOptions={stackOptions}
-      >
+    <NavigationContainer
+      key={session ? `${session.userId}:${session.role}` : 'signed-out'}
+      ref={navigationRef}
+      theme={theme}
+    >
+      <Root.Navigator screenOptions={stackOptions}>
         {session ? (
           session.role === 'PATIENT' ? (
             <Root.Screen name="PatientApp" options={{ headerShown: false }}>
@@ -109,16 +115,22 @@ export function AppNavigator({
                   patient={session.patient}
                   patientId={session.userId}
                   onSessionExpired={onSessionExpired}
+                  onSignOut={onSignOut}
                   onSignIn={() => {}}
                 />
               )}
             </Root.Screen>
           ) : (
-            <Root.Screen
-              name="StaffApp"
-              component={StaffNavigator}
-              options={{ headerShown: false }}
-            />
+            <Root.Screen name="StaffApp" options={{ headerShown: false }}>
+              {() => (
+                <StaffNavigator
+                  accessToken={session.accessToken}
+                  staff={session.staff}
+                  onSessionExpired={onSessionExpired}
+                  onSignOut={onSignOut}
+                />
+              )}
+            </Root.Screen>
           )
         ) : (
           <>
@@ -132,16 +144,16 @@ export function AppNavigator({
               component={ChooseRole}
               options={{ title: 'Choose role' }}
             />
-            <Root.Screen
-              name="PatientAuth"
-              component={PatientAuthNavigator}
-              options={{ headerShown: false }}
-            />
-            <Root.Screen
-              name="StaffAuth"
-              component={StaffAuthNavigator}
-              options={{ headerShown: false }}
-            />
+            <Root.Screen name="PatientAuth" options={{ headerShown: false }}>
+              {() => <PatientAuthNavigator onSignedIn={onSignedIn} />}
+            </Root.Screen>
+            <Root.Screen name="StaffAuth" options={{ headerShown: false }}>
+              {() => (
+                <StaffAuthNavigator
+                  onStaffAuthenticated={onSignedIn ?? (() => {})}
+                />
+              )}
+            </Root.Screen>
             <Root.Screen
               name="Guest"
               component={Guest}

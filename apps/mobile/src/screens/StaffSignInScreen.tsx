@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,82 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
+import { colors, fonts, radii, surfaces } from '../theme/tokens';
+import { PasswordField } from '../components/g_PasswordField';
+import { SessionToast } from '../components/k_SessionToast';
+import { signInStaff, StaffAuthError } from '../features/staff/g_staffAuth';
+import type { StaffSession } from '../features/staff/g_staffAuth';
 
-export const StaffSignInScreen = ({ navigation }: any) => {
-  const [staffId, setStaffId] = useState('CNH-RC-0421');
-  const [password, setPassword] = useState('••••••••••');
-  const [hospital] = useState('Colombo National Hospital');
+export const StaffSignInScreen = ({
+  navigation,
+  route,
+  onAuthenticated,
+}: any) => {
+  const routeStaffId: string | undefined = route?.params?.staffId;
+  const [staffId, setStaffId] = useState(routeStaffId ?? '');
+  // Registration returns here with the new Staff ID while this screen is still mounted.
+  const [appliedStaffId, setAppliedStaffId] = useState(routeStaffId);
+  if (routeStaffId !== appliedStaffId) {
+    setAppliedStaffId(routeStaffId);
+    if (routeStaffId) setStaffId(routeStaffId);
+  }
+  const [password, setPassword] = useState('');
 
-  const handleSignIn = () => {
-    Alert.alert('Staff Sign In', `Signing in with Staff ID: ${staffId}`);
+  const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [attempted, setAttempted] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [connectionToast, setConnectionToast] = useState<string>();
+  const dismissConnectionToast = useCallback(() => setConnectionToast(undefined), []);
+  const lock = useRef(false);
+  const alive = useRef(true);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; controller.current?.abort(); };
+  }, []);
+  const staffIdError = attempted && !staffId.trim() ? 'Enter your Staff ID.' : fieldErrors.staffId;
+  const passwordError = attempted && !password ? 'Enter your password.' : fieldErrors.password;
+  const valid = !!staffId.trim() && !!password;
+  const handleSignIn = async () => {
+    if (lock.current) return;
+    setAttempted(true);
+    if (!valid) return;
+    lock.current = true;
+    setFieldErrors({});
+    setAuthError('');
+    setSubmitting(true);
+    controller.current = new AbortController();
+    try {
+      const session: StaffSession = await signInStaff(staffId.trim(), password, controller.current.signal);
+      if (!alive.current) return;
+      onAuthenticated?.({
+        userId: session.userId,
+        accessToken: session.accessToken,
+        role: session.role,
+        staff: {
+          fullName: session.fullName,
+          staffId: session.staffId,
+          hospital: session.hospital,
+        },
+      });
+    } catch (error) {
+      if (!alive.current) return;
+      if (error instanceof StaffAuthError && Object.keys(error.fieldErrors).length) {
+        setFieldErrors(error.fieldErrors);
+        return;
+      }
+      if (error instanceof StaffAuthError && ['NETWORK_ERROR', 'TIMEOUT'].includes(error.code))
+        setConnectionToast('Connection problem');
+      else setAuthError(error instanceof StaffAuthError
+        ? error.status === 401 || error.code === 'INVALID_CREDENTIALS' ? 'Invalid Staff ID or password.' : error.message
+        : 'Could not sign in. Please try again.');
+    } finally {
+      lock.current = false;
+      if (alive.current) setSubmitting(false);
+    }
   };
 
   const handleRequestAccount = () => {
@@ -26,6 +90,7 @@ export const StaffSignInScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <SessionToast message={connectionToast} kind="error" onDismiss={dismissConnectionToast} />
       <View style={styles.navHead}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -36,7 +101,7 @@ export const StaffSignInScreen = ({ navigation }: any) => {
         <View style={styles.titleWrap} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {/* Brand Icon Mark */}
         <View style={styles.markTint}>
           <Text style={styles.markIcon}>▦</Text>
@@ -51,40 +116,43 @@ export const StaffSignInScreen = ({ navigation }: any) => {
         <View style={styles.field}>
           <Text style={styles.label}>Staff ID</Text>
           <TextInput
-            style={[styles.control, styles.mono]}
+            style={[styles.control, styles.mono, staffIdError && { borderColor: colors.coral }]}
+            accessibilityLabel="Staff ID"
+            accessibilityHint="Required"
+            autoCorrect={false}
             value={staffId}
-            onChangeText={setStaffId}
+            editable={!submitting}
+            onChangeText={value => { setStaffId(value); setAuthError(''); setFieldErrors(current => ({ ...current, staffId: '' })); }}
             autoCapitalize="characters"
           />
+          {staffIdError ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite"
+            style={{ color: colors.coralStrong, marginTop: 5 }}>{staffIdError}</Text> : null}
         </View>
 
         {/* Password Field */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={[styles.control, styles.controlFocused]}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </View>
+        <PasswordField
+          label="Password"
+          value={password}
+          onChangeText={value => { if (!lock.current) { setPassword(value); setAuthError(''); setFieldErrors(current => ({ ...current, password: '' })); } }}
+          error={passwordError}
+        />
 
-        {/* Hospital Dropdown */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Hospital</Text>
-          <TouchableOpacity style={styles.controlDropdown} activeOpacity={0.7}>
-            <Text style={styles.dropdownValue}>{hospital}</Text>
-            <Text style={styles.chev}>▼</Text>
-          </TouchableOpacity>
-        </View>
+        {authError ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite"
+          style={{ color: colors.coralStrong, marginBottom: 10 }}>{authError}</Text> : null}
 
         {/* Sign In Button */}
         <TouchableOpacity
-          style={styles.btnPrimary}
+          style={[styles.btnPrimary, submitting && { opacity: 0.6 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Sign in"
           onPress={handleSignIn}
+          accessibilityState={{ disabled: submitting, busy: submitting }}
+          disabled={submitting}
           activeOpacity={0.8}
         >
-          <Text style={styles.btnPrimaryText}>Sign in</Text>
+          <Text style={styles.btnPrimaryText}>
+            {submitting ? 'Signing in…' : 'Sign in'}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -102,7 +170,8 @@ export const StaffSignInScreen = ({ navigation }: any) => {
         <View style={styles.noteWarn}>
           <Text style={styles.warnIcon}>⚠</Text>
           <Text style={styles.warnText}>
-            Staff accounts are approved by the hospital administrator before first use.
+            Use the Staff ID and password you created to sign in to the
+            Reception Desk.
           </Text>
         </View>
 
@@ -135,6 +204,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backBtn: {
+    borderRadius: radii.circle,
     width: 38,
     height: 38,
     backgroundColor: colors.panel,
@@ -144,6 +214,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backBtnArrow: {
+    fontFamily: fonts.body,
     fontSize: 24,
     color: colors.tealDark,
     lineHeight: 28,
@@ -152,12 +223,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
+    ...surfaces.content,
     paddingHorizontal: 22,
     paddingTop: 6,
     paddingBottom: 28,
     flexGrow: 1,
   },
   markTint: {
+    borderRadius: radii.mark,
     width: 70,
     height: 70,
     backgroundColor: colors.tealTint,
@@ -168,10 +241,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   markIcon: {
+    fontFamily: fonts.body,
     fontSize: 28,
     color: colors.tealDark,
   },
   screenTitle: {
+    fontFamily: fonts.display,
     fontSize: 28,
     fontWeight: '700',
     color: colors.tealDark,
@@ -179,6 +254,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   lede: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.inkSoft,
     lineHeight: 20,
@@ -191,12 +267,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: {
+    fontFamily: fonts.body,
     fontSize: 12,
     fontWeight: '600',
     color: colors.ink,
     marginBottom: 6,
   },
   control: {
+    borderRadius: radii.sm,
+    fontFamily: fonts.body,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -210,6 +289,7 @@ const styles = StyleSheet.create({
     borderColor: colors.teal,
   },
   controlDropdown: {
+    borderRadius: radii.sm,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sage,
@@ -221,17 +301,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   dropdownValue: {
+    fontFamily: fonts.body,
     fontSize: 14,
     color: colors.ink,
   },
   chev: {
+    fontFamily: fonts.body,
     fontSize: 10,
     color: colors.inkSoft,
   },
   mono: {
-    fontFamily: 'monospace',
+    fontFamily: fonts.mono,
   },
   btnPrimary: {
+    borderRadius: radii.pill,
     backgroundColor: colors.teal,
     paddingVertical: 14,
     alignItems: 'center',
@@ -239,6 +322,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   btnPrimaryText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -255,6 +339,7 @@ const styles = StyleSheet.create({
     minHeight: 24,
   },
   noteWarn: {
+    borderRadius: radii.note,
     backgroundColor: colors.amberTint,
     padding: 13,
     flexDirection: 'row',
@@ -262,6 +347,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   warnIcon: {
+    fontFamily: fonts.body,
     fontSize: 15,
     color: colors.amber,
     marginRight: 8,
@@ -274,6 +360,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   btnOutline: {
+    borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.sage,
     backgroundColor: 'transparent',
@@ -282,6 +369,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnOutlineText: {
+    fontFamily: fonts.body,
     fontSize: 15,
     fontWeight: '600',
     color: colors.tealDark,

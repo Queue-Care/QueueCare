@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from 'react-native';
 import {
   createBottomTabNavigator,
   type BottomTabNavigationProp,
@@ -8,12 +7,7 @@ import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import {
-  NavigationPage,
-  SignInGate,
-  stackOptions,
-  tabOptions,
-} from './NavigationPage';
+import { SignInGate, stackOptions, tabOptions } from './NavigationPage';
 import { PatientHomeScreen } from '../screens/PatientHomeScreen';
 import { MyBookingsScreen } from '../screens/MyBookingsScreen';
 import { BookingDetailsScreen } from '../screens/BookingDetailsScreen';
@@ -27,6 +21,9 @@ import {
 } from '../features/booking/useBookingSubmission';
 import { BookingConfirmationScreen } from '../screens/BookingConfirmationScreen';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
+import { useHomeFonts } from '../theme/homeFonts';
 import type {
   BookingsStackParams,
   HomeStackParams,
@@ -43,6 +40,7 @@ type Access = {
   patient?: PatientSummary;
   patientId?: string;
   onSessionExpired?: () => void;
+  onSignOut?: () => void;
   onSignIn: () => void;
   onExit?: () => void;
 };
@@ -62,16 +60,7 @@ function HomeNavigator({
       <Home.Screen
         name="PatientHome"
         options={{
-          title: 'QueueCare',
-          headerLeft: onExit
-            ? () => (
-                <Button
-                  title="Welcome"
-                  accessibilityLabel="Back to welcome"
-                  onPress={onExit}
-                />
-              )
-            : undefined,
+          headerShown: false,
         }}
       >
         {({
@@ -80,6 +69,22 @@ function HomeNavigator({
           <PatientHomeScreen
             guest={guest}
             accessToken={accessToken}
+            patient={patient}
+            onExit={onExit}
+            onProfile={() =>
+              navigation
+                .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                .navigate('Profile')
+            }
+            onPriority={() =>
+              navigation
+                .getParent<BottomTabNavigationProp<PatientTabParams>>()
+                .navigate('Bookings', {
+                  screen: 'PriorityRequestStatus',
+                  params: {},
+                  initial: false,
+                })
+            }
             onSignIn={onSignIn}
             onSearch={() => navigation.navigate('HospitalSearch')}
             onBookings={() =>
@@ -228,12 +233,25 @@ export function PatientNavigator({
   patient,
   patientId,
   onSessionExpired,
+  onSignOut,
   onSignIn,
   onExit,
 }: Access) {
   const submission = useBookingSubmission(patientId, accessToken);
+  const homeFonts = useHomeFonts();
   return (
-    <Tabs.Navigator screenOptions={tabOptions}>
+    <Tabs.Navigator
+      screenOptions={({ route }) => ({
+        ...tabOptions({ route }),
+        tabBarInactiveTintColor: '#93A8A2',
+        tabBarLabelStyle: {
+          fontFamily: homeFonts.semibold,
+          fontSize: 10.88,
+          fontWeight: '600',
+        },
+        tabBarItemStyle: { paddingTop: 6, paddingBottom: 4 },
+      })}
+    >
       <Tabs.Screen name="Home">
         {() => (
           <HomeNavigator
@@ -258,11 +276,20 @@ export function PatientNavigator({
         }
       </Tabs.Screen>
       <Tabs.Screen name="Alerts">
-        {() =>
+        {({ navigation }) =>
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
-            <NavigationPage title="Notifications" />
+            <NotificationsScreen
+              accessToken={accessToken}
+              onSessionExpired={onSessionExpired}
+              onOpenBooking={bookingId =>
+                navigation.navigate('Bookings', {
+                  screen: 'BookingDetails',
+                  params: { bookingId },
+                })
+              }
+            />
           )
         }
       </Tabs.Screen>
@@ -271,7 +298,11 @@ export function PatientNavigator({
           guest ? (
             <SignInGate onSignIn={onSignIn} />
           ) : (
-            <NavigationPage title="Profile" />
+            <ProfileScreen
+              accessToken={accessToken}
+              onSignOut={onSignOut}
+              onSessionExpired={onSessionExpired}
+            />
           )
         }
       </Tabs.Screen>

@@ -7,14 +7,11 @@ import {
   LoadState,
   patientStyles as s,
 } from '../components/PatientPage';
-import {
-  formatVisit,
-  parseBooking,
-  patientApi,
-  PatientApiError,
-} from '../features/patient/api';
+import { formatVisit } from '../features/patient/api';
 import { usePatientResource } from '../features/patient/usePatientResource';
-import { colors } from '../theme/tokens';
+import { colors, radii, shadows } from '../theme/tokens';
+import { ActionButton } from '../components/ActionButton';
+import { getPatientBookings } from '../features/patient/bookings';
 
 export function MyBookingsScreen({
   navigation,
@@ -23,19 +20,10 @@ export function MyBookingsScreen({
   accessToken?: string;
 }) {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [page, setPage] = useState(1);
   const load = useCallback(
-    async (signal: AbortSignal) => {
-      const data = await patientApi(`/bookings/me?status=${tab}`, {
-        token: accessToken,
-        signal,
-      });
-      if (!Array.isArray(data))
-        throw new PatientApiError(
-          'We could not read your bookings. Please try again.',
-        );
-      return data.map(parseBooking);
-    },
-    [accessToken, tab],
+    (signal: AbortSignal) => getPatientBookings(accessToken, tab, page, signal),
+    [accessToken, tab, page],
   );
   const state = usePatientResource(load);
   return (
@@ -47,7 +35,7 @@ export function MyBookingsScreen({
           {
             padding: 5,
             gap: 5,
-            borderRadius: 12,
+            borderRadius: radii.pill,
             backgroundColor: colors.tealTint,
           },
         ]}
@@ -57,11 +45,15 @@ export function MyBookingsScreen({
             key={value}
             accessibilityRole="tab"
             accessibilityState={{ selected: tab === value }}
-            onPress={() => setTab(value)}
+            onPress={() => {
+              setPage(1);
+              setTab(value);
+            }}
             style={{
+              ...(tab === value ? shadows.segment : {}),
               flex: 1,
               padding: 13,
-              borderRadius: 9,
+              borderRadius: radii.pill,
               alignItems: 'center',
               backgroundColor: tab === value ? colors.panel : 'transparent',
             }}
@@ -77,9 +69,11 @@ export function MyBookingsScreen({
         error={state.error}
         retry={state.reload}
       />
-      {!state.loading && !state.error && state.data?.length === 0 ? (
+      {!state.loading && !state.error && state.data?.bookings.length === 0 ? (
         <View style={s.card}>
-          <Text style={s.heading}>No {tab} bookings</Text>
+          <Text style={s.heading}>
+            {page === 1 ? `No ${tab} bookings` : 'No bookings on this page'}
+          </Text>
           <Text style={s.text}>
             {tab === 'upcoming'
               ? 'Your next hospital appointment will appear here once booked.'
@@ -87,7 +81,7 @@ export function MyBookingsScreen({
           </Text>
         </View>
       ) : null}
-      {state.data?.map(booking => (
+      {state.data?.bookings.map(booking => (
         <Pressable
           key={booking._id}
           accessibilityRole="button"
@@ -113,6 +107,32 @@ export function MyBookingsScreen({
           </Text>
         </Pressable>
       ))}
+      {!state.loading && state.data && (
+        <View style={{ gap: 12 }}>
+          <Text style={s.small}>
+            {`Page ${page} · ${state.data.total} ${tab} bookings`}
+          </Text>
+          {page > 1 && (
+            <ActionButton
+              label="Previous bookings"
+              variant="outline"
+              onPress={() => setPage(page - 1)}
+            />
+          )}
+          {state.data.hasNextPage && (
+            <ActionButton
+              label="Next bookings"
+              variant="outline"
+              onPress={() => setPage(page + 1)}
+            />
+          )}
+          <ActionButton
+            label="Refresh bookings"
+            variant="outline"
+            onPress={state.reload}
+          />
+        </View>
+      )}
     </PatientPage>
   );
 }

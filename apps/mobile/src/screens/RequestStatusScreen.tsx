@@ -18,7 +18,7 @@ import {
   reasons,
 } from '../features/patient/api';
 import { usePatientResource } from '../features/patient/usePatientResource';
-import { colors } from '../theme/tokens';
+import { colors, radii } from '../theme/tokens';
 
 export function RequestStatusScreen({
   route,
@@ -27,7 +27,7 @@ export function RequestStatusScreen({
 }: NativeStackScreenProps<BookingsStackParams, 'PriorityRequestStatus'> & {
   accessToken?: string;
 }) {
-  const id = route.params.requestId;
+  const id = route.params?.requestId;
   const load = useCallback(
     async (signal: AbortSignal) => {
       const data = await patientApi('/priority-requests/me', {
@@ -36,7 +36,13 @@ export function RequestStatusScreen({
       });
       if (!Array.isArray(data))
         throw new PatientApiError('We could not read your requests.');
-      const request = data.map(parsePriority).find(item => item._id === id);
+      const requests = data.map(parsePriority);
+      const request = id
+        ? requests.find(item => item._id === id)
+        : requests.sort(
+            (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+          )[0];
+      if (!request && !id) return null;
       if (!request)
         throw new PatientApiError('This request could not be found.');
       const booking = parseBooking(
@@ -64,6 +70,19 @@ export function RequestStatusScreen({
         error={state.error}
         retry={state.reload}
       />
+      {!state.loading && !state.error && data === null ? (
+        <View style={s.card}>
+          <Text style={s.title}>No priority requests yet</Text>
+          <Text style={s.text}>
+            Open a confirmed booking to request priority assistance. Your latest
+            request status will appear here.
+          </Text>
+          <ActionButton
+            label="View my bookings"
+            onPress={() => navigation.navigate('MyBookings')}
+          />
+        </View>
+      ) : null}
       {data ? (
         <>
           <View
@@ -121,7 +140,7 @@ export function RequestStatusScreen({
                     style={{
                       width: 22,
                       height: 22,
-                      borderRadius: 11,
+                      borderRadius: radii.circle,
                       backgroundColor: complete
                         ? pending && index === 1
                           ? colors.amber

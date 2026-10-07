@@ -9,6 +9,7 @@ import {
   createBookingRepository,
   ensureBookingIndexes,
 } from '../modules/bookings/bookingRepository.js';
+import { createStaffSessionRepository } from '../modules/sessions/k_sessionRepository.js';
 import { parseBookingBody } from '../modules/bookings/bookingRoutes.js';
 import {
   ensureBookingNotificationIndexes,
@@ -200,6 +201,40 @@ test(
     });
     const base = await startHttp(t, app(db, client));
     const bearer = await token();
+    await t.test('49 of 50 permits one final booking, full rejects all writes, and staff capacity edits restore availability', async () => {
+      await sessions.insertOne(sample(350, { capacity: 50, bookedCount: 49 }));
+      const final = await post(base, id(350), await token(id(14)));
+      assert.equal(final.status, 201);
+      assert.equal((await sessions.findOne({ _id: id(350) })).bookedCount, 50);
+      const before = { bookings: await bookings.countDocuments({}), notifications: await notifications.countDocuments({}),
+        queue: await db.collection('queueEntries').countDocuments({}) };
+      const rejected = await post(base, id(350), await token(id(15)));
+      assert.equal(rejected.status, 409);
+      assert.equal(rejected.body.error.code, 'SESSION_FULL');
+      assert.equal(rejected.body.error.message, 'This session is fully booked.');
+      assert.equal((await sessions.findOne({ _id: id(350) })).bookedCount, 50);
+      assert.equal(await bookings.countDocuments({}), before.bookings);
+      assert.equal(await notifications.countDocuments({}), before.notifications);
+      assert.equal(await db.collection('queueEntries').countDocuments({}), before.queue);
+      await users.insertOne({ _id: id(900), role: 'RECEPTION', status: 'ACTIVE', hospitalId });
+      const staffSessions = createStaffSessionRepository(db, { now: () => at });
+      await assert.rejects(staffSessions.edit(id(900), id(350), { capacity: 49 }), error => error.status === 400);
+      await staffSessions.edit(id(900), id(350), { capacity: 50 });
+      await staffSessions.edit(id(900), id(350), { capacity: 51 });
+      assert.equal((await post(base, id(350), await token(id(15)))).status, 201);
+      const stored = await sessions.findOne({ _id: id(350) });
+      assert.equal(stored.bookedCount, 51); assert.equal(stored.capacity, 51); assert.equal(stored.status, 'OPEN');
+      assert.equal(await bookings.countDocuments({ sessionId: id(350) }), 2);
+    });
+    await t.test('two simultaneous final-slot attempts at 49 of 50 cannot both commit', async () => {
+      await sessions.insertOne(sample(351, { capacity: 50, bookedCount: 49 }));
+      const results = await Promise.all([post(base, id(351), await token(id(14))), post(base, id(351), await token(id(15)))]);
+      assert.deepEqual(results.map(result => result.status).sort(), [201, 409]);
+      assert.equal((await sessions.findOne({ _id: id(351) })).bookedCount, 50);
+      assert.equal(await bookings.countDocuments({ sessionId: id(351) }), 1);
+      assert.equal(await notifications.countDocuments({ 'data.sessionId': id(351) }), 1);
+      assert.equal(await db.collection('queueEntries').countDocuments({ sessionId: id(351) }), 0);
+    });
     await t.test(
       'creates persisted public booking and increments capacity exactly once; duplicates include cancelled records',
       async () => {
@@ -581,6 +616,39 @@ test(
           await db.collection('hospitals').findOne({ _id: hospitalId }),
           beforeHospital
         );
+      }
+    );
+    await t.test(
+      'session starting between eligibility read and capacity write rolls back every write',
+      async () => {
+        const sessionId = id(512);
+        await sessions.insertOne(sample(512));
+        const beforePatient = await users.findOne({ _id: id(1) });
+        const beforeSession = await sessions.findOne({ _id: sessionId });
+        let clockReads = 0;
+        const cutoffBase = await startHttp(
+          t,
+          app(db, client, {
+            now: () =>
+              ++clockReads === 1
+                ? new Date('2026-10-03T03:29:59.999Z')
+                : new Date('2026-10-03T03:30:00.000Z'),
+          })
+        );
+        const result = await post(cutoffBase, sessionId, bearer);
+        assert.equal(clockReads, 2);
+        assert.equal(result.status, 409);
+        assert.equal(result.body.error.code, 'SESSION_UNAVAILABLE');
+        assert.equal(await bookings.countDocuments({ sessionId }), 0);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': sessionId }),
+          0
+        );
+        assert.deepEqual(
+          await sessions.findOne({ _id: sessionId }),
+          beforeSession
+        );
+        assert.deepEqual(await users.findOne({ _id: id(1) }), beforePatient);
       }
     );
     function interceptNotificationInsert(afterInsert) {

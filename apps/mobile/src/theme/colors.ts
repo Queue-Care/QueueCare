@@ -1,18 +1,2 @@
-export const colors = {
-  mist: '#F5F8F7',
-  panel: '#FFFFFF',
-  ink: '#17302A',
-  inkSoft: '#4A625C',
-  teal: '#0E6B5C',
-  tealDark: '#0A4F45',
-  tealTint: '#E4F0EC',
-  coral: '#E2624C',
-  coralTint: '#FBE7E2',
-  amber: '#C68A1F',
-  amberTint: '#FBF0DA',
-  sage: '#CFDDD7',
-  sageLine: '#DFE9E5',
-  canvas: '#E8EDEB',
-  doneBg: '#E7EFE9',
-  doneText: '#3C6B4E',
-};
+// Keep the existing import path while sharing one design palette.
+export { colors } from './tokens';

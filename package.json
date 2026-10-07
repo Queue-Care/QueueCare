@@ -2,6 +2,7 @@
   "name": "queuecare",
   "version": "0.1.0",
   "private": true,
+  "main": "apps/mobile/index.js",
   "scripts": {
     "start:mobile": "npm --workspace apps/mobile run start",
     "dev:mobile": "npm --workspace apps/mobile run start",
@@ -14,10 +15,15 @@
     "dev:api": "npm --workspace apps/api run dev",
     "start:api": "npm --workspace apps/api run start",
     "test:api": "npm --workspace apps/api run test",
+    "test:patient-flow": "node --test apps/api/src/tests/discoveryBookingFlow.test.js && npm run test:mobile -- --watchman=false PatientBookingJourney.test.tsx",
     "db:seed:hospitals": "npm --workspace apps/api run seed:hospitals",
     "db:seed:discovery": "npm --workspace apps/api run seed:discovery",
     "db:seed:sessions": "npm --workspace apps/api run seed:sessions --",
-    "check:db": "npm --workspace apps/api run check:db"
+    "db:seed:priority": "npm --workspace apps/api run seed:priority",
+    "db:seed:priority:reset": "npm --workspace apps/api run seed:priority:reset",
+    "check:db": "npm --workspace apps/api run check:db",
+    "check:setup": "node apps/api/src/config/checkSetup.js",
+    "test:staff-patient-flow": "node --test apps/api/src/tests/staffPatientBookingFlow.test.js"
   },
   "workspaces": [
     "apps/mobile",

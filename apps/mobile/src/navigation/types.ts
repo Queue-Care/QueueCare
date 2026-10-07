@@ -2,6 +2,11 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 // Display fields from the validated account/profile response, never route params.
 export type PatientSummary = { fullName: string; nic?: string };
+export type StaffSummary = {
+  fullName: string;
+  staffId: string;
+  hospital: string;
+};
 
 // The authentication owner supplies this only after validating the session.
 export type NavigationSession = {
@@ -9,17 +14,17 @@ export type NavigationSession = {
   // Supplied in memory by S-13; never read from a public environment variable.
   accessToken?: string;
   patient?: PatientSummary;
+  staff?: StaffSummary;
   role: 'PATIENT' | 'RECEPTION' | 'NURSE';
 };
 
 export type PatientAuthParams = {
-  PatientSignIn: undefined;
+  PatientSignIn: { registered?: boolean } | undefined;
   PatientCreateAccount: undefined;
-  VerifyMobile: { verificationId: string };
   ResetPassword: undefined;
 };
 export type StaffAuthParams = {
-  StaffSignIn: undefined;
+  StaffSignIn: { staffId?: string } | undefined;
   StaffRegistration: undefined;
   StaffVerification: { verificationId: string };
   ResetPassword: undefined;
@@ -39,7 +44,7 @@ export type BookingsStackParams = {
   MyBookings: undefined;
   BookingDetails: { bookingId: string };
   RequestPriority: { bookingId: string };
-  PriorityRequestStatus: { requestId: string };
+  PriorityRequestStatus: { requestId?: string } | undefined;
 };
 export type PatientTabParams = {
   Home: NavigatorScreenParams<HomeStackParams> | undefined;
@@ -48,15 +53,19 @@ export type PatientTabParams = {
   Profile: undefined;
 };
 export type SessionsStackParams = {
-  SessionsList: undefined;
+  SessionsList: { savedSessionDate?: string; saveMessage?: string; saveRevision?: number } | undefined;
   AddEditSession: { sessionId?: string } | undefined;
 };
 export type PriorityStackParams = {
   PriorityRequests: undefined;
   PriorityRequestDetails: { requestId: string };
 };
+export type DashboardStackParams = {
+  ReceptionDashboard: undefined;
+  StaffNotifications: undefined;
+};
 export type StaffTabParams = {
-  Dashboard: undefined;
+  Dashboard: NavigatorScreenParams<DashboardStackParams> | undefined;
   Sessions: NavigatorScreenParams<SessionsStackParams> | undefined;
   Priority: NavigatorScreenParams<PriorityStackParams> | undefined;
   Profile: undefined;

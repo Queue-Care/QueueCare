@@ -9,13 +9,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { StatusText } from '../components/StatusText';
+import { TicketAccent } from '../components/TicketAccent';
 import { useBookingDetails } from '../features/booking/useBookingDetails';
 import {
   bookingDateLabel,
   type BookingDetails,
 } from '../features/booking/bookingDetails';
 import { sessionTimeLabel } from '../features/booking/availableSessions';
-import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { colors, fonts, surfaces, radii, spacing, ticketStyles, typography } from '../theme/tokens';
 
 function title(booking: BookingDetails) {
   const labels = {
@@ -69,12 +71,18 @@ export function BookingConfirmationScreen({
       >
         {state.status === 'loading' ? (
           <View style={styles.panel} accessibilityState={{ busy: true }}>
-            <ActivityIndicator color={colors.teal} />
-            <Text style={styles.body}>Loading your booking…</Text>
+            <ActivityIndicator
+              color={colors.teal}
+              accessible={false}
+              importantForAccessibility="no"
+            />
+            <StatusText style={styles.body} accessibilityState={{ busy: true }}>
+              Loading your booking…
+            </StatusText>
           </View>
         ) : state.status === 'error' ? (
           <View style={styles.panel}>
-            <Text accessibilityRole="alert" style={styles.heading}>
+            <StatusText accessibilityRole="alert" style={styles.heading}>
               {state.kind === 'authentication'
                 ? 'Sign in to view your booking'
                 : state.kind === 'forbidden'
@@ -84,7 +92,7 @@ export function BookingConfirmationScreen({
                 : state.kind === 'incomplete'
                 ? 'Booking summary unavailable'
                 : 'We couldn’t load your booking'}
-            </Text>
+            </StatusText>
             <Text style={styles.body}>
               {state.kind === 'unavailable'
                 ? 'This booking could not be found for your account.'
@@ -113,15 +121,19 @@ export function BookingConfirmationScreen({
           <>
             <View style={styles.hero}>
               {confirmed && (
-                <View style={styles.mark}>
+                <View
+                  style={styles.mark}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                >
                   <Text style={styles.check} accessible={false}>
                     ✓
                   </Text>
                 </View>
               )}
-              <Text accessibilityRole="header" style={styles.title}>
+              <StatusText accessibilityRole="header" style={styles.title}>
                 {heading}
-              </Text>
+              </StatusText>
               <Text style={styles.body}>
                 {confirmed
                   ? 'Show this booking ID at the hospital reception desk.'
@@ -129,6 +141,7 @@ export function BookingConfirmationScreen({
               </Text>
             </View>
             <View style={styles.ticket}>
+              <TicketAccent />
               <Text style={styles.ticketLabel}>Booking ID</Text>
               <Text
                 selectable
@@ -180,6 +193,11 @@ export function BookingConfirmationScreen({
               label="View booking"
               onPress={() => onViewBooking(booking.id)}
             />
+            <ActionButton
+              label="Refresh booking"
+              variant="outline"
+              onPress={reload}
+            />
           </>
         ) : null}
         <ActionButton label="Back to Home" variant="outline" onPress={onHome} />
@@ -190,6 +208,7 @@ export function BookingConfirmationScreen({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
+    ...surfaces.content,
     padding: spacing.lg,
     gap: spacing.md,
     paddingBottom: spacing.xl,
@@ -198,7 +217,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   mark: {
     backgroundColor: colors.tealTint,
-    borderRadius: 40,
+    borderRadius: radii.mark,
     width: 72,
     height: 72,
     alignItems: 'center',
@@ -208,51 +227,48 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.display,
     fontSize: 30,
-    lineHeight: 38,
-    color: colors.ink,
+    lineHeight: 36,
+    color: colors.tealDark,
     textAlign: 'center',
   },
   heading: {
     fontFamily: fonts.body,
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 24,
     color: colors.ink,
     fontWeight: '600',
   },
-  body: {
-    fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.inkSoft,
-  },
+  body: typography.body,
   panel: {
+    ...surfaces.card,
     backgroundColor: colors.panel,
     padding: spacing.md,
     gap: spacing.md,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.sageLine,
   },
   ticket: {
-    backgroundColor: colors.tealDark,
-    borderRadius: radii.md,
-    padding: spacing.lg,
+    ...ticketStyles.panel,
+    borderRadius: radii.lg,
     gap: spacing.sm,
   },
-  ticketLabel: { color: colors.sage, fontSize: 14, lineHeight: 22 },
+  ticketLabel: ticketStyles.label,
   code: {
+    ...ticketStyles.identifier,
     color: colors.panel,
-    fontSize: 22,
+    fontSize: 20,
     lineHeight: 30,
     fontWeight: '700',
     flexShrink: 1,
   },
   ticketHeading: {
+    fontFamily: fonts.body,
     color: colors.panel,
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 26,
     fontWeight: '600',
   },
-  ticketText: { color: colors.panel, fontSize: 16, lineHeight: 24 },
-  line: { height: 1, backgroundColor: colors.teal, marginVertical: spacing.sm },
+  ticketText: ticketStyles.text,
+  line: { ...ticketStyles.divider, marginVertical: spacing.sm },
 });

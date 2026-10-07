@@ -216,6 +216,46 @@ test(
       }
     );
     await t.test(
+      'booking read storage failures are generic errors, not missing bookings or successful empty summaries',
+      async () => {
+        // Authentication still reads real MongoDB. Inject failure only at the booking lookup.
+        const failedDb = {
+          collection(name) {
+            if (name === 'bookings')
+              return {
+                findOne: async () => {
+                  throw new Error('private-storage-error');
+                },
+              };
+            return db.collection(name);
+          },
+        };
+        const failedBase = await startHttp(
+          t,
+          createApp({
+            hospitalRepository: {},
+            checkDatabase: async () => {},
+            authenticate: authenticate(db, config, { now: () => at }),
+            bookingRepository: createBookingRepository(failedDb, client),
+          })
+        );
+        const response = await fetch(
+          `${failedBase}/api/v1/bookings/${id(400)}`,
+          { headers: { Authorization: `Bearer ${bearer}` } }
+        );
+        assert.equal(response.status, 500);
+        assert.deepEqual(await response.json(), {
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Something went wrong. Please try again.',
+            fieldErrors: {},
+          },
+        });
+        assert.equal((await get()).status, 200);
+      }
+    );
+    await t.test(
       'missing relations and malformed records return safe incomplete-summary errors',
       async () => {
         const cases = [

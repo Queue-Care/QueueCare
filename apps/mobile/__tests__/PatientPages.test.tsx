@@ -13,6 +13,7 @@ import {
 import type {
   PatientAuthParams,
   RootStackParams,
+  NavigationSession,
 } from '../src/navigation/types';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { bookingDetailsPayload } from '../test-utils/bookingFixtures';
@@ -108,12 +109,12 @@ test('invalid registration shows field errors without sending an API request', a
   ).toBe(true);
 });
 
-test('registration sends trimmed values and opens verification only after server success', async () => {
-  const navigation = { navigate: jest.fn() };
+test('registration sends trimmed values and opens login only after server success', async () => {
+  const navigation = { navigate: jest.fn(), reset: jest.fn() };
   fetchMock.mockResolvedValue({
     ok: true,
     status: 201,
-    json: async () => ({ success: true, data: { verificationId: 'verify-1' } }),
+    json: async () => ({ success: true, data: { registered: true } }),
   });
   await act(async () => {
     renderer = ReactTestRenderer.create(
@@ -155,8 +156,9 @@ test('registration sends trimmed values and opens verification only after server
       .pop()!
       .props.onPress();
   });
-  expect(navigation.navigate).toHaveBeenCalledWith('VerifyMobile', {
-    verificationId: 'verify-1',
+  expect(navigation.reset).toHaveBeenCalledWith({
+    index: 0,
+    routes: [{ name: 'PatientSignIn', params: { registered: true } }],
   });
   expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
     fullName: values.fullName,
@@ -164,6 +166,73 @@ test('registration sends trimmed values and opens verification only after server
     mobile: '+94771234567',
     password: values.password,
   });
+});
+
+test('successful patient login changes the root navigation to patient home', async () => {
+  const ref = createNavigationContainerRef<RootStackParams>();
+  function Harness() {
+    const [session, setSession] = React.useState<NavigationSession | null>(
+      null,
+    );
+    return (
+      <SafeAreaProvider>
+        <AppNavigator
+          session={session}
+          onSignedIn={setSession}
+          navigationRef={ref}
+        />
+      </SafeAreaProvider>
+    );
+  }
+  fetchMock.mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      success: true,
+      data: {
+        userId: '000000000000000000000001',
+        accessToken: 'server-token',
+        role: 'PATIENT',
+        patient: { fullName: 'Kasun Perera' },
+      },
+    }),
+  });
+  await act(async () => {
+    renderer = ReactTestRenderer.create(<Harness />);
+  });
+  await act(async () => {
+    ref.navigate('PatientAuth', { screen: 'PatientSignIn' });
+  });
+  for (const [label, value] of [
+    ['NIC number', values.nic],
+    ['Password', values.password],
+  ]) {
+    await act(async () => {
+      renderer!.root
+        .findAll(
+          item =>
+            item.props.accessibilityLabel === label &&
+            typeof item.props.onChangeText === 'function',
+        )
+        .pop()!
+        .props.onChangeText(value);
+    });
+  }
+  await act(async () => {
+    await renderer!.root
+      .findAll(
+        item =>
+          item.props.accessibilityLabel === 'Sign in' &&
+          typeof item.props.onPress === 'function',
+      )
+      .pop()!
+      .props.onPress();
+  });
+  expect(ref.getCurrentRoute()?.name).toBe('PatientHome');
+  expect(ref.getRootState()?.routeNames).not.toContain('PatientAuth');
+  expect(fetchMock.mock.calls[0][0]).toBe(
+    'http://localhost:3000/api/v1/auth/patient/login',
+  );
 });
 
 test('protected requests require a token and do not expose raw server errors', async () => {
@@ -219,6 +288,83 @@ test('patient pages read the nested booking details returned by develop', () => 
   ).toThrow();
 });
 
+test.each([true, false])(
+  'Home priority shortcut opens request status (has requests: %s)',
+  async hasRequests => {
+    const ref = createNavigationContainerRef<RootStackParams>();
+    fetchMock.mockImplementation(async (url: string) => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: url.endsWith('/priority-requests/me')
+          ? hasRequests
+            ? [
+                {
+                  _id: 'old',
+                  bookingId: 'booking-1',
+                  reason: 'OTHER',
+                  status: 'DECLINED',
+                  createdAt: '2026-10-01T12:00:00Z',
+                },
+                {
+                  _id: 'new',
+                  bookingId: 'booking-1',
+                  reason: 'MOBILITY',
+                  status: 'PENDING',
+                  createdAt: '2026-10-04T12:00:00Z',
+                },
+              ]
+            : []
+          : url.includes('/bookings/me')
+          ? []
+          : {
+              _id: 'booking-1',
+              bookingCode: 'OPD-101',
+              hospitalName: 'Hospital',
+              serviceName: 'General OPD',
+              startsAt: '2026-10-06T09:00:00+05:30',
+              status: 'CONFIRMED',
+            },
+      }),
+    }));
+    await act(async () => {
+      renderer = ReactTestRenderer.create(
+        <SafeAreaProvider>
+          <AppNavigator
+            navigationRef={ref}
+            session={{
+              userId: 'patient-1',
+              role: 'PATIENT',
+              accessToken: 'token',
+            }}
+          />
+        </SafeAreaProvider>,
+      );
+    });
+    await act(async () => {
+      await renderer!.root
+        .findAll(
+          item =>
+            item.props.accessibilityLabel === 'Priority queue' &&
+            typeof item.props.onPress === 'function',
+        )
+        .pop()!
+        .props.onPress();
+    });
+    expect(ref.getCurrentRoute()?.name).toBe('PriorityRequestStatus');
+    expect(
+      renderer!.root
+        .findAllByType(Text)
+        .some(
+          item =>
+            item.props.children ===
+            (hasRequests ? 'Under review' : 'No priority requests yet'),
+        ),
+    ).toBe(true);
+  },
+);
+
 test('patient can open a booking, submit the selected priority reason, and return from status', async () => {
   const booking = {
     _id: 'booking-1',
@@ -247,7 +393,21 @@ test('patient can open a booking, submit the selected priority reason, and retur
       return {
         ok: true,
         status: 200,
-        json: async () => ({ success: true, data }),
+        json: async () => ({
+          success: true,
+          data,
+          ...(url.includes('/bookings/me')
+            ? {
+                meta: {
+                  page: 1,
+                  limit: 20,
+                  total: 1,
+                  totalPages: 1,
+                  hasNextPage: false,
+                },
+              }
+            : {}),
+        }),
       };
     },
   );

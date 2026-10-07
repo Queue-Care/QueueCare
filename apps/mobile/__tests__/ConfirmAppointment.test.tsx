@@ -365,6 +365,43 @@ test('token replacement cancels old work, retains uncertainty, and ignores its l
   expect(hasText(bookingMessages.uncertain)).toBe(true);
 });
 
+test('switching directly to another patient clears booking history and ignores the first account’s late success', async () => {
+  const pending = deferred();
+  post.mockReturnValueOnce(pending.promise);
+  await mount();
+  await select();
+  await press('Confirm appointment');
+  const signal = post.mock.calls[0][0].signal;
+  await act(async () => {
+    renderer.update(
+      tree({
+        userId: 'abcdef000000000000000002',
+        role: 'PATIENT',
+        accessToken: 'other.patient.token',
+        patient: { fullName: 'Second Test Patient' },
+      }),
+    );
+  });
+  expect(signal.aborted).toBe(true);
+  expect(ref.getCurrentRoute()?.name).toBe('PatientHome');
+  await act(async () => {
+    pending.resolve(saved);
+  });
+  expect(ref.getCurrentRoute()?.name).toBe('PatientHome');
+  expect(hasText(saved.bookingCode)).toBe(false);
+  expect(getBookingDetails).not.toHaveBeenCalled();
+  await act(async () => {
+    ref.navigate('PatientApp', {
+      screen: 'Home',
+      params: { screen: 'BookAppointment', params: { hospitalId, serviceId } },
+    });
+  });
+  await select();
+  expect(action('Confirm appointment').props.disabled).toBe(false);
+  expect(hasText('Appointment saved')).toBe(false);
+  expect(post).toHaveBeenCalledTimes(1);
+});
+
 test.each(['authentication', 'forbidden'] as BookingErrorKind[])(
   'a newly supplied token can recover after %s without automatic resubmission',
   async kind => {

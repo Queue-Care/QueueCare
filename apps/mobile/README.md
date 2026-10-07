@@ -4,27 +4,20 @@ React Native application for task **S-05**, owned by Member 1. The team selected
 
 ## Run on your phone
 
-1. Install Node.js 22.13 or newer (a supported LTS release) and npm on your computer.
-2. Install an [Expo Go build compatible with SDK 57](https://expo.dev/go) on your phone.
-3. Connect your computer and phone to the same Wi-Fi network.
-4. From the repository root, run:
+Follow the [complete local setup guide](../../docs/SETUP.md) to configure both workspace environment files, MongoDB, JWT login and the phone's API URL. The API and Expo run in separate terminals from the repository root:
 
 ```bash
-npm install
-npm run dev:mobile
+npm run check:setup
+npm run dev:api
 ```
-
-Scan the terminal QR code using Expo Go on Android or the Camera app on iOS. Keep the terminal running. Startup shows the in-app Splash while resolving the session, then Welcome offers Get Started, Existing Account, and Continue as guest. Welcome, Patient Home, Hospital Search, and Hospital Details have dedicated layouts. Session selection and booking still have navigation scaffolds. The default session loader is signed out until S-13 authentication is connected. Android Studio, Xcode, and USB debugging are not required for this phone workflow.
-
-If the phone cannot connect, check that the network allows devices to communicate and that your firewall allows the Expo development server. Use a shared personal hotspot if your campus network isolates devices.
-
-After changing Expo or Metro configuration, clear the cache with:
 
 ```bash
 npm run dev:mobile -- --clear
 ```
 
-`npm run android:mobile` and `npm run ios:mobile` are optional shortcuts for opening Expo Go on an installed Android emulator or iOS simulator. These shortcuts require their platform tools.
+Use Expo Go compatible with the project's SDK 57, and keep the phone and backend computer on the same network. Set `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env` to the backend's reachable LAN URL ending in `/api/v1`. Restart Expo after URL changes. Android Studio/Xcode are not required for this phone preview workflow; emulator/simulator shortcuts require their platform tools.
+
+Patient registration/sign-in, Home, hospital search/details, session selection, booking confirmation, saved bookings and booking-alert navigation are implemented. Session state is in memory; startup currently returns signed out. Patient sign-in was confirmed on a phone on 2026-10-07; the full [booking and error-recovery checklist](../../docs/PATIENT_FLOW_TESTING.md) remains pending.
 
 ## Dependencies and checks
 
@@ -43,7 +36,7 @@ The root `package-lock.json` is present. Use `npm ci` for clean installs and kee
 
 ## Current verification status
 
-Dependencies are installed and the user confirmed QueueCare opens in Expo Go (S-05). The S-12 navigation scaffold passes TypeScript, lint, automated tests, and Android/iOS Metro exports. Expo’s offline compatibility check reports dependencies up to date against its bundled metadata. Splash, Welcome, and startup recovery pass the expanded 19-test suite. Prototype comparison and phone visual testing remain pending; follow [the startup handoff](../../docs/STARTUP.md) and [navigation checks](../../docs/NAVIGATION.md).
+The most recent full implementation run (opening hours, 2026-10-06) passed 82 API tests, 291 mobile tests, TypeScript, lint and Android/iOS Metro exports. These are recorded historical results, not native release builds or complete device acceptance. See [test evidence](../../docs/TESTING.md), [accessibility checks](../../docs/ACCESSIBILITY.md), and [setup diagnosis](../../docs/SETUP.md).
 
 ## Project layout
 
@@ -57,7 +50,7 @@ The service stack remains Express, MongoDB, JWT, and Cloudinary. Expo Go preview
 
 ## Patient Home API setup
 
-Home now supports next-appointment loading, empty/error states, retry/refresh, hospital search, and booking/alert actions. For real appointment data, copy `.env.example` to `.env` in `apps/mobile` and configure the public API URL, then connect the real authentication provider and booking-list backend. See [Patient Home integration](../../docs/PATIENT_HOME.md). Guest Home opens without an API connection; hospital results require the configured API and MongoDB. Live booking data and phone acceptance remain pending.
+Home now supports next-appointment loading, empty/error states, retry/refresh, hospital search, and booking/alert actions. For real appointment data, configure `apps/mobile/.env` as described in the setup guide and sign in. Home reads the connected authenticated `/bookings/me` endpoint. See [Patient Home integration](../../docs/PATIENT_HOME.md). Guest Home opens without an API connection; hospital results require the configured API and MongoDB. Full phone acceptance remains pending.
 
 ## Hospital Search — M1-05
 
@@ -65,4 +58,4 @@ From Home, tap Search hospitals to browse, submit name/city filters, refresh, or
 
 ## Hospital Details — M1-07
 
-Tap a hospital to load its information and OPD services. Select one service to enable View OPD sessions. Hospital/service IDs are passed to the next route; guests retain the sign-in gate. Loading, empty, unavailable, failure, retry, and refresh states are implemented. Opening hours and session availability are not invented. See [setup, current limitations, and phone checks](../../docs/HOSPITAL_DETAILS.md). M1-08’s [available sessions API](../../docs/SESSIONS.md) is implemented. M1-09’s [Book Appointment screen](../../docs/BOOK_APPOINTMENT.md) now consumes it with date selection, capacity, single selection, and patient-summary display. M1-10’s [transactional booking API](../../docs/BOOKING_API.md) is implemented; M1-11’s [Confirm Appointment integration](../../docs/CONFIRM_APPOINTMENT.md) now calls it with the validated session token. Next is M1-12’s full Booking Confirmation screen. Real login/profile loading, booking reads, and phone acceptance remain pending.
+Tap a hospital to load its information and OPD services. Select one service to enable View OPD sessions. Hospital/service IDs are passed to the next route; guests retain the sign-in gate. Loading, empty, unavailable, failure, retry, and refresh states are implemented. Opening hours and session availability are not invented. See [setup, current limitations, and phone checks](../../docs/HOSPITAL_DETAILS.md). M1-08’s [available sessions API](../../docs/SESSIONS.md) is implemented. M1-09’s [Book Appointment screen](../../docs/BOOK_APPOINTMENT.md) now consumes it with date selection, capacity, single selection, and patient-summary display. M1-10’s [transactional booking API](../../docs/BOOKING_API.md) is implemented; M1-11’s [Confirm Appointment integration](../../docs/CONFIRM_APPOINTMENT.md) now calls it with the validated session token. M1-12’s Booking Confirmation screen, real patient login, booking reads and booking-alert navigation are implemented. Optional stored opening hours are displayed. Physical booking/accessibility acceptance remains pending.

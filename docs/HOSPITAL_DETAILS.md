@@ -1,6 +1,6 @@
-# M1-06/M1-07 — Hospital Details handoff
+# M1-06/M1-07/M1-17 — Hospital Details handoff
 
-M1-04/M1-05 hospital search and M1-06's public hospital details/service APIs are implemented and merged. M1-07 now replaces the mobile Hospital Details placeholder with a screen consuming both endpoints. M1-08’s [Available Sessions API](SESSIONS.md) is now implemented. M1-09’s [Book Appointment screen](BOOK_APPOINTMENT.md) consumes session availability. M1-10’s [booking API](BOOKING_API.md) is implemented. M1-11’s [confirmation action](CONFIRM_APPOINTMENT.md) is implemented. M1-12’s [Booking Confirmation screen](BOOKING_CONFIRMATION.md) is implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. **Next: M1-14 — accessibility refinements.**
+M1-04/M1-05 hospital search and M1-06's public hospital details/service APIs are implemented and merged. M1-07 now replaces the mobile Hospital Details placeholder with a screen consuming both endpoints. M1-08’s [Available Sessions API](SESSIONS.md) is now implemented. M1-09’s [Book Appointment screen](BOOK_APPOINTMENT.md) consumes session availability. M1-10’s [booking API](BOOKING_API.md) is implemented. M1-11’s [confirmation action](CONFIRM_APPOINTMENT.md) is implemented. M1-12’s [Booking Confirmation screen](BOOKING_CONFIRMATION.md) is implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. M1-16’s [Home search clarification](PATIENT_HOME.md) is implemented. M1-17’s [session-action refinement](HOSPITAL_DETAILS.md#m1-17-session-action-refinement) is implemented. **Next: patient-flow integration and phone acceptance (I-01 / T-04).**
 
 ## Run and check
 
@@ -35,8 +35,8 @@ The complete response and error contract is in [API.md](API.md). IDs above are f
 - The action navigates to `BookAppointment` with `{ hospitalId, serviceId }`. `serviceId` is an optional typed route parameter; existing hospital/session routes remain valid. The next screen now supports date/session selection and capacity for patients, with the existing sign-in gate for guests. M1-11 now enables confirmation with a real patient token, loaded profile, and available selected session.
 - Loading, hospital failure, hospital unavailable (404/invalid ID), empty services, and service-only failure have distinct states. A service failure retains hospital information and offers retry; it never displays a successful empty catalog. A 404 from either endpoint makes the hospital unavailable.
 - Pull-to-refresh clears selection and reloads both endpoints. Retry and refocus reload both too. Requests have 15-second timeouts and are cancelled on blur, unmount, retry, or hospital-ID changes. Late responses cannot replace the current hospital. Selection is usable only while that service is present in the currently loaded hospital catalog.
-- Layout follows screen 08 of `opd-high-fidelity-screens-square.html`: title/address, OPD service panel, opening-hours panel, explanatory note, and prominent CTA. It uses the app's existing font fallbacks and shared button. Physical-device visual fidelity remains unverified.
-- The opening-hours panel explicitly says hours have not been provided. No static prototype hours, session counts, or “Full today” badges are copied into live UI. Supplying actual hours and integrating session availability into this screen remain outstanding; see [design/data limitations](milestone03/DEVIATIONS.md).
+- Layout uses screen 08 of `opd-high-fidelity-screens .html` as its reference: title/address, OPD services and opening hours. M1-17 follows the README usability feedback by moving the session action directly beside service selection, before opening hours. It uses the app's existing font fallbacks and shared button. Physical-device visual fidelity remains unverified.
+- The opening-hours panel shows optional stored `openingHours` text, or explicitly says hours have not been provided. It distinguishes general hours from service/session appointment times. Session counts and “Full today” badges are not inferred from these hours; see [design/data limitations](milestone03/DEVIATIONS.md).
 
 ## Expo Go check
 
@@ -47,7 +47,7 @@ npm run dev:mobile -- --clear
 ```
 
 1. Open Expo Go, then **Continue as guest → Search hospitals → Demo Central Hospital**.
-2. Confirm the hospital address and two seeded services load. No real opening times or session counts should appear.
+2. Confirm the hospital address and two seeded services load. Newly seeded Demo Central records show clearly labelled fictional hours; older records without hours show the missing-hours message. No session counts are inferred from hours.
 3. Select General OPD, then Medical clinic. Only the last selection should be checked, and the CTA should become enabled.
 4. Tap View OPD sessions. Guests should reach the existing sign-in gate. A validated patient session reaches the implemented session-selection screen; real authentication is still owned separately.
 5. Go back and pull to refresh; selection should clear. Stop the API and refresh to check error/retry behavior, then restart it.
@@ -60,3 +60,43 @@ On 2026-10-02, all **27 API tests passed**, including real temporary MongoDB and
 M1-07 passes all **102 mobile tests**, TypeScript, and lint. Android and iOS Metro exports also pass; these are JavaScript/Hermes bundles, not standalone native builds. Tests cover the public request contract, malformed/cross-hospital responses, empty/error/404 states, single selection and disabled actions, route IDs, guest sign-in gates, refresh, focus, timeout/cancellation, and stale response handling. Mobile tests use mocked HTTP/adapter responses; they do not establish phone-to-API connectivity.
 
 Backend tests create isolated databases and do not modify or verify the configured Atlas/development database. Check that connection separately with `npm run check:db`. The phone checklist above and prototype visual comparison remain pending.
+
+## M1-17 session-action refinement
+
+The previous screen separated service selection from View OPD sessions with opening hours, a note, and Refresh hospital details. The action now appears immediately below the service choices in a tinted panel. Its teal primary button spans the panel width and keeps the shared minimum height of 52 points, minimum width of 48 points, and unrestricted text scaling/wrapping. Refresh remains a secondary outlined action after opening hours. The reference HTML is preserved.
+
+The panel announces the currently selected service. Before selection it explains what to choose; service-load failure and empty catalogs have their own guidance. The CTA is disabled without a currently valid service and hidden while loading or when the hospital cannot be loaded. Refresh clears the selection. The note makes clear that service selection does not reserve a place. Patient navigation retains both hospital/service IDs; guests retain the sign-in gate.
+
+Verified on 2026-10-05: **247 mobile tests across 17 suites**, TypeScript, and Android/iOS exports pass (`/private/tmp/queuecare-m1-17-export`). Lint exits successfully with zero errors and two existing duplicate-import warnings in `PatientPages.test.tsx`. Two new Hospital Details tests guard action order/touch target/text scaling and visible-refresh invalidation; existing tests now check selected-service guidance, empty/error guidance, route IDs and guest gates. API code was not changed or retested in this task.
+
+### Phone and usability acceptance — pending
+
+Use the Expo Go commands above, then:
+
+1. Open a hospital with services. Confirm the primary View OPD sessions button is directly below the choices and before opening hours/Refresh hospital details.
+2. Without a selection, confirm the instruction is clear and the button cannot advance. Select two different services in turn; only the latest service name should appear in the guidance and be passed to the next screen.
+3. As a guest, verify the sign-in gate. After signing in as a patient, reopen the hospital, select a service and confirm that its sessions load. Login currently returns Home; resuming a guest's interrupted route is not claimed.
+4. Refresh after selecting a service. Confirm the selection clears and the action cannot proceed during loading or until a new selection. Check empty services and a service-load failure using a controlled test dataset/network setup.
+5. On a small phone, landscape, and enlarged system text, confirm labels wrap, every service and the action can be reached by scrolling, and nothing overlaps or clips. With VoiceOver/TalkBack, check service selection → selected-service guidance → View OPD sessions reading order and disabled-state announcements.
+6. Ask a first-time participant to choose a service and find its sessions without pointing out the button. Record hesitation, wrong taps, completion, device/font settings and a screenshot in milestone evidence. Automated tests do not establish physical layout or participant success.
+
+M1-17 implementation is complete locally. **Next: I-01 patient integration and T-04 end-to-end booking acceptance with the other feature owners.**
+
+## Opening-hours follow-up — 2026-10-06
+
+The remaining M1-06/M1-07 hours integration is implemented. Hospital Details now renders `hospitals.openingHours` from the public details API. This optional plain-text field supports line breaks and 1–500 characters after trimming; use hospital-local days/times and include the time zone in the text. Missing or malformed stored values are omitted by the API. The mobile adapter validates the response, preserves line breaks and allows text scaling/wrapping. Refresh removes outdated hours when the field is removed. General hours do not enable booking or imply that an OPD session is available.
+
+Newly inserted Demo Central Hospital records include explicitly fictional demo hours. `npm run db:seed:discovery` still only inserts missing records: **re-running it does not add hours to an existing hospital or replace edited values**. Demo Lakeside and Demo Southern retain no hours to demonstrate the fallback. No configured database was changed during implementation.
+
+To preview hours on an existing development database, use MongoDB Compass to locate `hospitals` → `_id: ObjectId("000000000000000000000101")` (Demo Central Hospital) and add an `openingHours` string containing:
+
+```text
+Demo hours (Sri Lanka time):
+Monday–Friday: 08:00–17:00
+Saturday: 08:00–12:00
+Sunday: Closed
+```
+
+Refresh Hospital Details in Expo Go. Confirm the text appears and the session action still requires a service selection. Remove the field and refresh to verify the fallback. Real hospital records need verified hours from their data owner; the demo values must not be used as real care information.
+
+Validation: **82 API tests and 291 mobile tests across 22 suites pass**, plus TypeScript, lint and Android/iOS Metro exports (`/private/tmp/queuecare-opening-hours-export`). These are bundles, not standalone native builds. Coverage includes trimmed/multiline/max-length text, absent and malformed records, seed preservation, mobile validation and refreshed display. Physical large-text/VoiceOver/TalkBack acceptance remains pending.

@@ -10,8 +10,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { StatusText } from '../components/StatusText';
 import { useHospitalDetails } from '../features/hospitals/useHospitalDetails';
-import { colors, fonts, spacing } from '../theme/tokens';
+import {
+  colors,
+  fonts,
+  radii,
+  surfaces,
+  typography,
+  spacing,
+} from '../theme/tokens';
 
 export function HospitalDetailsScreen({
   hospitalId,
@@ -37,6 +45,13 @@ export function HospitalDetailsScreen({
     setSelection(null);
     reload();
   };
+  const sessionGuidance = selected
+    ? `Selected service: ${selected.name}`
+    : state.status === 'ready' && state.servicesFailed
+    ? 'Retry loading OPD services to continue.'
+    : state.status === 'ready' && state.services.length === 0
+    ? 'There is no OPD service to select at this hospital yet.'
+    : 'Select an OPD service above to view its sessions.';
   return (
     <SafeAreaView style={styles.page} edges={['bottom', 'left', 'right']}>
       <ScrollView
@@ -50,20 +65,24 @@ export function HospitalDetailsScreen({
         }
       >
         {state.status === 'loading' ? (
-          <View
-            style={styles.card}
-            accessible
-            accessibilityLabel="Loading hospital details"
-            accessibilityState={{ busy: true }}
-          >
-            <ActivityIndicator color={colors.teal} />
-            <Text style={styles.description}>Loading hospital details…</Text>
+          <View style={styles.card}>
+            <ActivityIndicator
+              color={colors.teal}
+              accessible={false}
+              importantForAccessibility="no"
+            />
+            <StatusText
+              style={styles.description}
+              accessibilityState={{ busy: true }}
+            >
+              Loading hospital details…
+            </StatusText>
           </View>
         ) : state.status === 'unavailable' ? (
           <View style={styles.card}>
-            <Text accessibilityRole="header" style={styles.heading}>
+            <StatusText accessibilityRole="header" style={styles.heading}>
               Hospital unavailable
-            </Text>
+            </StatusText>
             <Text style={styles.description}>
               This hospital could not be found or is no longer listed. Please
               choose another hospital.
@@ -72,9 +91,9 @@ export function HospitalDetailsScreen({
           </View>
         ) : state.status === 'error' ? (
           <View style={styles.card}>
-            <Text accessibilityRole="alert" style={styles.heading}>
+            <StatusText accessibilityRole="alert" style={styles.heading}>
               We couldn’t load this hospital
-            </Text>
+            </StatusText>
             <Text style={styles.description}>
               Please check your connection and try again.
             </Text>
@@ -102,11 +121,21 @@ export function HospitalDetailsScreen({
               <Text accessibilityRole="header" style={styles.heading}>
                 OPD services
               </Text>
+              {!state.servicesFailed && state.services.length > 0 && (
+                <StatusText style={styles.description}>
+                  {`${state.services.length} OPD ${
+                    state.services.length === 1 ? 'service' : 'services'
+                  } available. Select one to continue.`}
+                </StatusText>
+              )}
               {state.servicesFailed ? (
                 <>
-                  <Text accessibilityRole="alert" style={styles.description}>
+                  <StatusText
+                    accessibilityRole="alert"
+                    style={styles.description}
+                  >
                     We couldn’t load OPD services.
-                  </Text>
+                  </StatusText>
                   <ActionButton
                     label="Retry services"
                     onPress={refresh}
@@ -115,9 +144,9 @@ export function HospitalDetailsScreen({
                 </>
               ) : state.services.length === 0 ? (
                 <>
-                  <Text style={styles.description}>
+                  <StatusText style={styles.description}>
                     No OPD services listed yet.
-                  </Text>
+                  </StatusText>
                   <Text style={styles.description}>
                     Please check again later or choose another hospital.
                   </Text>
@@ -153,36 +182,48 @@ export function HospitalDetailsScreen({
                   </Pressable>
                 ))
               )}
+              <View style={styles.sessionAction}>
+                <StatusText style={styles.guidance}>
+                  {sessionGuidance}
+                </StatusText>
+                <ActionButton
+                  label="View OPD sessions"
+                  disabled={!selected}
+                  accessibilityHint={
+                    selected
+                      ? `Shows sessions for ${selected.name}`
+                      : sessionGuidance
+                  }
+                  onPress={() => {
+                    if (selected) onViewSessions(selected.id);
+                  }}
+                />
+                <Text style={styles.description}>
+                  Session availability is checked in the next step. Selecting a
+                  service does not reserve a place.
+                </Text>
+              </View>
             </View>
             <View style={styles.card}>
               <Text accessibilityRole="header" style={styles.heading}>
                 Opening hours
               </Text>
               <Text style={styles.description}>
-                Opening hours haven’t been provided. Please confirm with the
-                hospital before your visit.
+                {state.hospital.openingHours ??
+                  'Opening hours haven’t been provided. Please confirm with the hospital before your visit.'}
               </Text>
-            </View>
-            <View style={styles.note}>
-              <Text style={styles.description}>
-                Choose an OPD service to continue. Session availability has not
-                been checked yet.
-              </Text>
-            </View>
-            <View style={styles.action}>
-              <ActionButton
-                label="View OPD sessions"
-                disabled={!selected}
-                onPress={() => {
-                  if (selected) onViewSessions(selected.id);
-                }}
-              />
-              {!selected && (
-                <Text style={styles.helper}>
-                  Select an available service above to continue.
+              {state.hospital.openingHours ? (
+                <Text style={styles.description}>
+                  OPD appointment times depend on the selected service and
+                  session.
                 </Text>
-              )}
+              ) : null}
             </View>
+            <ActionButton
+              label="Refresh hospital details"
+              onPress={refresh}
+              variant="outline"
+            />
           </>
         ) : null}
       </ScrollView>
@@ -192,34 +233,20 @@ export function HospitalDetailsScreen({
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.mist },
   content: {
+    ...surfaces.content,
     padding: spacing.lg,
     gap: spacing.md,
     flexGrow: 1,
     width: '100%',
-    maxWidth: 640,
+    maxWidth: 560,
     alignSelf: 'center',
   },
   section: { gap: spacing.sm },
-  title: {
-    fontFamily: fonts.display,
-    color: colors.tealDark,
-    fontSize: 30,
-    lineHeight: 39,
-  },
-  heading: {
-    fontFamily: fonts.body,
-    color: colors.ink,
-    fontSize: 19,
-    fontWeight: '600',
-    lineHeight: 28,
-  },
-  description: {
-    fontFamily: fonts.body,
-    color: colors.inkSoft,
-    fontSize: 16,
-    lineHeight: 25,
-  },
+  title: typography.title,
+  heading: typography.heading,
+  description: typography.body,
   card: {
+    ...surfaces.card,
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.sageLine,
@@ -227,23 +254,24 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   service: {
+    borderRadius: radii.md,
     minHeight: 56,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.sageLine,
+    borderColor: colors.controlBorder,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  selected: { borderColor: colors.teal, backgroundColor: colors.tealTint },
+  selected: surfaces.selected,
   serviceName: {
     flexGrow: 1,
     flexShrink: 1,
     fontFamily: fonts.body,
     color: colors.ink,
-    fontSize: 16,
-    lineHeight: 25,
+    fontSize: 15,
+    lineHeight: 23,
   },
   choice: {
     fontFamily: fonts.body,
@@ -251,14 +279,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  note: { backgroundColor: colors.tealTint, padding: spacing.md },
-  action: { gap: spacing.sm, marginTop: 'auto', paddingTop: spacing.md },
-  helper: {
-    fontFamily: fonts.body,
-    color: colors.inkSoft,
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: 'center',
+  sessionAction: {
+    borderRadius: radii.note,
+    backgroundColor: colors.tealTint,
+    padding: spacing.md,
+    gap: spacing.md,
+    alignSelf: 'stretch',
   },
-  pressed: { opacity: 0.78 },
+  guidance: {
+    fontFamily: fonts.body,
+    color: colors.tealDark,
+    fontSize: 15,
+    lineHeight: 23,
+    fontWeight: '600',
+  },
+  pressed: { borderColor: colors.tealDark, borderWidth: 2 },
 });

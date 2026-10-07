@@ -1,12 +1,12 @@
 # Booking Confirmation — M1-12
 
-M1-10/M1-11 are merged in local history through PR #18. M1-12 replaces the confirmation placeholder with a saved booking summary. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is now implemented; Member 4’s read API/screen integration is pending. The next independent Member 1 task is **M1-14: accessibility refinements**.
+M1-10/M1-11 are merged in local history through PR #18. M1-12 replaces the confirmation placeholder with a saved booking summary. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is now implemented; Member 4’s read API/screen integration is pending. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. M1-16’s [Home search clarification](PATIENT_HOME.md) is implemented. M1-17’s [session-action refinement](HOSPITAL_DETAILS.md#m1-17-session-action-refinement) is implemented. Next is patient-flow integration and phone acceptance (I-01 / T-04).
 
 ## Implemented behavior
 
 After a successful booking POST, M1-11 replaces the form with `BookingConfirmation({ bookingId })`. The screen reads `GET /api/v1/bookings/:bookingId` using the validated session's patient ID and bearer token. Route parameters contain only the booking ID. No patient profile or credentials are placed in navigation state.
 
-The summary shows the persisted booking code (labelled Booking ID), hospital name/address/city, OPD service, doctor/team, appointment date/time in Asia/Colombo, and booking/session status. The full code wraps and can be selected for copying. View booking passes the database booking ID to Member 2's existing BookingDetails route; Back to Home returns to Patient Home. Member 2's My bookings and BookingDetails screens are still placeholders.
+The summary shows the persisted booking code (labelled Booking ID), hospital name/address/city, OPD service, doctor/team, appointment date/time in Asia/Colombo, and booking/session status. The full code wraps and can be selected for copying. View booking passes the database booking ID to Member 2's existing BookingDetails route; Back to Home returns to Patient Home. Member 2's My bookings and BookingDetails frontend pages are now merged; remaining backend integration and authenticated acceptance are pending.
 
 Loading and errors never display a fabricated confirmation. Retry and pull-to-refresh perform GET requests only; a failed summary load does not cancel or recreate the booking. Cancelled, completed, skipped, rescheduled, running, and past appointments use an appropriate heading rather than announcing a new confirmation. Cancelled sessions and unpublished hospitals/services display contact guidance. No notification, reminder, queue position, or estimated wait is promised.
 

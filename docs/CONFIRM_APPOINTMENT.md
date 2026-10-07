@@ -1,6 +1,6 @@
 # Confirm Appointment integration — M1-11
 
-M1-10's booking API and M1-11's mobile confirmation integration are merged through PR #18. M1-12's [full Booking Confirmation screen](BOOKING_CONFIRMATION.md) is now implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. **Next: M1-14 — accessibility refinements.**
+M1-10's booking API and M1-11's mobile confirmation integration are merged through PR #18. M1-12's [full Booking Confirmation screen](BOOKING_CONFIRMATION.md) is now implemented. M1-13’s [booking notification producer](BOOKING_NOTIFICATIONS.md) is implemented; Member 4’s read API/screen integration remains pending. M1-14’s [accessibility refinements](ACCESSIBILITY.md) are implemented. M1-15’s [test coverage and evidence](TESTING.md) are complete. M1-16’s [Home search clarification](PATIENT_HOME.md) is implemented. M1-17’s [session-action refinement](HOSPITAL_DETAILS.md#m1-17-session-action-refinement) is implemented. **Next: patient-flow integration and phone acceptance (I-01 / T-04).**
 
 ## Implemented flow
 
@@ -8,7 +8,7 @@ Confirm appointment becomes available only with a selected future bookable sessi
 
 The adapter sends `POST /api/v1/bookings` with `Authorization: Bearer <token>` and a body containing only `sessionId`. Patient identity is never taken from route data or sent in the body. A response must be HTTP 201 with a valid saved booking, matching patient/session IDs, CONFIRMED status, booking code, and valid UTC timestamps. Unexpected or mismatched responses never navigate to confirmation.
 
-While submitting, the button shows progress; date/session changes and manual refresh are disabled. A synchronous request lock prevents rapid taps from creating simultaneous POSTs. Success replaces the booking form with `BookingConfirmation` using only the persisted `bookingId`. M1-12 now loads the saved appointment summary with an owner-scoped GET and displays the full booking code, hospital, service, date/time, and current status. View booking and Back to Home remain available; Member 2's booking list/details screens remain placeholders.
+While submitting, the button shows progress; date/session changes and manual refresh are disabled. A synchronous request lock prevents rapid taps from creating simultaneous POSTs. Success replaces the booking form with `BookingConfirmation` using only the persisted `bookingId`. M1-12 now loads the saved appointment summary with an owner-scoped GET and displays the full booking code, hospital, service, date/time, and current status. View booking and Back to Home remain available; Member 2's booking list/details frontend pages are merged; remaining backend integration is pending.
 
 ## Failure and recovery
 
