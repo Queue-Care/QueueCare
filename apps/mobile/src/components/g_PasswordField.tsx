@@ -3,6 +3,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputProps,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -15,6 +16,9 @@ type Props = {
   onChangeText: (text: string) => void;
   placeholder?: string;
   error?: string;
+  editable?: boolean;
+  autoComplete?: TextInputProps['autoComplete'];
+  hint?: string;
 };
 
 // Password input with an eye button that shows or hides what was typed.
@@ -24,6 +28,9 @@ export function PasswordField({
   onChangeText,
   placeholder,
   error,
+  editable = true,
+  autoComplete,
+  hint,
 }: Props) {
   const [visible, setVisible] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -47,6 +54,8 @@ export function PasswordField({
           secureTextEntry={!visible}
           autoCapitalize="none"
           autoCorrect={false}
+          editable={editable}
+          autoComplete={autoComplete}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
         />
@@ -54,6 +63,7 @@ export function PasswordField({
           style={styles.eye}
           accessibilityRole="button"
           accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+          disabled={!editable}
           onPress={() => setVisible(current => !current)}
         >
           <Ionicons
@@ -64,11 +74,18 @@ export function PasswordField({
         </TouchableOpacity>
       </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  hint: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.inkSoft,
+    marginTop: 5,
+  },
   field: {
     marginBottom: 14,
   },
