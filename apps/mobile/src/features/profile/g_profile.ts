@@ -117,7 +117,8 @@ export async function prepareProfileImage(
   }
 }
 
-// The photo goes to the Express API, which uploads it to Cloudinary.
+// The photo goes to the Express API, which stores it (MongoDB, or Cloudinary
+// when its keys are set) and saves its address on the user's account.
 export async function uploadProfileImage(
   token: string | undefined,
   image: PickedImage,
