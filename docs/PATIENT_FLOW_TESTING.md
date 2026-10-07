@@ -39,6 +39,7 @@ Set `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env` to the computer's reachable
 | Step | Expected result | Result / evidence |
 | --- | --- | --- |
 | Create a new fictional patient account | Success leads to sign-in, not an authenticated booking screen | Pending |
+| Sign in with the registered NIC and password | Opens the patient app | User confirmed working on 2026-10-07; device/OS and screenshot not recorded |
 | Enter a wrong password, then the correct one | Error remains signed out; correct credentials open Home with the actual patient name | Pending |
 | Search by known hospital name/city and open it | Correct hospital and available service names load | Pending |
 | Select a service and an available future session | Correct IDs/date/time, remaining capacity and signed-in patient appear; Confirm requires a selection | Pending |
