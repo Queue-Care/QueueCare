@@ -42,11 +42,21 @@ export function createHospitalRepository(db, { now = () => new Date() } = {}) {
   async function findActiveHospital(hospitalId) {
     const hospital = await collection.findOne(
       { _id: hospitalId, isActive: true },
-      { projection, maxTimeMS: 3000 }
+      { projection: { ...projection, openingHours: 1 }, maxTimeMS: 3000 }
     );
     // Inactive and missing hospitals have the same public response.
     if (!hospital) throw new HttpError(404, 'NOT_FOUND', 'Hospital not found.');
-    return { ...hospital, _id: hospital._id.toString() };
+    const { openingHours, ...details } = hospital;
+    // Optional display text only: malformed legacy data must not hide the hospital
+    // or expose arbitrary nested fields. Session availability remains authoritative.
+    const hours = typeof openingHours === 'string' ? openingHours.trim() : '';
+    return {
+      ...details,
+      _id: hospital._id.toString(),
+      ...(hours.length > 0 && hours.length <= 500
+        ? { openingHours: hours }
+        : {}),
+    };
   }
   return {
     getDetails: findActiveHospital,

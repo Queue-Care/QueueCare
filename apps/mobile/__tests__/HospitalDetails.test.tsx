@@ -169,6 +169,31 @@ test.each([false, true])(
     } else expect(hasText('Choose a session')).toBe(true);
   },
 );
+test('shows supplied opening hours with wrapping text and removes outdated hours after refresh', async () => {
+  const openingHours = 'Monday–Friday: 08:00–17:00\nSunday: Closed';
+  details.mockResolvedValueOnce({ ...hospital, openingHours });
+  await mount();
+  expect(hasText(openingHours)).toBe(true);
+  expect(
+    hasText(
+      'OPD appointment times depend on the selected service and session.',
+    ),
+  ).toBe(true);
+  const hours = renderer.root
+    .findAllByType(Text)
+    .find(node => node.props.children === openingHours)!;
+  expect(hours.props.numberOfLines).toBeUndefined();
+  expect(hours.props.allowFontScaling).not.toBe(false);
+  expect(cta()?.props.disabled).toBe(true);
+  await press('Refresh hospital details');
+  expect(hasText(openingHours)).toBe(false);
+  expect(
+    hasText(
+      'Opening hours haven’t been provided. Please confirm with the hospital before your visit.',
+    ),
+  ).toBe(true);
+});
+
 test('session action precedes opening hours and refresh, with a large scalable primary touch target', async () => {
   await mount();
   await press('General OPD');
