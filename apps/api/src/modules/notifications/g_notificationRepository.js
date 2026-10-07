@@ -1,25 +1,12 @@
 import { ObjectId } from 'mongodb';
 import { HttpError } from '../../utils/HttpError.js';
+import { ensureNotificationUserRecentIndex } from '../../config/notificationIndexes.js';
 
 const TYPES = ['BOOKING', 'REMINDER', 'QUEUE', 'PRIORITY', 'SESSION', 'SYSTEM'];
 const LIST_LIMIT = 50;
 
 export async function ensureNotificationIndexes(db) {
-  const indexes = await db.collection('notifications').listIndexes().toArray()
-    .catch((error) => {
-      if (error.code === 26) return [];
-      throw error;
-    });
-  const existing = indexes.find((index) =>
-    JSON.stringify(index.key) === JSON.stringify({ userId: 1, createdAt: -1 }) &&
-    !index.unique && !index.sparse && !index.partialFilterExpression
-  );
-  await db
-    .collection('notifications')
-    .createIndex(
-      { userId: 1, createdAt: -1 },
-      { name: existing?.name ?? 'notification_user_recent' }
-    );
+  await ensureNotificationUserRecentIndex(db);
 }
 
 // Shared producer for in-app notifications (README section 20). No push/SMS/email.

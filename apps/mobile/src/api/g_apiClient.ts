@@ -71,11 +71,17 @@ export async function apiRequest(
         // No Content-Type here: fetch adds the multipart boundary itself.
         ...(options.formData ? { body: options.formData } : {}),
       });
-      payload = await response.json();
     } catch {
       throw new ApiError(
         'Could not connect. Check your connection and try again.',
+        0, 'NETWORK_ERROR',
       );
+    }
+    try { payload = await response.json(); }
+    catch {
+      if (controller.signal.aborted)
+        throw new ApiError('Could not connect. Check your connection and try again.', 0, 'NETWORK_ERROR');
+      throw unreadableResponse();
     }
     if (!response.ok || !isRecord(payload) || payload.success !== true) {
       const error =

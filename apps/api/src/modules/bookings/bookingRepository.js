@@ -134,7 +134,7 @@ export function createBookingRepository(
               throw new HttpError(
                 409,
                 'SESSION_FULL',
-                'This OPD session is already full.'
+                'This session is fully booked.'
               );
             const updated = await db.collection('opdSessions').updateOne(
               {

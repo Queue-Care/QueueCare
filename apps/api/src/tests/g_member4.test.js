@@ -559,8 +559,10 @@ test(
     const { db, call, staff, upload, base } = await setup(t, {
       mediaStore: 'mongodb',
     });
+    await db.collection('hospitals').insertOne({ ...demoHospitals[0] });
     const { token, userId } = await staff('CNH-RC-0421', {
-      hospital: 'Unlisted Hospital',
+      hospital: demoHospitals[0].name,
+      hospitalId: demoHospitals[0]._id.toString(),
     });
     const jpeg = Buffer.concat([
       Buffer.from([0xff, 0xd8, 0xff, 0xe0]),

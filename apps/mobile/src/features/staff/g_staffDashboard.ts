@@ -30,15 +30,19 @@ export type StaffDashboard = {
 };
 
 const labels = ['Running', 'Next', 'Later', 'Ended', 'Cancelled'];
-const count = (value: unknown) =>
-  typeof value === 'number' && Number.isFinite(value) ? value : 0;
+const count = (value: unknown) => {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+    throw unreadableResponse();
+  return value;
+};
 
 export function parseDashboard(value: unknown): StaffDashboard {
   if (
     !isRecord(value) ||
     !isRecord(value.staff) ||
     !isText(value.staff.fullName) ||
-    !Array.isArray(value.sessions)
+    !Array.isArray(value.sessions) ||
+    (value.nowServing !== null && !isText(value.nowServing))
   )
     throw unreadableResponse();
   return {
@@ -89,5 +93,5 @@ export function greeting(now = new Date()) {
     }).format(now),
   );
   if (hour < 12) return 'Good morning,';
-  return hour < 17 ? 'Good afternoon,' : 'Good evening,';
+  return hour < 18 ? 'Good afternoon,' : 'Good evening,';
 }
