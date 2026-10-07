@@ -7,8 +7,12 @@
     "userInterfaceStyle": "light",
     "platforms": [
       "android",
-      "ios"
+      "ios",
+      "web"
     ],
+    "web": {
+      "bundler": "metro"
+    },
     "ios": {
       "bundleIdentifier": "com.queuecare"
     },

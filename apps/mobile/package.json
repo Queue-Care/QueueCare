@@ -7,12 +7,14 @@
     "start": "expo start --go",
     "android": "expo start --go --android",
     "ios": "expo start --go --ios",
+    "web": "expo start --web",
     "lint": "eslint .",
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "check:dependencies": "expo install --check"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~57.0.16",
     "@expo/vector-icons": "^15.0.2",
     "@react-navigation/bottom-tabs": "^7.20.0",
     "@react-navigation/native": "^7.5.0",
@@ -22,9 +24,11 @@
     "expo-image-manipulator": "~57.0.20",
     "expo-image-picker": "~57.0.20",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.26.0"
+    "react-native-screens": "~4.26.0",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

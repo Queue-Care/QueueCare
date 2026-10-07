@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { errorHandler } from './middleware/errorHandler.js';
 import { hospitalRoutes } from './modules/hospitals/hospitalRoutes.js';
 import { HttpError } from './utils/HttpError.js';
@@ -33,6 +34,8 @@ export function createApp({
   const app = express();
   app.disable('x-powered-by');
   app.set('query parser', 'simple');
+  // Lets the app run in a browser (Expo web), which calls the API from another origin.
+  app.use(cors());
   app.use(express.json({ limit: '100kb' }));
   app.use('/api/v1/auth/patient', patientAuthRoutes(patientRegistrationRepository, authConfig));
   app.get('/health', async (_request, response) => {

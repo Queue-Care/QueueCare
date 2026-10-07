@@ -374,7 +374,7 @@ test('the profile saves contact details and settings, then signs out', async () 
 });
 
 test('a staff member adds, sees and removes a profile photo', async () => {
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   pickImage.mockResolvedValue({
     canceled: false,
     assets: [
@@ -405,6 +405,15 @@ test('a staff member adds, sees and removes a profile photo', async () => {
     { uri: 'file:///photo.heic', resize: { width: 1000 } },
     { save: { format: 'jpeg', compress: 0.8 } },
   ]);
+  // The chosen photo is only previewed; nothing is stored before Save photo.
+  expect(photos()).toEqual(['file:///resized.jpg']);
+  expect(calls('POST', '/me/profile-image')).toHaveLength(0);
+  await press('Cancel');
+  expect(photos()).toEqual([]);
+  expect(calls('POST', '/me/profile-image')).toHaveLength(0);
+
+  await press('Add profile photo');
+  await press('Save photo');
   // The photo is sent to the API as a multipart "image" field.
   const [[, init]] = calls('POST', '/me/profile-image');
   expect(init.body).toBeInstanceOf(FormData);
@@ -416,15 +425,27 @@ test('a staff member adds, sees and removes a profile photo', async () => {
   ]);
 
   // With a photo set, the same button offers to replace or remove it.
+  const saved = `http://api.test/api/v1/media/profile-images/${'f'.repeat(32)}`;
   await press('Change profile photo');
-  await choose(alert, 'Remove photo');
+  expect(photos()).toEqual([saved, saved]);
+  await press('Choose a new photo');
+  expect(photos()).toEqual([saved, 'file:///resized.jpg']);
+  await press('Cancel');
+  expect(calls('POST', '/me/profile-image')).toHaveLength(1);
+  await press('Change profile photo');
+  await press('Remove photo');
   expect(calls('DELETE', '/me/profile-image')).toHaveLength(1);
   expect(photos()).toEqual([]);
 
-  // Cancelling the picker uploads nothing.
+  // Cancelling the picker uploads nothing and offers nothing to save.
   pickImage.mockResolvedValue({ canceled: true, assets: null });
   await press('Add profile photo');
   expect(calls('POST', '/me/profile-image')).toHaveLength(1);
+  expect(
+    renderer.root.findAll(
+      item => item.props.accessibilityLabel === 'Save photo',
+    ),
+  ).toHaveLength(0);
 
   // The Edit profile button opens the same form as Personal information.
   await press('Edit profile');
