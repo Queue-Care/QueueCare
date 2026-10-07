@@ -1,5 +1,13 @@
 # Issue and fix evidence
 
+## T-04-M1-01 — patient sign-in unavailable due to local setup
+
+- **Found:** 2026-10-07. User saw “This service is not available yet” while signing in. Inspection found no mobile `.env`/API base URL, no backend JWT secret and no API listener on port 4000 at the time of diagnosis.
+- **Fix:** Added the mobile LAN API URL and a generated JWT secret to ignored local environment files, preserving existing database settings. Started the backend and instructed the user to restart Expo with `--clear`. No secret values are included in this evidence.
+- **Verification:** Configured MongoDB ping succeeded; backend `/health` returned connected; the isolated patient-login test passed. The user subsequently confirmed “Yes, sign-in works” on 2026-10-07.
+- **Limit:** Confirmation is user-reported phone sign-in only. Device/OS, screenshots, wrong-password recovery and the remaining physical booking journey are not yet recorded. A LAN address may change when the computer changes networks; teammates need their own environment setup.
+
+
 ## I-03-M1-01 — booking alert loses its destination in the client
 
 - **Found:** 2026-10-06, after PR #28 and Member 4 integration. The API returns `data.bookingId`, but the mobile notification parser dropped metadata and tapping the row only marked it read.

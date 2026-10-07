@@ -79,7 +79,11 @@ function HomeNavigator({
             onPriority={() =>
               navigation
                 .getParent<BottomTabNavigationProp<PatientTabParams>>()
-                .navigate('Bookings')
+                .navigate('Bookings', {
+                  screen: 'PriorityRequestStatus',
+                  params: {},
+                  initial: false,
+                })
             }
             onSignIn={onSignIn}
             onSearch={() => navigation.navigate('HospitalSearch')}

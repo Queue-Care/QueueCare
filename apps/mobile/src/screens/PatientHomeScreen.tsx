@@ -136,7 +136,7 @@ export function PatientHomeScreen({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Search hospitals"
-          accessibilityHint="Opens hospital search with name and city filters"
+          accessibilityHint="Search hospitals or clinics"
           onPress={onSearch}
           style={({ pressed }) => [styles.search, pressed && styles.pressed]}
         >
@@ -220,7 +220,7 @@ export function PatientHomeScreen({
               <Text
                 style={[styles.description, { fontFamily: homeFonts.body }]}
               >
-                Please try again. Hospital search is still available.
+                Please try again. You can still explore hospitals below.
               </Text>
               <ActionButton
                 label="Try again"

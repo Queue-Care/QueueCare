@@ -1,6 +1,9 @@
 import type { Hospital } from './hospitalSearch';
 
-export type HospitalDetails = Hospital & { phone?: string };
+export type HospitalDetails = Hospital & {
+  phone?: string;
+  openingHours?: string;
+};
 export type HospitalService = { id: string; hospitalId: string; name: string };
 export class HospitalDetailsError extends Error {
   constructor(
@@ -36,7 +39,9 @@ export function parseHospitalDetails(
     !text(item.name) ||
     !text(item.address) ||
     !text(item.city) ||
-    (item.phone !== undefined && !text(item.phone))
+    (item.phone !== undefined && !text(item.phone)) ||
+    (item.openingHours !== undefined &&
+      (!text(item.openingHours) || item.openingHours.trim().length > 500))
   )
     throw new HospitalDetailsError('response');
   return {
@@ -45,6 +50,9 @@ export function parseHospitalDetails(
     address: item.address,
     city: item.city,
     ...(typeof item.phone === 'string' ? { phone: item.phone } : {}),
+    ...(typeof item.openingHours === 'string'
+      ? { openingHours: item.openingHours.trim() }
+      : {}),
   };
 }
 export function parseHospitalServices(

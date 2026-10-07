@@ -44,7 +44,7 @@ export type BookingsStackParams = {
   MyBookings: undefined;
   BookingDetails: { bookingId: string };
   RequestPriority: { bookingId: string };
-  PriorityRequestStatus: { requestId: string };
+  PriorityRequestStatus: { requestId?: string } | undefined;
 };
 export type PatientTabParams = {
   Home: NavigatorScreenParams<HomeStackParams> | undefined;
