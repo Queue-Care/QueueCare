@@ -69,7 +69,8 @@ export function parseCreatedBooking(
     !isBookingId(item.sessionId) ||
     item.sessionId.toLowerCase() !== sessionId.toLowerCase() ||
     typeof item.bookingCode !== 'string' ||
-    !/^OPD-[A-F0-9]{32}$/.test(item.bookingCode) ||
+    // Short codes since 2026-10-07; the long legacy form is still accepted from older API builds.
+    !/^OPD-([A-HJ-NP-Z2-9]{6}|[A-F0-9]{32})$/.test(item.bookingCode) ||
     item.status !== 'CONFIRMED' ||
     !timestamp(item.createdAt) ||
     !timestamp(item.updatedAt) ||

@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
+import { InterfaceIcon } from '../components/InterfaceIcon';
 import { SessionToast } from '../components/k_SessionToast';
 import { ApiError, errorMessage } from '../api/g_apiClient';
 import { useApiResource } from '../api/g_useApiResource';
@@ -38,6 +39,8 @@ export function OpdSessionsScreen(props: Props) {
 function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView, date }:
   Props & { view: SessionView; page: number; date?: string; onPage: (page: number) => void; onView: (view: SessionView) => void }) {
   const fonts = useHomeFonts();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const listPending = useRef(false);
   const load = useCallback(async (signal: AbortSignal) => {
     listPending.current = true;
@@ -96,11 +99,27 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
     ], { cancelable: false });
   };
   const bodyFont = { fontFamily: fonts.body };
+  const query = searchQuery.trim().toLowerCase();
+  const visibleSessions = data?.data.filter(session => !query ||
+    [session.serviceName, session.doctorOrTeam].some(value => value?.toLowerCase().includes(query))) ?? [];
   return <SafeAreaView style={styles.safe} edges={['left', 'right']}>
-    <ScrollView contentContainerStyle={styles.content}
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.teal} />}>
-      <Text accessibilityRole="header" style={[styles.title, { fontFamily: fonts.display }]}>OPD sessions</Text>
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={[styles.title, styles.grow, { fontFamily: fonts.display }]}>OPD sessions</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Search sessions"
+          accessibilityState={{ expanded: searchOpen }} onPress={() => setSearchOpen(true)} style={styles.searchButton}>
+          <InterfaceIcon name="Search" color={colors.tealDark} />
+        </Pressable>
+      </View>
       {hospital ? <Text style={[styles.sub, bodyFont]}>{hospital}</Text> : null}
+      {searchOpen ? <View style={styles.searchRow}>
+        <TextInput accessibilityLabel="Search sessions" placeholder="Search sessions" autoFocus
+          value={searchQuery} onChangeText={setSearchQuery} autoCorrect={false} autoCapitalize="none"
+          placeholderTextColor={colors.inkSoft} style={[styles.searchInput, bodyFont]} />
+        {searchQuery ? <ActionButton label="Clear search" variant="outline" onPress={() => setSearchQuery('')} /> : null}
+        <ActionButton label="Close search" variant="outline" onPress={() => { setSearchQuery(''); setSearchOpen(false); }} />
+      </View> : null}
       <View style={styles.segment}>{(['today', 'upcoming'] as const).map(option =>
         <Pressable key={option} accessibilityRole="tab" accessibilityLabel={option === 'today' ? 'Today' : 'Upcoming'}
           accessibilityState={{ selected: !date && view === option, disabled: !!busy }} disabled={!!busy}
@@ -114,10 +133,13 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
         <Text style={[styles.sub, bodyFont]}>Loading sessions…</Text></View> : null}
       {error ? <View style={styles.state}><Text accessibilityRole="alert" style={[styles.sub, bodyFont]}>{error}</Text>
         <ActionButton label="Try again" onPress={reload} /></View> : null}
-      {!loading && !error && data?.data.length === 0 ? <View style={styles.state}>
+      {!loading && !error && data && query && visibleSessions.length === 0 ? <View style={styles.state}>
+        <Text accessibilityLiveRegion="polite" style={[styles.heading, { fontFamily: fonts.semibold }]}>No sessions match your search.</Text>
+      </View> : null}
+      {!loading && !error && !query && data?.data.length === 0 ? <View style={styles.state}>
         <Text style={[styles.heading, { fontFamily: fonts.semibold }]}>{date ? 'No sessions on this date' : view === 'today' ? 'No sessions today' : 'No upcoming sessions'}</Text>
         <Text style={[styles.sub, bodyFont]}>Add a session or pull down to refresh.</Text></View> : null}
-      {data?.data.map(session => <View key={session._id} style={styles.card}>
+      {visibleSessions.map(session => <View key={session._id} style={styles.card}>
         <View style={styles.cardTop}><Text style={[styles.heading, styles.grow, { fontFamily: fonts.semibold }]}>{session.serviceName ?? 'Service unavailable'}</Text>
           <View style={[styles.badge, session.status === 'OPEN' || session.status === 'RUNNING' ? styles.tealBadge : styles.neutralBadge]}>
             <Text style={[styles.status, bodyFont]}>{session.status === 'CLOSED' ? 'Bookings closed' : session.status?.toLowerCase().replace(/^./, letter => letter.toUpperCase()) ?? 'Status unavailable'}</Text>
@@ -164,6 +186,10 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.mist },
   content: { ...surfaces.content, padding: 22, paddingBottom: 30, gap: 14 },
   title: { fontSize: 28, color: colors.tealDark },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  searchButton: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel, borderRadius: radii.note },
+  searchRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  searchInput: { flexGrow: 1, flexShrink: 1, minWidth: 150, minHeight: 48, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.sageLine, borderRadius: radii.note, backgroundColor: colors.panel, color: colors.ink, fontSize: 16 },
   sub: { fontSize: 15, color: colors.inkSoft },
   heading: { fontSize: 18, color: colors.ink },
   grow: { flex: 1 },

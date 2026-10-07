@@ -5,7 +5,7 @@ M1-08's Available Sessions API is merged in local history (PR #16). M1-09 replac
 ## Current behavior
 
 - Hospital Details passes `hospitalId` and the selected `serviceId` into the screen. Older callers without a service ID see all active services. Existing optional `sessionId` route data is retained for compatibility but does not select or authorize a session; users explicitly choose from the loaded list.
-- The initial date is today in Asia/Colombo. Enter a real `YYYY-MM-DD` date and tap Show sessions, or use Previous day / Next day. Past dates are rejected. The heading always identifies the applied date, which can differ from an unsubmitted input draft.
+- The initial date is today in Asia/Colombo. Tap the date button to open the phone's calendar (Android date dialog; iOS inline calendar with Use date / Cancel). Past days are disabled in the calendar and also rejected by the screen. Choosing a date loads its sessions immediately; dismissing the calendar keeps the current date.
 - Cards show service, doctor/team, Sri Lanka time, and remaining capacity. Exactly one available session can be selected. Full sessions stay visible and disabled. Already-started sessions are hidden; the screen checks time every 30 seconds while focused and checks again when selecting.
 - Date/hospital/service changes, refresh, screen refocus, and foregrounding reload data and clear selection. Discovery requests time out after 15 seconds and are cancelled on blur, backgrounding, unmount, or replacement. Booking POST lifecycle and uncertain results follow the [M1-11 handoff](CONFIRM_APPOINTMENT.md). Late responses cannot overwrite a newer selection of hospital/date.
 - Loading, empty, failure, unavailable-hospital/service, retry, and pull-to-refresh states are implemented. A database/network failure does not become an empty list. Public response validation rejects incorrect IDs, date/time mismatches, inconsistent capacity, and duplicate sessions.
@@ -39,7 +39,7 @@ npm run dev:mobile
 Configure `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env` using your computer's LAN IP, and put the phone and computer on the same network. See [API setup](../apps/api/README.md) and [session seed instructions](SESSIONS.md).
 
 1. As a guest, search for a demo hospital, select a service in Hospital Details, and tap View OPD sessions. Confirm patient sign-in is required.
-2. After real patient authentication is connected, repeat that flow and choose the date printed by the seed (Next day for the default seed). Verify the hospital/service, two sessions, and remaining capacity.
+2. After real patient authentication is connected, repeat that flow and choose the date printed by the seed (tomorrow for the default seed; pick it from the calendar). Verify the hospital/service, two sessions, and remaining capacity.
 3. Select one card, then the other. Only one radio should be selected. Verify your profile name and masked NIC; no fabricated patient details should appear.
 4. Change the date, refresh, switch tabs and return, or background and reopen the app. Verify selection clears and availability reloads. Test invalid dates, empty dates, lost network, retry, and unavailable services.
 5. Check full sessions are disabled and session times stay in Sri Lanka time even with a different phone timezone. Check text scaling, screen-reader labels, scrolling, keyboard use, and Back navigation.

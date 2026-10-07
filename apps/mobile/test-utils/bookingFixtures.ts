@@ -4,7 +4,7 @@ export const bookingPayload = {
   success: true,
   data: {
     _id: 'abcdef000000000000000401',
-    bookingCode: 'OPD-74A099F60D3B48C18409D3A835176FA0',
+    bookingCode: 'OPD-7K3QX9',
     patientId,
     sessionId: session._id,
     status: 'CONFIRMED',
