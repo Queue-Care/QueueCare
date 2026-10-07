@@ -2,7 +2,7 @@
 
 ## Patient account, bookings, and priority pages
 
-These frontend contracts follow the supplied project plan. Patient registration and booking details are implemented. Booking lists, cancellation, and priority endpoints remain pending. All responses use `{ "success": true, "data": ... }`; errors use an appropriate non-2xx status. Protected endpoints require a patient JWT and must enforce patient ownership on the server.
+These frontend contracts follow the supplied project plan. Patient registration, booking reads, and patient priority submission/status reads are implemented. Cancellation remains pending. All responses use `{ "success": true, "data": ... }`; errors use an appropriate non-2xx status. Protected endpoints require a patient JWT and must enforce patient ownership on the server.
 
 - `POST /api/v1/auth/patient/register`: body `{ fullName, nic, mobile, email?, password }`; data `{ registered: true }`. Never return the password. After success the client opens patient login.
 
@@ -15,6 +15,10 @@ Registration returns HTTP 201 and saves an ACTIVE PATIENT account. Passwords use
 - `PATCH /api/v1/bookings/:bookingId/cancel`: successful data may be null or the updated booking. Enforce allowed cancellation transitions and release capacity atomically. The client refetches details after success.
 - `POST /api/v1/bookings/:bookingId/priority-requests`: body `{ reason, note }`, where reason is ELDERLY, MOBILITY, PREGNANT, or OTHER and note is at most 500 characters. Data is a priority request `{ _id, bookingId, reason, status, createdAt, note?, decisionNote? }`. Only CONFIRMED bookings are eligible; prevent duplicate active requests on the server.
 - `GET /api/v1/priority-requests/me`: data is an array of those priority requests. The status page finds its requestId, then reads its associated booking. Status is PENDING, ACCEPTED, or DECLINED. Only staff may make a decision; return the actual decision and optional decisionNote.
+
+Priority submission returns HTTP 201 after inserting a PENDING document in `priorityRequests`. The authenticated patient must own the CONFIRMED booking, and its session must be OPEN, CLOSED, or RUNNING and not have ended (Asia/Colombo). Patient identity, request status, and timestamps are server-owned. A unique partial index on bookingId prevents concurrent duplicate PENDING/ACCEPTED requests; declined requests allow resubmission. Invalid payloads return 400, another patient's or missing booking returns 404, and duplicate/ineligible requests return 409. The patient list returns only the signed-in patient's requests, newest first, up to 100. Booking details includes priorityRequestId when an active request exists.
+
+The staff inbox reads these same documents through `GET /api/v1/staff/priority-requests?status=pending`; staff linked to another hospital do not see them. The existing staff page polls every 10 seconds and supports manual refresh. Staff decisions appear in patient Request status after refresh, using the same saved request. Submission does not approve priority automatically or modify queue ordering.
 
 All dates must be valid ISO timestamps with Z or an explicit offset. All identifier and display-name fields must be nonempty strings. The registration endpoint normalizes and validates NIC/mobile and hashes passwords on the server; client validation is not a substitute for server validation. Use 409 for duplicate registration, conflicting cancellation, or an existing active priority request.
 
