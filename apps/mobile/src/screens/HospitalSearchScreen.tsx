@@ -120,11 +120,6 @@ export function HospitalSearchScreen({
                     state.total === 1 ? 'hospital' : 'hospitals'
                   } found. ${state.hospitals.length} shown.`}
                 </StatusText>
-                <ActionButton
-                  label="Refresh hospitals"
-                  variant="outline"
-                  onPress={reload}
-                />
               </View>
             )}
           </View>

@@ -193,11 +193,6 @@ export function BookingConfirmationScreen({
               label="View booking"
               onPress={() => onViewBooking(booking.id)}
             />
-            <ActionButton
-              label="Refresh booking"
-              variant="outline"
-              onPress={reload}
-            />
           </>
         ) : null}
         <ActionButton label="Back to Home" variant="outline" onPress={onHome} />

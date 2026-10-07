@@ -4,6 +4,7 @@ import {
   View,
   Text,
   StyleSheet,
+  RefreshControl,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
@@ -61,14 +62,6 @@ export const PriorityRequestsScreen = ({
         <Text accessibilityRole="header" style={styles.navTitle}>
           Priority requests
         </Text>
-        <TouchableOpacity
-          style={styles.iconBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Refresh priority requests"
-          onPress={reload}
-        >
-          <Text style={styles.refreshIcon}>↻</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.segmentWrap}>
@@ -116,7 +109,16 @@ export const PriorityRequestsScreen = ({
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading && !!data}
+            onRefresh={reload}
+            tintColor={colors.teal}
+          />
+        }
+      >
         {loading && !data ? (
           <ActivityIndicator style={styles.state} color={colors.teal} />
         ) : error && !data ? (
@@ -234,21 +236,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     fontSize: 20,
     fontWeight: '700',
-    color: colors.tealDark,
-  },
-  iconBtn: {
-    borderRadius: radii.circle,
-    width: 38,
-    height: 38,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.sageLine,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  refreshIcon: {
-    fontFamily: fonts.body,
-    fontSize: 18,
     color: colors.tealDark,
   },
   segmentWrap: {

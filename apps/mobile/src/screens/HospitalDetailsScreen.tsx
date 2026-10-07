@@ -219,11 +219,6 @@ export function HospitalDetailsScreen({
                 </Text>
               ) : null}
             </View>
-            <ActionButton
-              label="Refresh hospital details"
-              onPress={refresh}
-              variant="outline"
-            />
           </>
         ) : null}
       </ScrollView>
