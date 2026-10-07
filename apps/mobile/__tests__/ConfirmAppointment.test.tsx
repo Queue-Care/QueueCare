@@ -178,15 +178,15 @@ test('valid patient selects, posts once despite rapid taps, and replaces form wi
     signal: expect.anything(),
   });
   expect(action('Confirming appointment…').props.disabled).toBe(true);
-  expect(action('Next day').props.disabled).toBe(true);
-  expect(
-    screen().find(
-      node =>
-        node.props.accessibilityLabel === 'Appointment date' &&
-        typeof node.props.onPress === 'function',
-    ).props.disabled,
-  ).toBe(true);
-  await press('Next day');
+  const dateControl = screen().find(
+    node =>
+      node.props.accessibilityLabel === 'Appointment date' &&
+      typeof node.props.onPress === 'function',
+  );
+  expect(dateControl.props.disabled).toBe(true);
+  await act(async () => {
+    dateControl.props.onPress();
+  });
   expect(load).toHaveBeenCalledTimes(1);
   await act(async () => {
     pending.resolve(saved);

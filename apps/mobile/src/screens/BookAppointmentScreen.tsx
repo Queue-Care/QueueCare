@@ -25,7 +25,6 @@ import {
   isSessionBookable,
   sessionTimeLabel,
   SESSION_TIME_ZONE,
-  shiftDate,
 } from '../features/booking/availableSessions';
 import { useAvailableSessions } from '../features/booking/useAvailableSessions';
 import type { PatientSummary } from '../navigation/types';
@@ -115,7 +114,6 @@ export function BookAppointmentScreen({
   const refresh = () => {
     if (!submission.pending) reload();
   };
-  const today = colomboDate(new Date(now));
   const chooseDate = (value: string) => {
     if (submission.pending) return;
     if (!isCalendarDate(value) || value < colomboDate()) {
@@ -260,28 +258,6 @@ export function BookAppointmentScreen({
               {dateError}
             </StatusText>
           )}
-          <View style={styles.dateNavigation}>
-            <View style={styles.dateAction}>
-              <ActionButton
-                label="Previous day"
-                variant="quiet"
-                disabled={submission.pending || date <= today}
-                onPress={() => {
-                  if (date > colomboDate()) chooseDate(shiftDate(date, -1));
-                }}
-              />
-            </View>
-            <View style={styles.dateAction}>
-              <ActionButton
-                label="Next day"
-                variant="quiet"
-                disabled={submission.pending || date === '9999-12-31'}
-                onPress={() => {
-                  if (date !== '9999-12-31') chooseDate(shiftDate(date, 1));
-                }}
-              />
-            </View>
-          </View>
         </View>
         <Text accessibilityRole="header" style={styles.heading}>
           Sessions for {date}
@@ -643,8 +619,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  dateNavigation: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  dateAction: { flexBasis: 140, flexGrow: 1 },
   sessionControl: { minHeight: 52, borderColor: colors.controlBorder },
   grow: { flex: 1 },
   selected: surfaces.selected,

@@ -239,12 +239,11 @@ test('guest direct navigation keeps sign-in gate and never loads availability', 
   expect(renderer.root.findAllByType(BookAppointmentScreen)).toHaveLength(0);
   expect(load).not.toHaveBeenCalled();
 });
-test('loading is explicit, invalid/past dates do not fetch, and day stepping clears selection', async () => {
+test('loading is explicit, past dates do not fetch, and changing date clears selection', async () => {
   const pending = deferred();
   load.mockReturnValueOnce(pending.promise);
   await mount();
   expect(text('Loading sessions…')).toBe(true);
-  expect(action('Previous day').props.disabled).toBe(true);
   await act(async () => {
     pending.resolve(slots);
   });
@@ -263,15 +262,14 @@ test('loading is explicit, invalid/past dates do not fetch, and day stepping cle
   expect(text('Choose today or a future date.')).toBe(true);
   expect(load).toHaveBeenCalledTimes(1);
   load.mockResolvedValue([]);
-  await press('Next day');
+  await changeDate('2026-10-04');
   expect(load).toHaveBeenLastCalledWith(
     { hospitalId, serviceId, date: '2026-10-04' },
     expect.anything(),
   );
   expect(text('Selected session')).toBe(false);
   expect(text('No upcoming sessions for this date')).toBe(true);
-  expect(action('Previous day').props.disabled).toBe(false);
-  await press('Previous day');
+  await changeDate(date);
   expect(dateControl().props.accessibilityValue).toEqual({
     text: 'Sat, 3 Oct 2026',
   });
@@ -347,7 +345,7 @@ test('date and hospital changes abort old work and ignore late responses', async
   await mount();
   const signal = load.mock.calls[0][1];
   load.mockResolvedValue([]);
-  await press('Next day');
+  await changeDate('2026-10-04');
   expect(signal.aborted).toBe(true);
   await act(async () => {
     old.resolve(slots);
