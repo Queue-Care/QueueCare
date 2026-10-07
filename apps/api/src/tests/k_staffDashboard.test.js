@@ -10,6 +10,9 @@ import { authenticate } from '../middleware/auth.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 import { createStaffDashboardRepository, staffDashboardRoutes } from '../modules/staff/g_staffDashboard.js';
 import { createPriorityRepository } from '../modules/priority/g_priorityRepository.js';
+import { staffPriorityRoutes } from '../modules/priority/g_priorityRoutes.js';
+import { createPatientPriorityRepository } from '../modules/priority/patientPriorityRepository.js';
+import { patientPriorityRoutes } from '../modules/priority/patientPriorityRoutes.js';
 import { createNotificationRepository } from '../modules/notifications/g_notificationRepository.js';
 import { startHttp, startMongo } from './testServer.js';
 
@@ -82,7 +85,10 @@ test('M3-10 dashboard metrics use real MongoDB and authenticated hospital scope'
   const repository = createStaffDashboardRepository(db, { now: () => now,
     priorityRepository: createPriorityRepository(db), notificationRepository: createNotificationRepository(db) });
   const app = express();
+  app.use(express.json());
   app.set('query parser', 'simple');
+  app.use('/api/v1', patientPriorityRoutes(createPatientPriorityRepository(db, { now: () => now }), authenticate(db, authConfig)));
+  app.use('/api/v1/staff/priority-requests', staffPriorityRoutes(createPriorityRepository(db), authenticate(db, authConfig)));
   app.use('/api/v1/staff/dashboard', staffDashboardRoutes(repository, authenticate(db, authConfig)));
   app.use(errorHandler);
   const base = await startHttp(t, app);
@@ -168,5 +174,46 @@ test('M3-10 dashboard metrics use real MongoDB and authenticated hospital scope'
     await call();
     const after = await Promise.all(collections.map(name => db.collection(name).find().sort({ _id: 1 }).toArray()));
     assert.deepEqual(after, before);
+  });
+  await t.test('patient submissions increase real hospital pending count and staff decisions decrease it without changing inbox semantics', async () => {
+    await db.collection('users').insertOne({ _id: id(900), role: 'PATIENT', status: 'ACTIVE', fullName: 'Patient' });
+    await db.collection('opdSessions').insertOne(session(800, { hospitalId: emptyHospitalId,
+      sessionDate: new Date('2026-10-08T00:00:00Z') }));
+    await db.collection('bookings').insertMany([801, 802, 803].map(n => ({
+      _id: id(n), sessionId: id(800), patientId: id(900), status: 'CONFIRMED', bookingCode: `TEST-${n}`,
+    })));
+    const staffToken = await token(32), patientToken = await token(900);
+    const headers = accessToken => ({ Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' });
+    const pending = async () => {
+      const response = await fetch(`${base}/api/v1/staff/priority-requests?status=pending`, { headers: headers(staffToken) });
+      assert.equal(response.status, 200);
+      return response.json();
+    };
+    assert.equal((await call(staffToken)).body.data.priorityWaiting, 0);
+    const ownRequests = [];
+    for (const [index, booking] of [801, 802, 803].entries()) {
+      const response = await fetch(`${base}/api/v1/bookings/${id(booking)}/priority-requests`, {
+        method: 'POST', headers: headers(patientToken), body: JSON.stringify({ reason: 'MOBILITY' }),
+      });
+      assert.equal(response.status, 201);
+      const { data } = await response.json();
+      assert.equal(data.status, 'PENDING'); ownRequests.push(data._id);
+      assert.equal((await call(staffToken)).body.data.priorityWaiting, index + 1);
+      const inbox = await pending();
+      assert.equal(inbox.meta.pendingCount, index + 1);
+      assert.equal(inbox.data.length, index + 1);
+    }
+    assert.equal((await call(await token(33))).body.data.priorityWaiting, 1); // Other hospital is unchanged.
+    for (const [index, decision] of ['ACCEPTED', 'DECLINED'].entries()) {
+      const response = await fetch(`${base}/api/v1/staff/priority-requests/${ownRequests[index]}/decision`, {
+        method: 'PATCH', headers: headers(staffToken), body: JSON.stringify({ decision }),
+      });
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).data.status, decision);
+      assert.equal((await call(staffToken)).body.data.priorityWaiting, 2 - index);
+      assert.equal((await pending()).meta.pendingCount, 2 - index);
+    }
+    assert.equal((await pending()).data[0]._id, ownRequests[2]);
+    assert.equal(await db.collection('priorityRequests').countDocuments({ bookingId: { $in: [801, 802, 803].map(id) } }), 3);
   });
 });
