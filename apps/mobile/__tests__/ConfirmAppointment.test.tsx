@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TextInput } from 'react-native';
+import { Text } from 'react-native';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -179,7 +179,13 @@ test('valid patient selects, posts once despite rapid taps, and replaces form wi
   });
   expect(action('Confirming appointment…').props.disabled).toBe(true);
   expect(action('Next day').props.disabled).toBe(true);
-  expect(screen().findByType(TextInput).props.editable).toBe(false);
+  expect(
+    screen().find(
+      node =>
+        node.props.accessibilityLabel === 'Appointment date' &&
+        typeof node.props.onPress === 'function',
+    ).props.disabled,
+  ).toBe(true);
   await press('Next day');
   expect(load).toHaveBeenCalledTimes(1);
   await act(async () => {

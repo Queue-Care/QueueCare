@@ -2,30 +2,41 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
+  Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { bookingMessages } from '../features/booking/createBooking';
 import type { BookingSubmission } from '../features/booking/useBookingSubmission';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
 import { StatusText } from '../components/StatusText';
+import { InterfaceIcon } from '../components/InterfaceIcon';
 import {
   colomboDate,
   isCalendarDate,
   isSessionBookable,
   sessionTimeLabel,
+  SESSION_TIME_ZONE,
   shiftDate,
 } from '../features/booking/availableSessions';
 import { useAvailableSessions } from '../features/booking/useAvailableSessions';
 import type { PatientSummary } from '../navigation/types';
-import { colors, fonts, surfaces, typography, radii, spacing } from '../theme/tokens';
+import {
+  colors,
+  fonts,
+  surfaces,
+  typography,
+  radii,
+  spacing,
+} from '../theme/tokens';
 
 export function BookAppointmentScreen({
   hospitalId,
@@ -47,8 +58,9 @@ export function BookAppointmentScreen({
   onChooseHospital: () => void;
 }) {
   const [date, setDate] = useState(colomboDate);
-  const [draftDate, setDraftDate] = useState(date);
   const [dateError, setDateError] = useState('');
+  // Pending calendar value; iOS confirms it with "Use date", Android applies it on selection.
+  const [picker, setPicker] = useState<Date | null>(null);
   const { state, selected, select, reload, now } = useAvailableSessions({
     hospitalId,
     serviceId,
@@ -107,14 +119,41 @@ export function BookAppointmentScreen({
   const chooseDate = (value: string) => {
     if (submission.pending) return;
     if (!isCalendarDate(value) || value < colomboDate()) {
-      setDateError('Enter today or a future date in YYYY-MM-DD format.');
+      setDateError('Choose today or a future date.');
       return;
     }
     setDateError('');
-    setDraftDate(value);
     if (value === date) reload();
     else setDate(value);
   };
+  const openCalendar = () => {
+    if (submission.pending) return;
+    setDateError('');
+    setPicker(new Date(`${date}T12:00:00+05:30`));
+  };
+  const acceptCalendar = (value: Date) => {
+    setPicker(null);
+    if (Number.isFinite(value.getTime())) chooseDate(colomboDate(value));
+  };
+  const calendar = picker ? (
+    <DateTimePicker
+      value={picker}
+      mode="date"
+      display={Platform.OS === 'ios' ? 'inline' : 'default'}
+      timeZoneName={SESSION_TIME_ZONE}
+      themeVariant="light"
+      accentColor={colors.teal}
+      minimumDate={new Date(`${colomboDate()}T00:00:00+05:30`)}
+      onValueChange={(_event, value) =>
+        Platform.OS === 'ios' ? setPicker(value) : acceptCalendar(value)
+      }
+      onDismiss={() => setPicker(null)}
+      onError={() => {
+        setPicker(null);
+        setDateError('Could not open the calendar. Please try again.');
+      }}
+    />
+  ) : null;
   const patientName =
     typeof patient?.fullName === 'string' ? patient.fullName.trim() : '';
   const nic = typeof patient?.nic === 'string' ? patient.nic.trim() : '';
@@ -191,39 +230,36 @@ export function BookAppointmentScreen({
           <Text style={styles.body}>
             All dates and times are in Sri Lanka time.
           </Text>
-          <TextInput
-            accessibilityLabel="Appointment date, YYYY-MM-DD"
-            accessibilityHint={
-              dateError ||
-              'Enter today or a future date in Sri Lanka time, then choose Show sessions'
-            }
-            accessibilityState={{ disabled: submission.pending }}
-            style={styles.input}
-            value={draftDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.inkSoft}
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={10}
-            editable={!submission.pending}
-            onChangeText={value => {
-              setDraftDate(value);
-              setDateError('');
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Appointment date"
+            accessibilityValue={{ text: friendlyDate(date) }}
+            accessibilityHint="Opens a calendar to choose today or a future date"
+            accessibilityState={{
+              disabled: submission.pending,
+              expanded: !!picker,
             }}
-            onSubmitEditing={() => chooseDate(draftDate)}
-            returnKeyType="search"
-          />
+            disabled={submission.pending}
+            onPress={openCalendar}
+            style={({ pressed }) => [
+              styles.dateControl,
+              pressed && styles.dateControlPressed,
+              submission.pending && styles.dateControlDisabled,
+            ]}
+          >
+            <View style={styles.dateIcon}>
+              <InterfaceIcon name="Calendar" color={colors.tealDark} />
+            </View>
+            <Text style={[styles.heading, styles.grow]}>
+              {friendlyDate(date)}
+            </Text>
+            <Text style={styles.dateChange}>Change</Text>
+          </Pressable>
           {!!dateError && (
             <StatusText accessibilityRole="alert" style={styles.error}>
               {dateError}
             </StatusText>
           )}
-          <ActionButton
-            label="Show sessions"
-            disabled={submission.pending}
-            variant="secondary"
-            onPress={() => chooseDate(draftDate)}
-          />
           <View style={styles.dateNavigation}>
             <View style={styles.dateAction}>
               <ActionButton
@@ -510,6 +546,36 @@ export function BookAppointmentScreen({
           }}
         />
       </ScrollView>
+      {Platform.OS === 'ios' ? (
+        <Modal
+          visible={!!picker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPicker(null)}
+        >
+          <View style={styles.overlay}>
+            <View style={styles.dialog}>
+              <Text accessibilityRole="header" style={styles.heading}>
+                Choose appointment date
+              </Text>
+              {calendar}
+              <ActionButton
+                label="Use date"
+                onPress={() => {
+                  if (picker) acceptCalendar(picker);
+                }}
+              />
+              <ActionButton
+                label="Cancel"
+                variant="quiet"
+                onPress={() => setPicker(null)}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : (
+        calendar
+      )}
     </SafeAreaView>
   );
 }
@@ -533,17 +599,48 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.panel,
   },
-  input: {
-    fontFamily: fonts.body,
-    minHeight: 52,
+  dateControl: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     borderWidth: 1,
     borderColor: colors.controlBorder,
     borderRadius: radii.sm,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 15,
-    color: colors.ink,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: colors.panel,
+  },
+  dateControlPressed: {
+    backgroundColor: colors.tealTint,
+    borderColor: colors.tealDark,
+  },
+  dateControlDisabled: { backgroundColor: colors.canvas },
+  dateIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.icon,
+    backgroundColor: colors.tealTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateChange: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.tealDark,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(23,48,42,0.45)',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  dialog: {
+    backgroundColor: colors.panel,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.md,
   },
   row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
   dateNavigation: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -582,3 +679,12 @@ const styles = StyleSheet.create({
   error: { color: colors.ink, fontSize: 16, lineHeight: 24 },
   pressed: { borderColor: colors.tealDark, borderWidth: 2 },
 });
+function friendlyDate(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${value}T00:00:00.000Z`));
+}
