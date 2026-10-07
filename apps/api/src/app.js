@@ -7,6 +7,7 @@ import { bookingRoutes } from './modules/bookings/bookingRoutes.js';
 import { staffAuthRoutes } from './modules/staff/g_staffAuthRoutes.js';
 import { staffDashboardRoutes } from './modules/staff/g_staffDashboard.js';
 import { staffPriorityRoutes } from './modules/priority/g_priorityRoutes.js';
+import { patientPriorityRoutes } from './modules/priority/patientPriorityRoutes.js';
 import { notificationRoutes } from './modules/notifications/g_notificationRoutes.js';
 import { profileRoutes } from './modules/users/g_profileRoutes.js';
 import { mediaRoutes } from './modules/media/g_mongoMediaStore.js';
@@ -31,6 +32,7 @@ export function createApp({
   sessionMetricsRepository,
   queueMutationRepository,
   priorityRepository,
+  patientPriorityRepository,
   notificationRepository,
   profileRepository,
   profileImageStore,
@@ -87,6 +89,7 @@ export function createApp({
   app.use('/api/v1/me', profileRoutes(profileRepository, requireSignIn));
   app.use('/api/v1/media', mediaRoutes(profileImageStore));
   app.use('/api/v1/bookings', checkInRoutes(checkInRepository, requireSignIn));
+  app.use('/api/v1', patientPriorityRoutes(patientPriorityRepository, requireSignIn));
   app.use('/api/v1/bookings', bookingRoutes(bookingRepository, requireSignIn));
   app.use((_request, _response, next) =>
     next(
