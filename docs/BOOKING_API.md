@@ -14,7 +14,7 @@ Content-Type: application/json
 
 `sessionId` is the only accepted field. It must be a 24-character hexadecimal ObjectId. Unknown fields and query parameters are rejected. The patient always comes from verified authentication; sending `patientId`, role, status, capacity, or a booking code cannot change that identity or bypass checks.
 
-Success is HTTP 201 with `success: true` and `data` containing `_id`, `bookingCode`, `patientId`, `sessionId`, `status: "CONFIRMED"`, `createdAt`, and `updatedAt`. IDs are strings and timestamps are UTC ISO strings. The code is `OPD-` followed by 32 uppercase UUID hexadecimal characters, protected by a unique index. No profile, credentials, or internal revision fields are returned.
+Success is HTTP 201 with `success: true` and `data` containing `_id`, `bookingCode`, `patientId`, `sessionId`, `status: "CONFIRMED"`, `createdAt`, and `updatedAt`. IDs are strings and timestamps are UTC ISO strings. The code is `OPD-` followed by 6 random characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no look-alike 0/O or 1/I), for example `OPD-7K3QX9`, protected by a unique index. If a new code collides with an existing one, the rolled-back transaction is retried with a fresh code, up to 5 attempts. Bookings created before 2026-10-07 keep their original long codes. No profile, credentials, or internal revision fields are returned.
 
 | HTTP | Code | Meaning |
 | --- | --- | --- |

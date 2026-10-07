@@ -176,6 +176,7 @@ function contrast(a: string, b: string) {
 test.each([
   'primary',
   'outline',
+  'quiet',
   'onDark',
   'secondary',
   'urgent',

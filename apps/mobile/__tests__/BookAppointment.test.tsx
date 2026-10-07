@@ -1,11 +1,12 @@
 import React from 'react';
 import {
   AppState,
+  Platform,
   RefreshControl,
   Text,
-  TextInput,
   type AppStateStatus,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -35,6 +36,10 @@ jest.mock(
   'react-native-safe-area-context',
   () => jest.requireActual('react-native-safe-area-context/jest/mock').default,
 );
+jest.mock('@react-native-community/datetimepicker', () => ({
+  __esModule: true,
+  default: jest.fn(() => null),
+}));
 jest.mock('../src/features/hospitals/hospitalDetails', () => ({
   ...jest.requireActual('../src/features/hospitals/hospitalDetails'),
   getHospitalDetails: jest.fn(),
@@ -108,11 +113,23 @@ async function select(index: number) {
     radios()[index].props.onPress();
   });
 }
+function dateControl() {
+  return screen().find(
+    node =>
+      node.props.accessibilityLabel === 'Appointment date' &&
+      typeof node.props.onPress === 'function',
+  );
+}
 async function changeDate(value: string) {
   await act(async () => {
-    screen().findByType(TextInput).props.onChangeText(value);
+    dateControl().props.onPress();
   });
-  await press('Show sessions');
+  await act(async () => {
+    screen()
+      .findByType(DateTimePicker)
+      .props.onValueChange({}, new Date(`${value}T12:00:00+05:30`));
+  });
+  await press('Use date');
 }
 function tree(auth: NavigationSession | null = patient) {
   return (
@@ -222,31 +239,74 @@ test('guest direct navigation keeps sign-in gate and never loads availability', 
   expect(renderer.root.findAllByType(BookAppointmentScreen)).toHaveLength(0);
   expect(load).not.toHaveBeenCalled();
 });
-test('loading is explicit, invalid/past dates do not fetch, and day stepping clears selection', async () => {
+test('loading is explicit, past dates do not fetch, and changing date clears selection', async () => {
   const pending = deferred();
   load.mockReturnValueOnce(pending.promise);
   await mount();
   expect(text('Loading sessions…')).toBe(true);
-  expect(action('Previous day').props.disabled).toBe(true);
   await act(async () => {
     pending.resolve(slots);
   });
   await select(0);
-  await changeDate('2026-02-30');
-  expect(text('Enter today or a future date in YYYY-MM-DD format.')).toBe(true);
+  await act(async () => {
+    dateControl().props.onPress();
+  });
+  const calendar = screen().findByType(DateTimePicker).props;
+  expect(calendar.mode).toBe('date');
+  expect(calendar.minimumDate.toISOString()).toBe(
+    new Date(`${date}T00:00:00+05:30`).toISOString(),
+  );
+  await press('Cancel');
+  expect(screen().findAllByType(DateTimePicker)).toHaveLength(0);
   await changeDate('2026-10-02');
+  expect(text('Choose today or a future date.')).toBe(true);
   expect(load).toHaveBeenCalledTimes(1);
   load.mockResolvedValue([]);
-  await press('Next day');
+  await changeDate('2026-10-04');
   expect(load).toHaveBeenLastCalledWith(
     { hospitalId, serviceId, date: '2026-10-04' },
     expect.anything(),
   );
   expect(text('Selected session')).toBe(false);
   expect(text('No upcoming sessions for this date')).toBe(true);
-  expect(action('Previous day').props.disabled).toBe(false);
-  await press('Previous day');
-  expect(screen().findByType(TextInput).props.value).toBe(date);
+  await changeDate(date);
+  expect(dateControl().props.accessibilityValue).toEqual({
+    text: 'Sat, 3 Oct 2026',
+  });
+});
+test('Android calendar applies a chosen date immediately and dismissing keeps the date', async () => {
+  const os = Platform.OS;
+  Object.defineProperty(Platform, 'OS', {
+    value: 'android',
+    configurable: true,
+  });
+  try {
+    await mount();
+    load.mockResolvedValue([]);
+    await act(async () => {
+      dateControl().props.onPress();
+    });
+    await act(async () => {
+      screen().findByType(DateTimePicker).props.onDismiss();
+    });
+    expect(screen().findAllByType(DateTimePicker)).toHaveLength(0);
+    expect(load).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      dateControl().props.onPress();
+    });
+    await act(async () => {
+      screen()
+        .findByType(DateTimePicker)
+        .props.onValueChange({}, new Date('2026-10-05T12:00:00+05:30'));
+    });
+    expect(screen().findAllByType(DateTimePicker)).toHaveLength(0);
+    expect(load).toHaveBeenLastCalledWith(
+      { hospitalId, serviceId, date: '2026-10-05' },
+      expect.anything(),
+    );
+  } finally {
+    Object.defineProperty(Platform, 'OS', { value: os, configurable: true });
+  }
 });
 test('refresh invalidates selection and updated capacity disables a now-full session', async () => {
   await mount();
@@ -285,7 +345,7 @@ test('date and hospital changes abort old work and ignore late responses', async
   await mount();
   const signal = load.mock.calls[0][1];
   load.mockResolvedValue([]);
-  await press('Next day');
+  await changeDate('2026-10-04');
   expect(signal.aborted).toBe(true);
   await act(async () => {
     old.resolve(slots);
@@ -346,10 +406,10 @@ test('unmount cancels pending requests and removes listeners', async () => {
   expect(removeListener).toHaveBeenCalled();
 });
 
-
 test('full session is labelled Fully booked and cannot initiate a booking', async () => {
   await mount();
   expect(text('Fully booked')).toBe(true);
-  const full = radios()[1]; expect(full.props.accessibilityState.disabled).toBe(true);
+  const full = radios()[1];
+  expect(full.props.accessibilityState.disabled).toBe(true);
   expect(full.props.disabled).toBe(true);
 });
