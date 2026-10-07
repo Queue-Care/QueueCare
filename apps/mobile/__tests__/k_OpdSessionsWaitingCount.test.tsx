@@ -64,11 +64,11 @@ test('initial loading text never derives a count from bookings', async () => {
 });
 
 test('search leaves waiting metrics and polling for the complete loaded list unchanged', async () => {
-  const dermatology = { ...session, _id: '000000000000000000000102', serviceName: 'Dermatology' };
+  const dermatology = { ...session, _id: '000000000000000000000102', serviceName: 'Dermatology', doctorOrTeam: 'Dr Perera' };
   list.mockResolvedValue(page([session, dermatology]));
   await mount(); expect(metrics).toHaveBeenCalledTimes(2);
   await press('Search sessions');
-  await act(async () => renderer.root.findByType(TextInput).props.onChangeText('general'));
+  await act(async () => renderer.root.findByType(TextInput).props.onChangeText('team'));
   expect(texts()).toContain('General OPD'); expect(texts()).not.toContain('Dermatology');
   expect(texts()).toContain('3 waiting'); expect(texts()).toContain('19');
   expect(metrics).toHaveBeenCalledTimes(2); expect(list).toHaveBeenCalledTimes(1);
