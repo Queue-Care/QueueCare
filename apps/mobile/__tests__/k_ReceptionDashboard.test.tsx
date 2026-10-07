@@ -17,6 +17,7 @@ jest.mock('../src/theme/homeFonts', () => ({ useHomeFonts: () => ({ body: 'Home-
 
 const originalFetch = globalThis.fetch;
 const originalUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+const originalAppState = Object.getOwnPropertyDescriptor(AppState, 'currentState');
 const request = jest.fn();
 const expired = jest.fn();
 const dashboard = {
@@ -29,6 +30,7 @@ let ref: ReturnType<typeof createNavigationContainerRef<StaffTabParams>>;
 function respond(data = dashboard) { return { ok: true, status: 200, json: async () => ({ success: true, data }) }; }
 beforeEach(() => {
   jest.clearAllMocks();
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
   jest.spyOn(AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test/api/v1';
   globalThis.fetch = request;
@@ -37,6 +39,7 @@ beforeEach(() => {
 afterEach(async () => {
   if (renderer) await act(async () => renderer!.unmount());
   renderer = undefined;
+  if (originalAppState) Object.defineProperty(AppState, 'currentState', originalAppState);
   globalThis.fetch = originalFetch;
   if (originalUrl === undefined) delete process.env.EXPO_PUBLIC_API_BASE_URL;
   else process.env.EXPO_PUBLIC_API_BASE_URL = originalUrl;
@@ -64,6 +67,77 @@ test('real helper sends JWT to the existing endpoint and rejects missing authent
   await expect(fetchDashboard(undefined)).rejects.toThrow('Please sign in again');
   expect(request).not.toHaveBeenCalled();
 });
+
+test.each([0, 1, 5])('Priority waiting displays the server pending count %s', async priorityWaiting => {
+  request.mockResolvedValue(respond({ ...dashboard, priorityWaiting }));
+  await mount();
+  const label = renderer!.root.findAllByType(Text).find(node => node.props.children === 'Priority waiting')!;
+  expect(label.parent!.findAllByType(Text).map(node => node.props.children)).toContain(priorityWaiting);
+});
+
+test('Priority waiting refreshes on polling/focus/foreground and stops on blur/background/unmount', async () => {
+  jest.useFakeTimers();
+  let count = 0;
+  request.mockImplementation(async () => respond({ ...dashboard, priorityWaiting: count }));
+  const shown = () => {
+    const label = renderer!.root.findAllByType(Text).find(node => node.props.children === 'Priority waiting')!;
+    return label.parent!.findAllByType(Text).map(node => node.props.children).at(-1);
+  };
+  const changeState = async (state: 'active' | 'background') => {
+    const listeners = jest.mocked(AppState.addEventListener).mock.calls.filter(call => call[0] === 'change').map(call => call[1]);
+    await act(async () => listeners.forEach(listener => listener(state)));
+  };
+  try {
+    await mount(); expect(shown()).toBe(0); expect(request).toHaveBeenCalledTimes(1);
+    count = 1;
+    await act(async () => jest.advanceTimersByTime(10000)); expect(shown()).toBe(1);
+    count = 5;
+    await act(async () => jest.advanceTimersByTime(10000)); expect(shown()).toBe(5);
+    await changeState('background');
+    const beforeBackground = request.mock.calls.length;
+    await act(async () => jest.advanceTimersByTime(30000)); expect(request).toHaveBeenCalledTimes(beforeBackground);
+    count = 2; await changeState('active'); expect(shown()).toBe(2);
+    await act(async () => ref.navigate('Priority'));
+    const beforeBlur = request.mock.calls.length;
+    await act(async () => jest.advanceTimersByTime(30000)); expect(request).toHaveBeenCalledTimes(beforeBlur);
+    count = 0; await act(async () => ref.navigate('Dashboard')); expect(shown()).toBe(0);
+    const beforeUnmount = request.mock.calls.length;
+    await act(async () => renderer!.unmount()); renderer = undefined;
+    await act(async () => jest.advanceTimersByTime(30000)); expect(request).toHaveBeenCalledTimes(beforeUnmount);
+  } finally {
+    if (renderer) await act(async () => renderer!.unmount()); renderer = undefined;
+    jest.restoreAllMocks(); jest.useRealTimers();
+  }
+});
+test('dashboard polling avoids overlapping requests and ignores aborted background results', async () => {
+  jest.useFakeTimers();
+  let finish!: (value: ReturnType<typeof respond>) => void;
+  try {
+    await mount();
+    request.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await act(async () => jest.advanceTimersByTime(10000));
+    expect(request).toHaveBeenCalledTimes(2);
+    const signal = request.mock.calls[1][1].signal as AbortSignal;
+    await act(async () => jest.advanceTimersByTime(30000));
+    expect(request).toHaveBeenCalledTimes(2);
+    const listeners = jest.mocked(AppState.addEventListener).mock.calls
+      .filter(call => call[0] === 'change').map(call => call[1]);
+    await act(async () => listeners.forEach(listener => listener('background')));
+    expect(signal.aborted).toBe(true);
+    await act(async () => finish(respond({ ...dashboard, priorityWaiting: 99 })));
+    expect(texts()).not.toContain(99);
+    request.mockResolvedValue(respond({ ...dashboard, priorityWaiting: 7 }));
+    await act(async () => listeners.forEach(listener => listener('active')));
+    expect(texts()).toContain(7);
+    expect(request).toHaveBeenCalledTimes(3);
+    await act(async () => listeners.forEach(listener => listener('active')));
+    expect(request).toHaveBeenCalledTimes(3);
+  } finally {
+    if (renderer) await act(async () => renderer!.unmount()); renderer = undefined;
+    jest.useRealTimers();
+  }
+});
+
 test.each([undefined, -1, 1.5, '27', NaN])('malformed KPI %s is an error rather than a fabricated zero', value => {
   expect(() => parseDashboard({ ...dashboard, sessionsToday: value })).toThrow();
 });
@@ -74,7 +148,8 @@ test('missing nowServing is rejected; Colombo greeting respects midnight and noo
 });
 test('renders actual KPIs, today sessions, notification count and priority badge/action', async () => {
   await mount();
-  for (const value of ['Sessions today', 'Priority waiting', 'Patients checked in', 'Now serving', 27, 4, 31, 'A-029', 'General OPD', 'Running', 'Hospital One', 'Review 4 priority requests']) expect(texts()).toContain(value);
+  for (const value of ['Sessions today', 'Priority waiting', 27, 4, 'General OPD', 'Running', 'Hospital One', 'Review 4 priority requests']) expect(texts()).toContain(value);
+  for (const value of ['Patients checked in', 'Now serving', 31, 'A-029']) expect(texts()).not.toContain(value);
   expect(renderer!.root.findAll(node => node.props.accessibilityLabel === 'Notifications, 2 unread').length).toBeGreaterThan(0);
   const tabBar = renderer!.root.findAll(node => node.props.descriptors && node.props.state?.type === 'tab')[0];
   expect(Object.values(tabBar.props.descriptors).some((descriptor: any) => descriptor.options.tabBarBadge === 4)).toBe(true);
@@ -82,8 +157,7 @@ test('renders actual KPIs, today sessions, notification count and priority badge
 test('legitimate zero KPIs and empty session list display without an error', async () => {
   request.mockResolvedValue(respond({ ...dashboard, sessionsToday: 0, priorityWaiting: 0, patientsCheckedIn: 0, nowServing: null, sessions: [] }));
   await mount();
-  expect(texts().filter(value => value === 0)).toHaveLength(3);
-  expect(texts()).toContain('—');
+  expect(texts().filter(value => value === 0)).toHaveLength(2);
   expect(texts()).toContain('No OPD sessions are scheduled for today.');
   expect(texts()).toContain('View priority requests');
 });
@@ -153,6 +227,23 @@ test('today sessions KPI is accessible, pressable, and targets existing Sessions
   expect(controls[0].props.accessibilityState.disabled).toBe(false);
   await act(async () => controls[0].props.onPress());
   expect(ref.getCurrentRoute()?.name).toBe('SessionsList');
+});
+
+test('dashboard session cards pass their exact ID and View all clears targeted navigation', async () => {
+  const secondId = 'b'.repeat(24);
+  request.mockResolvedValue(respond({ ...dashboard, sessions: [dashboard.sessions[0],
+    { ...dashboard.sessions[0], _id: secondId }] }));
+  await mount();
+  const cards = renderer!.root.findAll(node => node.props.accessibilityRole === 'button' &&
+    node.props.accessibilityLabel?.startsWith('Open General OPD session at') && typeof node.props.onPress === 'function');
+  expect(cards.length).toBeGreaterThanOrEqual(2);
+  await act(async () => cards.at(-1)!.props.onPress());
+  expect(ref.getCurrentRoute()?.name).toBe('SessionsList');
+  expect(ref.getCurrentRoute()?.params).toMatchObject({ targetSessionId: secondId });
+  await act(async () => ref.navigate('Dashboard'));
+  await press("View today's OPD sessions");
+  expect(ref.getCurrentRoute()?.name).toBe('SessionsList');
+  expect(ref.getCurrentRoute()?.params).toMatchObject({ targetSessionId: undefined, savedSessionDate: undefined });
 });
 
 

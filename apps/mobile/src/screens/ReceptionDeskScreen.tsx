@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fonts, radii, surfaces } from '../theme/tokens';
-import { useApiResource } from '../api/g_useApiResource';
+import { useReceptionDashboard } from '../features/staff/k_useReceptionDashboard';
 import { errorMessage } from '../api/g_apiClient';
 import { useHomeFonts } from '../theme/homeFonts';
 import {
@@ -30,6 +30,7 @@ type Props = {
   onSessionExpired?: () => void;
   onPendingCount?: (count: number) => void;
   onOpenSessions: () => void;
+  onOpenSession: (sessionId: string) => void;
   onOpenPriority: () => void;
   onOpenNotifications: () => void;
   onOpenProfile: () => void;
@@ -57,6 +58,7 @@ export function ReceptionDeskScreen({
   onSessionExpired,
   onPendingCount,
   onOpenSessions,
+  onOpenSession,
   onOpenPriority,
   onOpenNotifications,
   onOpenProfile,
@@ -104,8 +106,7 @@ export function ReceptionDeskScreen({
     [accessToken],
   );
   // README section 17: reception screens refresh every 5–10 seconds while visible.
-  const { data, loading, error, reload } = useApiResource(load, {
-    pollMs: 10000,
+  const { data, loading, error, reload } = useReceptionDashboard(load, {
     onUnauthorized: onSessionExpired,
   });
   const pending = data?.priorityWaiting;
@@ -198,16 +199,6 @@ export function ReceptionDeskScreen({
                 </Text>
               </View>
             </View>
-            <View style={[styles.kpiRow, styles.kpiRowSecond]}>
-              <View style={styles.kpi}>
-                <Text style={[styles.kpiLabel, semiboldFont]}>Patients checked in</Text>
-                <Text style={[styles.kpiNumber, displayFont]}>{data.patientsCheckedIn}</Text>
-              </View>
-              <View style={styles.kpi}>
-                <Text style={[styles.kpiLabel, semiboldFont]}>Now serving</Text>
-                <Text style={[styles.kpiNumber, displayFont]}>{data.nowServing ?? '—'}</Text>
-              </View>
-            </View>
           </>
         ) : null}
 
@@ -231,8 +222,11 @@ export function ReceptionDeskScreen({
             {data.sessions.map((session, index) => {
               const badge = badgeStyles(session.label);
               return (
-                <View
+                <TouchableOpacity
                   key={session._id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${session.serviceName} session at ${formatTime(session.startsAt)}`}
+                  onPress={() => onOpenSession(session._id)}
                   style={[
                     styles.listRow,
                     index === data.sessions.length - 1 && styles.lastRow,
@@ -251,7 +245,7 @@ export function ReceptionDeskScreen({
                       {session.label}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -353,7 +347,6 @@ const styles = StyleSheet.create({
   linkButton: { minWidth: 48, minHeight: 48, justifyContent: 'center', alignItems: 'center' },
   link: { fontSize: 14, fontWeight: '600', color: colors.teal },
   kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16, marginBottom: 4 },
-  kpiRowSecond: { marginTop: 12 },
   kpi: {
     borderRadius: radii.md,
     flex: 1,
@@ -399,6 +392,7 @@ const styles = StyleSheet.create({
     borderColor: colors.sageLine,
   },
   listRow: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
