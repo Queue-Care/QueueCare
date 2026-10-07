@@ -9,6 +9,7 @@ import {
   patientStyles as s,
 } from '../components/PatientPage';
 import { ActionButton } from '../components/ActionButton';
+import { PasswordField } from '../components/g_PasswordField';
 import { message, patientApi, PatientApiError } from '../features/patient/api';
 
 export type Registration = {
@@ -17,6 +18,7 @@ export type Registration = {
   mobile: string;
   email: string;
   password: string;
+  confirmPassword: string;
 };
 export function validateRegistration(values: Registration) {
   const errors: Partial<Record<keyof Registration, string>> = {};
@@ -33,6 +35,10 @@ export function validateRegistration(values: Registration) {
     errors.email = 'Enter a valid email address or leave this blank.';
   if (values.password.length < 8)
     errors.password = 'Use at least 8 characters.';
+  if (!values.confirmPassword)
+    errors.confirmPassword = 'Confirm your password.';
+  else if (values.confirmPassword !== values.password)
+    errors.confirmPassword = 'Passwords do not match.';
   return errors;
 }
 export function CreateAccountScreen({
@@ -44,6 +50,7 @@ export function CreateAccountScreen({
     mobile: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
   const [errors, setErrors] = useState<
     Partial<Record<keyof Registration, string>>
@@ -90,7 +97,11 @@ export function CreateAccountScreen({
   }
   const update = (key: keyof Registration) => (value: string) => {
     setValues(current => ({ ...current, [key]: value }));
-    setErrors(current => ({ ...current, [key]: undefined }));
+    setErrors(current => ({
+      ...current,
+      [key]: undefined,
+      ...(key === 'password' ? { confirmPassword: undefined } : {}),
+    }));
   };
   return (
     <PatientPage>
@@ -138,15 +149,23 @@ export function CreateAccountScreen({
         autoComplete="email"
         editable={!busy}
       />
-      <Field
+      <PasswordField
         label="Create password"
         value={values.password}
         onChangeText={update('password')}
         error={errors.password}
         placeholder="At least 8 characters"
-        secureTextEntry
         autoComplete="new-password"
         hint="At least 8 characters."
+        editable={!busy}
+      />
+      <PasswordField
+        label="Confirm password"
+        value={values.confirmPassword}
+        onChangeText={update('confirmPassword')}
+        error={errors.confirmPassword}
+        placeholder="Re-enter your password"
+        autoComplete="new-password"
         editable={!busy}
       />
       <Note>

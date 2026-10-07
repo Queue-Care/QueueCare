@@ -31,6 +31,7 @@ const values = {
   mobile: '+94 77 123 4567',
   email: '',
   password: 'password123',
+  confirmPassword: 'password123',
 };
 const fetchMock = jest.fn();
 const originalFetch = globalThis.fetch;
@@ -74,6 +75,13 @@ test('registration accepts both NIC formats and validates optional email and mob
       password: expect.any(String),
     }),
   );
+});
+
+test('registration requires matching confirmation', () => {
+  expect(validateRegistration({ ...values, confirmPassword: '' }).confirmPassword)
+    .toBe('Confirm your password.');
+  expect(validateRegistration({ ...values, confirmPassword: 'different123' }).confirmPassword)
+    .toBe('Passwords do not match.');
 });
 
 test('invalid registration shows field errors without sending an API request', async () => {
@@ -134,6 +142,7 @@ test('registration sends trimmed values and opens login only after server succes
     ['NIC number', values.nic],
     ['Mobile number', values.mobile],
     ['Create password', values.password],
+    ['Confirm password', values.confirmPassword],
   ]) {
     await act(async () => {
       renderer!.root
