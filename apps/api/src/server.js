@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { once } from 'node:events';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import dotenv from 'dotenv';
@@ -50,7 +51,7 @@ let connection;
 try {
   const config = readConfig();
   const authConfig = readAuthConfig();
-  connection = await connectMongo(config);
+  connection = await connectWithRetry(config);
   await ensurePatientRegistrationIndexes(connection.db);
   await ensureHospitalIndexes(connection.db);
   await ensureStaffAuthIndexes(connection.db);
@@ -125,6 +126,27 @@ try {
   } else {
     console.error(`API startup failed. ${connectionDiagnostic(error)}`);
     process.exitCode = 1;
+  }
+}
+
+// The database can be out of reach for a moment (Wi-Fi still joining, laptop
+// just woke up). Try a few times before calling the startup failed; a wrong
+// password or connection string fails straight away.
+async function connectWithRetry(config, attempts = 5, waitMs = 2000) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await connectMongo(config);
+    } catch (error) {
+      const unreachable =
+        ['MongoServerSelectionError', 'MongoNetworkError'].includes(
+          error?.name
+        ) || ['querySrv', 'queryTxt'].includes(error?.syscall);
+      if (!unreachable || attempt >= attempts) throw error;
+      console.log(
+        `MongoDB is not reachable yet, trying again (${attempt + 1}/${attempts})...`
+      );
+      await delay(waitMs);
+    }
   }
 }
 
