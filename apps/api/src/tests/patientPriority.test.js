@@ -53,16 +53,19 @@ test('patient requests persist, prevent duplicates, reach hospital staff, and re
   await ensurePriorityIndexes(db);
   await ensurePatientPriorityIndexes(db);
   const patientId = new ObjectId(), otherPatientId = new ObjectId(), staffId = new ObjectId(), otherStaffId = new ObjectId();
+  const unlinkedId = new ObjectId(), suspendedId = new ObjectId();
   const hospitalId = new ObjectId(), otherHospitalId = new ObjectId(), serviceId = new ObjectId(), sessionId = new ObjectId(), bookingId = new ObjectId();
   await db.collection('users').insertMany([
     { _id: patientId, role: 'PATIENT', status: 'ACTIVE', fullName: 'Test Patient' },
     { _id: otherPatientId, role: 'PATIENT', status: 'ACTIVE' },
     { _id: staffId, role: 'RECEPTION', status: 'ACTIVE', hospitalId },
     { _id: otherStaffId, role: 'RECEPTION', status: 'ACTIVE', hospitalId: otherHospitalId },
+    { _id: unlinkedId, role: 'RECEPTION', status: 'ACTIVE' },
+    { _id: suspendedId, role: 'RECEPTION', status: 'SUSPENDED', hospitalId },
   ]);
-  await db.collection('hospitals').insertOne({ _id: hospitalId, name: 'Test Hospital' });
+  await db.collection('hospitals').insertMany([{ _id: hospitalId, name: 'Test Hospital' }, { _id: otherHospitalId, name: 'Other Hospital' }]);
   await db.collection('opdServices').insertOne({ _id: serviceId, name: 'General OPD', hospitalId });
-  await db.collection('opdSessions').insertOne({ _id: sessionId, hospitalId, serviceId, sessionDate: new Date('2099-01-01T00:00:00Z'), startTime: '08:00', endTime: '10:00', status: 'OPEN' });
+  await db.collection('opdSessions').insertOne({ _id: sessionId, hospitalId, serviceId, sessionDate: new Date('2099-01-01T00:00:00Z'), startTime: '08:00', endTime: '10:00', capacity: 12, bookedCount: 1, status: 'OPEN' });
   await db.collection('bookings').insertOne({ _id: bookingId, patientId, sessionId, status: 'CONFIRMED', bookingCode: 'TEST-PRIORITY' });
   const config = readAuthConfig({ JWT_SECRET: 'priority-test-secret-'.repeat(4) });
   const base = await startHttp(t, createApp({
@@ -86,6 +89,11 @@ test('patient requests persist, prevent duplicates, reach hospital staff, and re
   assert.ok(stored.patientId.equals(patientId));
   assert.ok(stored.bookingId.equals(bookingId));
   assert.equal(stored.note, 'Walking assistance');
+  const staffNotices = await db.collection('notifications').find({ 'data.event': 'PRIORITY_REQUEST_SUBMITTED' }).toArray();
+  assert.equal(staffNotices.length, 1);
+  assert.ok(staffNotices[0].userId.equals(staffId));
+  assert.ok(staffNotices[0].data.hospitalId.equals(hospitalId));
+  assert.equal(await db.collection('notifications').countDocuments({ userId: { $in: [otherStaffId, unlinkedId, suspendedId] } }), 0);
   const staffList = await fetch(`${base}/api/v1/staff/priority-requests?status=pending`, { headers: staffHeaders });
   assert.equal(staffList.status, 200);
   const staffData = await staffList.json();
@@ -93,6 +101,10 @@ test('patient requests persist, prevent duplicates, reach hospital staff, and re
   assert.equal(staffData.data[0].patient.fullName, 'Test Patient');
   const otherList = await fetch(`${base}/api/v1/staff/priority-requests?status=pending`, { headers: await headers(otherStaffId) });
   assert.deepEqual((await otherList.json()).data, []);
+  const unlinkedHeaders = await headers(unlinkedId);
+  assert.equal((await fetch(`${base}/api/v1/staff/priority-requests?status=pending`, { headers: unlinkedHeaders })).status, 403);
+  assert.equal((await fetch(`${base}/api/v1/staff/priority-requests/${created._id}`, { headers: await headers(otherStaffId) })).status, 404);
+  assert.equal((await fetch(`${base}/api/v1/staff/priority-requests/${created._id}/decision`, { method: 'PATCH', headers: await headers(otherStaffId), body: JSON.stringify({ decision: 'ACCEPTED' }) })).status, 404);
   const decision = await fetch(`${base}/api/v1/staff/priority-requests/${created._id}/decision`, { method: 'PATCH', headers: staffHeaders, body: JSON.stringify({ decision: 'ACCEPTED', decisionNote: 'Assistance approved' }) });
   assert.equal(decision.status, 200);
   const patientList = await fetch(`${base}/api/v1/priority-requests/me`, { headers: patientHeaders });

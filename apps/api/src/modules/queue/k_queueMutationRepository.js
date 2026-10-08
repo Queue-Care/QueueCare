@@ -17,6 +17,7 @@ const notFound = () => new HttpError(404, 'NOT_FOUND', 'Queue resource not found
 const publicEntry = entry => ({ queueEntryId: entry._id.toString(), bookingId: entry.bookingId.toString(),
   sessionId: entry.sessionId.toString(), queueNumber: entry.queueNumber, priorityLevel: entry.priorityLevel,
   status: entry.status, checkedInAt: entry.checkedInAt.toISOString(), calledAt: entry.calledAt?.toISOString() ?? null,
+  ...(entry.assignedTime instanceof Date ? { assignedTime: entry.assignedTime.toISOString(), queueType: entry.queueType } : {}),
   completedAt: entry.completedAt?.toISOString() ?? null, updatedAt: entry.updatedAt.toISOString() });
 
 function consistent(entry, sessionId) {

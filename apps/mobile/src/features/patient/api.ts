@@ -8,6 +8,8 @@ export type Booking = {
   patientName?: string;
   maskedNic?: string;
   priorityRequestId?: string;
+  assignedTime?: string;
+  queueType?: 'NORMAL' | 'PRIORITY';
 };
 export type PriorityRequest = {
   _id: string;
@@ -17,6 +19,7 @@ export type PriorityRequest = {
   createdAt: string;
   note?: string;
   decisionNote?: string;
+  decisionCode?: string;
 };
 export const reasons = {
   ELDERLY: 'Elderly patient',
@@ -67,6 +70,8 @@ export function parseBooking(value: unknown): Booking {
       throw new PatientApiError(
         'We could not read this booking. Please try again.',
       );
+  if (value.assignedTime !== undefined && (!zonedDate(value.assignedTime) || !['NORMAL', 'PRIORITY'].includes(String(value.queueType))))
+    throw new PatientApiError('We could not read this appointment time.');
   return value as Booking;
 }
 export function parsePriority(value: unknown): PriorityRequest {

@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { HttpError } from '../../utils/HttpError.js';
 import { colomboDate, SESSION_TIME_ZONE } from './sessionQuery.js';
+import { readAvailableSlots } from '../bookings/appointmentSlots.js';
 
 export async function ensureSessionIndexes(db) {
   await db
@@ -155,6 +156,18 @@ export async function readHospitalSessions(db, hospitalId, query, now) {
         isBookable: remainingCapacity > 0,
       };
     });
+  // Total capacity includes reserved positions. The patient may only book a
+  // normal position; priority availability is checked separately at review.
+  for (const item of data) {
+    let normalRemainingCapacity = 0;
+    try {
+      const slots = await readAvailableSlots(db, { ...item,
+        _id: new ObjectId(item._id), sessionDate: new Date(`${date}T00:00:00Z`) }, { maxTimeMS: 3000 });
+      normalRemainingCapacity = Math.min(item.remainingCapacity, slots.filter(s => s.queueType === 'NORMAL').length);
+    } catch (error) { if (error.code !== 'SLOT_CONFLICT') throw error; }
+    item.normalRemainingCapacity = normalRemainingCapacity;
+    item.isBookable = normalRemainingCapacity > 0;
+  }
   return {
     data,
     meta: {

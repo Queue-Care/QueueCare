@@ -2,7 +2,9 @@ import { ObjectId } from 'mongodb';
 import { HttpError } from '../../utils/HttpError.js';
 import { writeAuditLog } from '../audit/g_auditLog.js';
 import { insertNotification } from '../notifications/g_notificationRepository.js';
+import { readAvailableSlots, slotFields, noPrioritySlots } from '../bookings/appointmentSlots.js';
 import { maskNic } from '../users/g_profileRepository.js';
+import { readStaffHospitalScope } from '../staff/k_staffHospitalScope.js';
 
 export const PRIORITY_REASONS = ['ELDERLY', 'MOBILITY', 'PREGNANT', 'OTHER'];
 const DECIDED = ['ACCEPTED', 'DECLINED'];
@@ -128,6 +130,8 @@ function toPublic(request, { detailed = false } = {}) {
       _id: request.booking._id.toString(),
       bookingCode: text(request.booking.bookingCode),
       status: request.booking.status,
+      assignedTime: iso(request.booking.assignedTime),
+      queueType: request.booking.queueType ?? null,
     },
     service: { name: text(request.service[0]?.name) ?? 'OPD service' },
     hospital: { name: text(request.hospital[0]?.name) ?? 'Hospital' },
@@ -144,13 +148,7 @@ export function createPriorityRepository(db, { now = () => new Date() } = {}) {
 
   // Staff linked to a hospital only ever see that hospital's requests.
   async function hospitalScope(staffUserId) {
-    const staff = await db
-      .collection('users')
-      .findOne(
-        { _id: staffUserId },
-        { projection: { hospitalId: 1 }, maxTimeMS: 3000 }
-      );
-    return staff?.hospitalId instanceof ObjectId ? staff.hospitalId : null;
+    return readStaffHospitalScope(db, staffUserId);
   }
 
   async function count(match, hospitalId) {
@@ -162,10 +160,10 @@ export function createPriorityRepository(db, { now = () => new Date() } = {}) {
     return result?.total ?? 0;
   }
 
-  async function read(requestId, hospitalId) {
+  async function read(requestId, hospitalId, options = {}) {
     const [request] = await requests
       .aggregate([...joined({ _id: requestId }, hospitalId), ...details], {
-        maxTimeMS: 5000,
+        maxTimeMS: 5000, ...options,
       })
       .toArray();
     if (!request) throw notFound();
@@ -208,73 +206,61 @@ export function createPriorityRepository(db, { now = () => new Date() } = {}) {
 
     async decide(staffUserId, requestId, { decision, decisionNote }) {
       const hospitalId = await hospitalScope(staffUserId);
-      const request = await read(requestId, hospitalId);
-      const at = now();
-      // The PENDING filter makes the decision atomic: a second reviewer loses.
-      const decided = await requests.findOneAndUpdate(
-        { _id: requestId, status: 'PENDING' },
-        {
-          $set: {
-            status: decision,
-            reviewedById: staffUserId,
-            reviewedAt: at,
-            decisionNote: decisionNote ?? null,
-            updatedAt: at,
-          },
-        },
-        { returnDocument: 'after' }
-      );
-      if (!decided)
-        throw new HttpError(
-          409,
-          'PRIORITY_REQUEST_ALREADY_DECIDED',
-          'This request has already been decided.'
-        );
-
-      const accepted = decision === 'ACCEPTED';
-      if (accepted)
-        // A patient who has already checked in moves to the priority queue now.
-        // Later check-ins read the accepted request for this booking.
-        await db.collection('queueEntries').updateMany(
-          {
-            bookingId: request.bookingId,
-            status: { $in: ['WAITING', 'CALLED'] },
-          },
-          { $set: { priorityLevel: 'APPROVED_PRIORITY', updatedAt: at } }
-        );
-      const bookingCode = text(request.booking.bookingCode) ?? 'your booking';
-      await insertNotification(db, {
-        userId: request.patientId,
-        type: 'PRIORITY',
-        title: accepted
-          ? 'Priority request accepted'
-          : 'Priority request declined',
-        message: accepted
-          ? `Reception accepted your priority request for ${bookingCode}. Report to the reception desk when you arrive.`
-          : `Reception could not accept your priority request for ${bookingCode}. Your booking is still confirmed.`,
-        data: {
-          event: accepted
-            ? 'PRIORITY_REQUEST_ACCEPTED'
-            : 'PRIORITY_REQUEST_DECLINED',
-          requestId,
-          bookingId: request.bookingId,
-        },
-        createdAt: at,
-      });
-      await writeAuditLog(db, {
-        actorUserId: staffUserId,
-        action: accepted
-          ? 'PRIORITY_REQUEST_ACCEPTED'
-          : 'PRIORITY_REQUEST_DECLINED',
-        entityType: 'priorityRequest',
-        entityId: requestId,
-        metadata: {
-          bookingId: request.bookingId,
-          patientId: request.patientId,
-          decisionNote: decisionNote ?? null,
-        },
-        createdAt: at,
-      });
+      const transaction = db.client.startSession();
+      try {
+        await transaction.withTransaction(async () => {
+          const options = { session: transaction, maxTimeMS: 5000 };
+          const request = await read(requestId, hospitalId, options);
+          if (request.status !== 'PENDING')
+            throw new HttpError(409, 'PRIORITY_REQUEST_ALREADY_DECIDED', 'This request has already been decided.');
+          const at = now();
+          let status = decision, note = decisionNote ?? null, slot, decisionCode;
+          if (decision === 'ACCEPTED') {
+            const session = await db.collection('opdSessions').findOneAndUpdate(
+              { _id: request.session._id, hospitalId: request.session.hospitalId,
+                status: { $in: ['OPEN', 'CLOSED', 'RUNNING'] } },
+              { $inc: { slotRevision: 1 } }, { ...options, returnDocument: 'after' });
+            const booking = await db.collection('bookings').findOneAndUpdate(
+              { _id: request.bookingId, patientId: request.patientId, status: 'CONFIRMED' },
+              { $inc: { slotRevision: 1 } }, { ...options, returnDocument: 'after' });
+            if (!session || !booking)
+              throw new HttpError(409, 'PRIORITY_BOOKING_UNAVAILABLE', 'This booking or session is no longer eligible for priority assistance.');
+            const queue = await db.collection('queueEntries').findOne({ bookingId: booking._id }, options);
+            if (queue && queue.status !== 'WAITING')
+              throw new HttpError(409, 'PRIORITY_BOOKING_UNAVAILABLE', 'A patient who has already been called cannot be reassigned.');
+            slot = (await readAvailableSlots(db, session, options))
+              .find(s => s.queueType === 'PRIORITY' && s.assignedTime > at);
+            if (!slot) { status = 'DECLINED'; note = noPrioritySlots; decisionCode = 'NO_PRIORITY_SLOT_AVAILABLE'; }
+            else {
+              await db.collection('bookings').updateOne({ _id: booking._id, status: 'CONFIRMED' },
+                { $set: { ...slotFields(slot), updatedAt: at } }, options);
+              await db.collection('queueEntries').updateMany({ bookingId: booking._id, status: 'WAITING' },
+                { $set: { ...slotFields(slot), priorityLevel: 'APPROVED_PRIORITY', updatedAt: at } }, options);
+            }
+          }
+          const decided = await requests.updateOne({ _id: requestId, status: 'PENDING' },
+            { $set: { status, decisionNote: note, ...(decisionCode ? { decisionCode } : {}),
+              reviewedById: staffUserId, reviewedAt: at, updatedAt: at } }, options);
+          if (!decided.modifiedCount)
+            throw new HttpError(409, 'PRIORITY_REQUEST_ALREADY_DECIDED', 'This request has already been decided.');
+          const accepted = status === 'ACCEPTED';
+          const service = text(request.service[0]?.name) ?? 'OPD';
+          const appointment = slot?.assignedTime.toLocaleString('en-GB', { timeZone: 'Asia/Colombo' });
+          await insertNotification(db, { userId: request.patientId, type: 'PRIORITY',
+            title: accepted ? 'Priority request accepted' : 'Priority request declined',
+            message: accepted
+              ? `Your priority request has been accepted. OPD: ${service} / ${request.session.doctorOrTeam}. Date and priority appointment time: ${appointment} (Sri Lanka time).`
+              : note ?? 'Reception could not accept your priority request. Your normal appointment remains confirmed.',
+            data: { event: accepted ? 'PRIORITY_REQUEST_ACCEPTED' : 'PRIORITY_REQUEST_DECLINED',
+              requestId, bookingId: request.bookingId, ...(slot ? slotFields(slot) : {}),
+              ...(decisionCode ? { decisionCode } : {}) }, createdAt: at }, options);
+          await writeAuditLog(db, { actorUserId: staffUserId,
+            action: accepted ? 'PRIORITY_REQUEST_ACCEPTED' : 'PRIORITY_REQUEST_DECLINED',
+            entityType: 'priorityRequest', entityId: requestId,
+            metadata: { bookingId: request.bookingId, decisionNote: note, decisionCode: decisionCode ?? null }, createdAt: at }, options);
+        }, { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' },
+          readPreference: 'primary', maxCommitTimeMS: 5000, timeoutMS: 10000 });
+      } finally { await transaction.endSession(); }
       return toPublic(await read(requestId, hospitalId), { detailed: true });
     },
   };

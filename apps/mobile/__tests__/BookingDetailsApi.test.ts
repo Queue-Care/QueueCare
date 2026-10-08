@@ -59,6 +59,15 @@ test('GET uses the saved ID and bearer token, validates ownership, and strips ex
     ],
   ]);
 });
+test('assigned appointment time and queue type come from the backend', () => {
+  const payload = { ...bookingDetailsPayload, data: { ...bookingDetailsPayload.data,
+    assignedTime: '2026-10-03T03:55:00.000Z', queueType: 'PRIORITY' } };
+  const result = parseBookingDetails(payload, bookingId, patientId);
+  expect(result.assignedTime).toBe(payload.data.assignedTime);
+  expect(result.queueType).toBe('PRIORITY');
+  expect(() => parseBookingDetails({ ...payload, data: { ...payload.data, assignedTime: 'invalid' } }, bookingId, patientId)).toThrow();
+});
+
 test('all known saved statuses and inactive parents parse without fabricating confirmation', () => {
   for (const status of bookingStatuses)
     expect(

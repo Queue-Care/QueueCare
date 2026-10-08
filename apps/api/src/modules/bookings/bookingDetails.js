@@ -32,6 +32,9 @@ export async function readBookingDetails(db, patientId, bookingId) {
         status: 1,
         createdAt: 1,
         updatedAt: 1,
+        slotIndex: 1,
+        assignedTime: 1,
+        queueType: 1,
       },
       maxTimeMS: 3000,
     }
@@ -149,6 +152,7 @@ export async function readBookingDetails(db, patientId, bookingId) {
   return {
     _id: booking._id.toString(),
     bookingCode: booking.bookingCode,
+    ...(date(booking.assignedTime) ? { assignedTime: booking.assignedTime.toISOString(), queueType: booking.queueType, slotIndex: booking.slotIndex } : {}),
     ...(priorityRequest ? { priorityRequestId: priorityRequest._id.toString() } : {}),
     patientId: patientId.toString(),
     sessionId: session._id.toString(),

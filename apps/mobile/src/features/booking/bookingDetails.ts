@@ -26,6 +26,8 @@ export type BookingDetails = {
   status: (typeof bookingStatuses)[number];
   createdAt: string;
   updatedAt: string;
+  assignedTime?: string;
+  queueType?: 'NORMAL' | 'PRIORITY';
   hospital: {
     id: string;
     name: string;
@@ -127,6 +129,7 @@ export function parseBookingDetails(
     Date.parse(slot.endsAt) <= Date.parse(slot.startsAt)
   )
     throw invalid();
+  if (b.assignedTime !== undefined && (!date(b.assignedTime) || !['NORMAL', 'PRIORITY'].includes(String(b.queueType)))) throw invalid();
   return {
     id: b._id.toLowerCase(),
     bookingCode: b.bookingCode,
@@ -135,6 +138,7 @@ export function parseBookingDetails(
     status: b.status as BookingDetails['status'],
     createdAt: b.createdAt,
     updatedAt: b.updatedAt,
+    ...(b.assignedTime !== undefined ? { assignedTime: b.assignedTime as string, queueType: b.queueType as 'NORMAL' | 'PRIORITY' } : {}),
     hospital: {
       id: h._id.toLowerCase(),
       name: h.name,

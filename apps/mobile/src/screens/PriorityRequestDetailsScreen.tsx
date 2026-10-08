@@ -173,6 +173,10 @@ export const PriorityRequestDetailsScreen = ({
                 <Text style={styles.k}>Service</Text>
                 <Text style={styles.v}>{item.service.name}</Text>
               </View>
+              {item.booking.assignedTime ? <View style={styles.kv}>
+                <Text style={styles.k}>Appointment time</Text>
+                <Text style={styles.v}>{formatSession(item.booking.assignedTime)} · {item.booking.queueType === 'PRIORITY' ? 'Priority' : 'Normal'}</Text>
+              </View> : null}
               <View style={[styles.kv, styles.kvLast]}>
                 <Text style={styles.k}>Session</Text>
                 <Text style={styles.v}>
@@ -237,6 +241,7 @@ export const PriorityRequestDetailsScreen = ({
                   {item.reviewedAt
                     ? ` Decided ${formatSession(item.reviewedAt)}.`
                     : ''}
+                  {item.decisionNote ? ` ${item.decisionNote}` : ''}
                 </Text>
               </View>
             )}
