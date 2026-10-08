@@ -13,6 +13,7 @@ const priorities = ['NORMAL', 'APPROVED_PRIORITY', 'EMERGENCY'];
 const statuses = ['WAITING', 'CALLED', 'IN_CONSULTATION', 'COMPLETED', 'SKIPPED'];
 const toPublic = entry => ({ bookingId: entry.bookingId.toString(), sessionId: entry.sessionId.toString(),
   queueNumber: entry.queueNumber, priorityLevel: entry.priorityLevel, status: entry.status,
+  ...(entry.assignedTime instanceof Date ? { assignedTime: entry.assignedTime.toISOString(), queueType: entry.queueType } : {}),
   checkedInAt: entry.checkedInAt.toISOString(), updatedAt: entry.updatedAt.toISOString() });
 
 export function createCheckInRepository(db, { now = () => new Date() } = {}) {
@@ -80,8 +81,8 @@ export function createCheckInRepository(db, { now = () => new Date() } = {}) {
           ).sort({ queueNumber: -1 }).limit(1).next();
           if (highest && (!Number.isSafeInteger(highest.queueNumber) || highest.queueNumber < 1 ||
               highest.queueNumber >= Number.MAX_SAFE_INTEGER)) throw conflict();
-          // Accepted state is read in this transaction; teammate priority decisions
-          // are separate multi-step writes, so simultaneous acceptance is not atomic.
+          // Acceptance and check-in both write the session and booking, so a
+          // concurrent acceptance retries rather than creating stale priority.
           const accepted = await db.collection('priorityRequests').findOne(
             { bookingId, patientId: booking.patientId, status: 'ACCEPTED',
               $expr: { $and: [
@@ -92,6 +93,8 @@ export function createCheckInRepository(db, { now = () => new Date() } = {}) {
           const entry = { _id: new ObjectId(), bookingId, sessionId: session._id, patientId: booking.patientId,
             queueNumber: highest ? highest.queueNumber + 1 : 1,
             priorityLevel: accepted ? 'APPROVED_PRIORITY' : 'NORMAL', status: 'WAITING',
+            ...(booking.assignedTime instanceof Date ? { assignedTime: booking.assignedTime,
+              slotIndex: booking.slotIndex, queueType: booking.queueType } : {}),
             checkedInAt: at, createdAt: at, updatedAt: at };
           await db.collection('bookings').updateOne(
             { _id: bookingId, status: 'CONFIRMED' }, { $set: { checkedInAt: at, updatedAt: at } }, options

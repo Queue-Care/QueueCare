@@ -83,6 +83,10 @@ export function BookingDetailsScreen({
           <View style={s.card}>
             <DetailRow label="Hospital" value={booking.hospitalName} />
             <DetailRow label="Service" value={booking.serviceName} />
+            {booking.assignedTime ? <>
+              <DetailRow label="Appointment time" value={formatVisit(booking.assignedTime)} />
+              <DetailRow label="Queue type" value={booking.queueType === 'PRIORITY' ? 'Priority' : 'Normal'} />
+            </> : null}
             {booking.patientName ? (
               <DetailRow
                 label="Patient"

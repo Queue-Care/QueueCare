@@ -62,7 +62,13 @@ function DashboardNavigator({
               staff={staff}
               onSessionExpired={onSessionExpired}
               onPendingCount={onPendingCount}
-              onOpenSessions={() => tabs.navigate('Sessions')}
+              onOpenSessions={() => tabs.navigate('Sessions', { screen: 'SessionsList', params: {
+                targetSessionId: undefined, targetRevision: undefined, savedSessionDate: undefined,
+                saveMessage: undefined, saveRevision: undefined,
+              } })}
+              onOpenSession={targetSessionId => tabs.navigate('Sessions', { screen: 'SessionsList',
+                params: { targetSessionId, targetRevision: Date.now(), savedSessionDate: undefined,
+                  saveMessage: undefined, saveRevision: undefined } })}
               onOpenPriority={() => tabs.navigate('Priority')}
               onOpenProfile={() => tabs.navigate('Profile')}
               onOpenNotifications={() =>
@@ -91,7 +97,8 @@ function SessionsNavigator({ accessToken, staff, onSessionExpired }: Access) {
         name="SessionsList"
         options={{ headerShown: false }}
       >
-        {({ navigation, route }) => <OpdSessionsScreen key={route.params?.saveRevision ?? 'initial'} accessToken={accessToken} hospital={staff?.hospital}
+        {({ navigation, route }) => <OpdSessionsScreen key={`${route.params?.saveRevision ?? 'initial'}:${route.params?.targetSessionId ?? ''}:${route.params?.targetRevision ?? ''}`} accessToken={accessToken} hospital={staff?.hospital}
+          targetSessionId={route.params?.targetSessionId}
           savedSessionDate={route.params?.savedSessionDate} saveMessage={route.params?.saveMessage}
           onSaveMessageConsumed={() => navigation.setParams({ saveMessage: undefined })}
           onSessionExpired={onSessionExpired} onAdd={() => navigation.navigate('AddEditSession')}

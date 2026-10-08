@@ -27,7 +27,8 @@ export function queueEntriesLookup({ includeTerminal = false } = {}) {
     pipeline: [
       { $match: { status: { $in: statuses } } },
       { $project: { bookingId: 1, patientId: 1, sessionId: 1, queueNumber: 1,
-        priorityLevel: 1, status: 1, checkedInAt: 1, updatedAt: 1, calledAt: 1 } },
+        priorityLevel: 1, status: 1, checkedInAt: 1, updatedAt: 1, calledAt: 1,
+        assignedTime: 1, queueType: 1, slotIndex: 1 } },
       { $lookup: { from: 'bookings', localField: 'bookingId', foreignField: '_id',
         pipeline: [{ $project: { patientId: 1, sessionId: 1, checkedInAt: 1 } }], as: 'booking' } },
       { $lookup: { from: 'users', localField: 'patientId', foreignField: '_id',

@@ -257,13 +257,6 @@ export function PatientHomeScreen({
               </Text>
             </View>
           )}
-          {!guest && state.status !== 'loading' && (
-            <ActionButton
-              label="Refresh appointment"
-              variant="outline"
-              onPress={reload}
-            />
-          )}
         </View>
         <Text
           accessibilityRole="header"

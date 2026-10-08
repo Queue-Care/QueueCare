@@ -27,7 +27,10 @@ export function MyBookingsScreen({
   );
   const state = usePatientResource(load);
   return (
-    <PatientPage>
+    <PatientPage
+      refreshing={state.loading && !!state.data}
+      onRefresh={state.reload}
+    >
       <View
         accessibilityRole="tablist"
         style={[
@@ -126,11 +129,6 @@ export function MyBookingsScreen({
               onPress={() => setPage(page + 1)}
             />
           )}
-          <ActionButton
-            label="Refresh bookings"
-            variant="outline"
-            onPress={state.reload}
-          />
         </View>
       )}
     </PatientPage>

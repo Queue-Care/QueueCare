@@ -162,6 +162,12 @@ export function BookingConfirmationScreen({
               <Text style={styles.ticketHeading}>
                 {sessionTimeLabel(booking.session)}
               </Text>
+              {booking.assignedTime ? <>
+                <Text style={styles.ticketHeading}>
+                  Appointment time: {new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Colombo', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).format(new Date(booking.assignedTime))}
+                </Text>
+                <Text style={styles.ticketText}>Queue type: {booking.queueType === 'PRIORITY' ? 'Priority' : 'Normal'}</Text>
+              </> : null}
               <Text style={styles.ticketText}>
                 Sri Lanka time (Asia/Colombo)
               </Text>
@@ -192,11 +198,6 @@ export function BookingConfirmationScreen({
             <ActionButton
               label="View booking"
               onPress={() => onViewBooking(booking.id)}
-            />
-            <ActionButton
-              label="Refresh booking"
-              variant="outline"
-              onPress={reload}
             />
           </>
         ) : null}

@@ -28,7 +28,7 @@ The next route receives the selected hospital/service IDs. M1-09 now implements 
 
 ## Book Appointment button hierarchy — 2026-10-07
 
-Book Appointment previously showed seven secondary actions in the same white outline style, with a sage border of about 1.4:1 contrast against white. Buttons now have three levels using only existing palette tokens: **primary** teal for Confirm appointment and other completing actions; **secondary** `tealTint` fill for the next step in a card (Try again, Sign in again, Check My bookings); and a new **quiet** variant for minor actions (Refresh availability, Retry same session). The quiet variant has a white fill, a `controlBorder` outline (above 3:1 non-text contrast) and `tealTint` when pressed. Labels, layout, sizes and behaviour are unchanged, and the shared `outline` variant used on other screens is untouched. The accessibility test covers the quiet variant's text contrast in enabled, pressed and disabled states. Phone visual check pending.
+Book Appointment previously showed seven secondary actions in the same white outline style, with a sage border of about 1.4:1 contrast against white. Buttons now have three levels using only existing palette tokens: **primary** teal for Confirm appointment and other completing actions; **secondary** `tealTint` fill for the next step in a card (Try again, Sign in again, Check My bookings); and a new **quiet** variant for minor actions (Retry same session; Refresh availability until it was removed). The quiet variant has a white fill, a `controlBorder` outline (above 3:1 non-text contrast) and `tealTint` when pressed. Labels, layout, sizes and behaviour are unchanged, and the shared `outline` variant used on other screens is untouched. The accessibility test covers the quiet variant's text contrast in enabled, pressed and disabled states. Phone visual check pending.
 
 ## Book Appointment calendar date picker — 2026-10-07
 
@@ -37,3 +37,9 @@ The appointment date was previously typed as `YYYY-MM-DD` and applied with a Sho
 ## Home Find a hospital quick action — 2026-10-07
 
 At the user's request, Home's quick actions again include the prototype's **Find a hospital** tile alongside the primary search bar. The README's M1-16 guidance allows a second entry if it is explained as the same destination: the tile uses the location icon, sits in Quick actions below the appointment, and has the accessibility hint "Opens the same hospital search as the search bar". This partly reverses M1-16's single-entry approach. Usability testing should check whether first-time users understand that both entries lead to the same screen. Phone check pending.
+
+## Refresh buttons removed — 2026-10-07
+
+At the user's request, every visible refresh button was removed: Home (Refresh appointment), Hospital Search (Refresh hospitals), Hospital Details (Refresh hospital details), Book Appointment (Refresh availability), Booking Confirmation (Refresh booking), My Bookings (Refresh bookings), Request Status (Refresh status) and the staff Priority Requests ↻ icon. Pull-to-refresh replaces them everywhere. My Bookings, Request Status and Priority Requests did not have it before, so it was added (`PatientPage` now accepts `onRefresh`/`refreshing`). Screens still reload when opened, Priority Requests still polls every 10 seconds, and error states keep their Try again button.
+
+Impact: M1-14 had added visible refresh buttons because pull-to-refresh is hard to discover and to perform with a screen reader. Screen-reader users can still refresh by leaving and reopening a screen, or with Try again after an error. Accessibility checks and usability testing should confirm this is acceptable. Automated tests now drive pull-to-refresh instead of the buttons. Phone check pending.

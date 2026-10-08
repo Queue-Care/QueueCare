@@ -341,13 +341,14 @@ export function BookAppointmentScreen({
               </View>
             ) : (
               sessions.map(session => {
+                const remaining = session.normalRemainingCapacity ?? session.remainingCapacity;
                 const bookable = isSessionBookable(session, now);
                 const checked = selected?.id === session.id;
                 const capacity =
-                  session.remainingCapacity === 0
+                  remaining === 0
                     ? 'Fully booked'
-                    : `${session.remainingCapacity} ${
-                        session.remainingCapacity === 1 ? 'slot' : 'slots'
+                    : `${remaining} ${
+                        remaining === 1 ? 'slot' : 'slots'
                       } left`;
                 return (
                   <Pressable
@@ -400,12 +401,6 @@ export function BookAppointmentScreen({
                 );
               })
             )}
-            <ActionButton
-              label="Refresh availability"
-              variant="quiet"
-              onPress={refresh}
-              disabled={submission.pending}
-            />
           </>
         )}
         <View style={styles.card}>
