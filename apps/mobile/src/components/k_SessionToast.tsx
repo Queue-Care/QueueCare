@@ -2,11 +2,13 @@ import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radii } from '../theme/tokens';
 import { useHomeFonts } from '../theme/homeFonts';
+import { useT } from '../i18n/g_language';
 
 export function SessionToast({ message, kind = 'success', onDismiss }: {
   message?: string; kind?: 'success' | 'error'; onDismiss: () => void;
 }) {
   const fonts = useHomeFonts();
+  const t = useT();
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(onDismiss, 2500);
@@ -19,7 +21,7 @@ export function SessionToast({ message, kind = 'success', onDismiss }: {
     <Text style={[styles.title, kind === 'success' && styles.successTitle, { fontFamily: fonts.semibold }]}>
       {kind === 'success' ? '\u2713 ' : '! '}{message}
     </Text>
-    {kind === 'error' ? <Text style={[styles.detail, { fontFamily: fonts.body }]}>Check your connection and try again.</Text> : null}
+    {kind === 'error' ? <Text style={[styles.detail, { fontFamily: fonts.body }]}>{t('Check your connection and try again.')}</Text> : null}
   </View>;
 }
 

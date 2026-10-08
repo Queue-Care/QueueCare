@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '../i18n/g_Text';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BookingsStackParams } from '../navigation/types';
 import {

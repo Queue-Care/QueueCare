@@ -6,10 +6,11 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
+import { Text } from '../i18n/g_Text';
+import { useT } from '../i18n/g_language';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
 import { StatusText } from '../components/StatusText';
@@ -21,6 +22,7 @@ export function HospitalSearchScreen({
 }: {
   onSelectHospital: (hospitalId: string) => void;
 }) {
+  const t = useT();
   const [search, setSearch] = useState('');
   const [city, setCity] = useState('');
   const [submitted, setSubmitted] = useState({
@@ -68,7 +70,7 @@ export function HospitalSearchScreen({
               <TextInput
                 accessibilityLabel="Hospital name or city"
                 accessibilityHint="Enter a name or city, then choose Find hospitals"
-                placeholder="Search hospitals"
+                placeholder={t('Search hospitals')}
                 placeholderTextColor={colors.inkSoft}
                 style={styles.input}
                 value={search}
@@ -81,7 +83,7 @@ export function HospitalSearchScreen({
               <Text style={styles.label}>City (optional)</Text>
               <TextInput
                 accessibilityLabel="City filter"
-                placeholder="Enter a city, e.g. Colombo"
+                placeholder={t('Enter a city, e.g. Colombo')}
                 placeholderTextColor={colors.inkSoft}
                 style={styles.input}
                 value={city}

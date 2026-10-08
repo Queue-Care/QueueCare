@@ -5,6 +5,7 @@ export type StaffAccount = {
   staffId: string;
   hospital: string;
   role: StaffRole;
+  preferredLanguage?: 'en' | 'si' | 'ta';
 };
 export type StaffSession = StaffAccount & { accessToken: string };
 

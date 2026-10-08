@@ -4,6 +4,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import ReactTestRenderer, { act } from 'react-test-renderer';
+import {
+  getLanguage,
+  translate,
+  translateWhen,
+} from '../src/i18n/g_language';
+import { translations } from '../src/i18n/g_translations';
 import { AppNavigator } from '../src/navigation/AppNavigator';
 import type { RootStackParams } from '../src/navigation/types';
 import { formatWhen } from '../src/features/notifications/g_notifications';
@@ -187,7 +193,10 @@ const calls = (method: string, path: string) =>
 const settle = async () => {
   for (let turn = 0; turn < 5; turn += 1) await act(async () => {});
 };
-async function mount(accessToken: string | undefined = 'staff.jwt.token') {
+async function mount(
+  accessToken: string | undefined = 'staff.jwt.token',
+  preferredLanguage?: 'en' | 'si' | 'ta',
+) {
   ref = createNavigationContainerRef<RootStackParams>();
   await act(async () => {
     renderer = ReactTestRenderer.create(
@@ -204,6 +213,7 @@ async function mount(accessToken: string | undefined = 'staff.jwt.token') {
               fullName: 'Nimasha Fernando',
               staffId: 'CNH-RC-0421',
               hospital: 'Demo Central Hospital',
+              preferredLanguage,
             },
           }}
         />
@@ -510,4 +520,90 @@ test('names and times are formatted as in the prototype', () => {
     'Yesterday · 6:18 PM',
   );
   expect(formatWhen('2026-09-20T05:00:00.000Z', now)).toBe('20 Sep');
+});
+
+test('choosing Sinhala or Tamil changes the staff screens until sign-out', async () => {
+  jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  await mount();
+  await act(async () => {
+    ref.navigate('StaffApp', { screen: 'Profile' });
+  });
+  await settle();
+  expect(texts()).toEqual(expect.arrayContaining(['Profile', 'Sign out']));
+
+  await press('Language, English');
+  await press('සිංහල');
+  expect(JSON.parse(calls('PATCH', '/me/preferences')[0][1].body)).toEqual({
+    preferredLanguage: 'si',
+  });
+  // The profile, its rows and the tab bar change together.
+  expect(texts()).toEqual(
+    expect.arrayContaining([
+      'පැතිකඩ',
+      'පෞද්ගලික තොරතුරු',
+      'ඉවත් වන්න',
+      'මුල් පුවරුව',
+      'සැසි',
+    ]),
+  );
+  expect(texts()).not.toContain('Sign out');
+  // Names and other saved data are not translated.
+  expect(texts()).toContain('Nimasha Fernando');
+
+  await act(async () => {
+    ref.navigate('StaffApp', { screen: 'Priority' });
+  });
+  await settle();
+  expect(texts()).toEqual(
+    expect.arrayContaining(['ප්‍රමුඛතා ඉල්ලීම්', 'වැඩිහිටි රෝගියෙක්', 'Kasun Perera']),
+  );
+
+  await act(async () => {
+    ref.navigate('StaffApp', { screen: 'Profile' });
+  });
+  await settle();
+  await press('භාෂාව, සිංහල');
+  await press('தமிழ்');
+  expect(texts()).toEqual(expect.arrayContaining(['சுயவிவரம்', 'வெளியேறு']));
+
+  // Leaving the staff screens returns the app to English.
+  await act(async () => {
+    renderer.unmount();
+  });
+  expect(getLanguage()).toBe('en');
+  await mount();
+  expect(texts()).toContain('Reception desk');
+});
+
+test('staff screens open in the language saved on the account', async () => {
+  await mount('staff.jwt.token', 'ta');
+  expect(texts()).toEqual(
+    expect.arrayContaining(['வரவேற்பு மேசை', 'முகப்பு', 'அமர்வுகள்']),
+  );
+  expect(texts()).not.toContain('Reception desk');
+});
+
+test('translations fill in values and leave unknown text in English', () => {
+  expect(translate('en', '{count} waiting', { count: 3 })).toBe('3 waiting');
+  expect(translate('si', '{count} waiting', { count: 3 })).toBe(
+    'රැඳී සිටින්නන් 3',
+  );
+  expect(translate('ta', 'Try again')).toBe('மீண்டும் முயற்சிக்கவும்');
+  expect(translate('si', 'Colombo General Hospital')).toBe(
+    'Colombo General Hospital',
+  );
+  expect(translateWhen('en', '10 minutes ago')).toBe('10 minutes ago');
+  expect(translateWhen('si', '10 minutes ago')).toBe('මිනිත්තු 10 කට පෙර');
+  expect(translateWhen('ta', 'Yesterday · 6:18 PM')).toBe('நேற்று · 6:18 PM');
+  expect(translateWhen('ta', '20 Sep')).toBe('20 Sep');
+
+  // Every entry has both languages and keeps the same {placeholders}.
+  const placeholders = (text: string) =>
+    (text.match(/\{[a-z]+\}/g) ?? []).sort().join();
+  for (const [english, [sinhala, tamil]] of Object.entries(translations)) {
+    expect(sinhala.trim()).not.toBe('');
+    expect(tamil.trim()).not.toBe('');
+    expect(placeholders(sinhala)).toBe(placeholders(english));
+    expect(placeholders(tamil)).toBe(placeholders(english));
+  }
 });

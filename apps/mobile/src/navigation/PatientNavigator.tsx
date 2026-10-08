@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   createBottomTabNavigator,
   type BottomTabNavigationProp,
@@ -24,6 +24,7 @@ import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { useHomeFonts } from '../theme/homeFonts';
+import { isAppLanguage, setLanguage, useT } from '../i18n/g_language';
 import type {
   BookingsStackParams,
   HomeStackParams,
@@ -55,6 +56,7 @@ function HomeNavigator({
   submission,
   onSessionExpired,
 }: Access & { submission: BookingSubmission }) {
+  const t = useT();
   return (
     <Home.Navigator screenOptions={stackOptions}>
       <Home.Screen
@@ -108,7 +110,7 @@ function HomeNavigator({
           />
         )}
       </Home.Screen>
-      <Home.Screen name="HospitalSearch" options={{ title: 'Hospital search' }}>
+      <Home.Screen name="HospitalSearch" options={{ title: t('Hospital search') }}>
         {({ navigation }) => (
           <HospitalSearchScreen
             onSelectHospital={hospitalId =>
@@ -119,7 +121,7 @@ function HomeNavigator({
       </Home.Screen>
       <Home.Screen
         name="HospitalDetails"
-        options={{ title: 'Hospital details' }}
+        options={{ title: t('Hospital details') }}
       >
         {({ route, navigation }) => (
           <HospitalDetailsScreen
@@ -136,7 +138,7 @@ function HomeNavigator({
       </Home.Screen>
       <Home.Screen
         name="BookAppointment"
-        options={{ title: 'Book appointment' }}
+        options={{ title: t('Book appointment') }}
       >
         {({
           route,
@@ -168,7 +170,7 @@ function HomeNavigator({
       </Home.Screen>
       <Home.Screen
         name="BookingConfirmation"
-        options={{ title: 'Booking confirmation' }}
+        options={{ title: t('Booking confirmation') }}
       >
         {({
           route,
@@ -199,20 +201,21 @@ function HomeNavigator({
   );
 }
 function BookingsNavigator({ accessToken }: { accessToken?: string }) {
+  const t = useT();
   return (
     <Bookings.Navigator screenOptions={stackOptions}>
-      <Bookings.Screen name="MyBookings" options={{ title: 'My bookings' }}>
+      <Bookings.Screen name="MyBookings" options={{ title: t('My bookings') }}>
         {props => <MyBookingsScreen {...props} accessToken={accessToken} />}
       </Bookings.Screen>
       <Bookings.Screen
         name="BookingDetails"
-        options={{ title: 'Booking details' }}
+        options={{ title: t('Booking details') }}
       >
         {props => <BookingDetailsScreen {...props} accessToken={accessToken} />}
       </Bookings.Screen>
       <Bookings.Screen
         name="RequestPriority"
-        options={{ title: 'Request priority' }}
+        options={{ title: t('Request priority') }}
       >
         {props => (
           <RequestPriorityScreen {...props} accessToken={accessToken} />
@@ -220,7 +223,7 @@ function BookingsNavigator({ accessToken }: { accessToken?: string }) {
       </Bookings.Screen>
       <Bookings.Screen
         name="PriorityRequestStatus"
-        options={{ title: 'Request status' }}
+        options={{ title: t('Request status') }}
       >
         {props => <RequestStatusScreen {...props} accessToken={accessToken} />}
       </Bookings.Screen>
@@ -239,6 +242,14 @@ export function PatientNavigator({
 }: Access) {
   const submission = useBookingSubmission(patientId, accessToken);
   const homeFonts = useHomeFonts();
+  const t = useT();
+  // Patient screens open in the language saved on the account. Guests, and the
+  // screens shown after signing out, stay in English.
+  const savedLanguage = guest ? undefined : patient?.preferredLanguage;
+  useEffect(() => {
+    setLanguage(isAppLanguage(savedLanguage) ? savedLanguage : 'en');
+    return () => setLanguage('en');
+  }, [savedLanguage]);
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
@@ -252,7 +263,7 @@ export function PatientNavigator({
         tabBarItemStyle: { paddingTop: 6, paddingBottom: 4 },
       })}
     >
-      <Tabs.Screen name="Home">
+      <Tabs.Screen name="Home" options={{ tabBarLabel: t('Home') }}>
         {() => (
           <HomeNavigator
             guest={guest}
@@ -266,7 +277,7 @@ export function PatientNavigator({
           />
         )}
       </Tabs.Screen>
-      <Tabs.Screen name="Bookings">
+      <Tabs.Screen name="Bookings" options={{ tabBarLabel: t('Bookings') }}>
         {() =>
           guest ? (
             <SignInGate onSignIn={onSignIn} />
@@ -275,7 +286,7 @@ export function PatientNavigator({
           )
         }
       </Tabs.Screen>
-      <Tabs.Screen name="Alerts">
+      <Tabs.Screen name="Alerts" options={{ tabBarLabel: t('Alerts') }}>
         {({ navigation }) =>
           guest ? (
             <SignInGate onSignIn={onSignIn} />
@@ -293,7 +304,7 @@ export function PatientNavigator({
           )
         }
       </Tabs.Screen>
-      <Tabs.Screen name="Profile">
+      <Tabs.Screen name="Profile" options={{ tabBarLabel: t('Profile') }}>
         {() =>
           guest ? (
             <SignInGate onSignIn={onSignIn} />

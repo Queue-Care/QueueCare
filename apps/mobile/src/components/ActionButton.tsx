@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../i18n/g_Text';
 import { colors, fonts, radii, spacing } from '../theme/tokens';
 import { InterfaceIcon } from './InterfaceIcon';
 

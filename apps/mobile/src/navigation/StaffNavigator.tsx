@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   createBottomTabNavigator,
   type BottomTabNavigationProp,
@@ -23,6 +23,7 @@ import { ReceptionDeskScreen } from '../screens/ReceptionDeskScreen';
 import { OpdSessionsScreen } from '../screens/k_OpdSessionsScreen';
 import { AddEditSessionScreen } from '../screens/k_AddEditSessionScreen';
 import { colors } from '../theme/colors';
+import { isAppLanguage, setLanguage, useT } from '../i18n/g_language';
 
 const Tabs = createBottomTabNavigator<StaffTabParams>();
 const Dashboard = createNativeStackNavigator<DashboardStackParams>();
@@ -91,6 +92,7 @@ function DashboardNavigator({
   );
 }
 function SessionsNavigator({ accessToken, staff, onSessionExpired }: Access) {
+  const t = useT();
   return (
     <Sessions.Navigator screenOptions={stackOptions}>
       <Sessions.Screen
@@ -107,7 +109,7 @@ function SessionsNavigator({ accessToken, staff, onSessionExpired }: Access) {
       <Sessions.Screen
         name="AddEditSession"
         options={({ route }) => ({
-          title: route.params?.sessionId ? 'Edit session' : 'Add session',
+          title: t(route.params?.sessionId ? 'Edit session' : 'Add session'),
         })}
       >
         {({ route, navigation }) => (
@@ -157,17 +159,26 @@ function PriorityNavigator({
 export function StaffNavigator(access: Access) {
   // Shown on the Priority tab, as in the prototype's tab bar.
   const [pendingCount, setPendingCount] = useState(0);
+  const t = useT();
+  // Staff screens open in the language saved on the account and go back to
+  // English when the staff member signs out, so patient screens are unaffected.
+  const savedLanguage = access.staff?.preferredLanguage;
+  useEffect(() => {
+    setLanguage(isAppLanguage(savedLanguage) ? savedLanguage : 'en');
+    return () => setLanguage('en');
+  }, [savedLanguage]);
   return (
     <Tabs.Navigator screenOptions={tabOptions}>
-      <Tabs.Screen name="Dashboard">
+      <Tabs.Screen name="Dashboard" options={{ tabBarLabel: t('Dashboard') }}>
         {() => (
           <DashboardNavigator {...access} onPendingCount={setPendingCount} />
         )}
       </Tabs.Screen>
-      <Tabs.Screen name="Sessions">{() => <SessionsNavigator {...access} />}</Tabs.Screen>
+      <Tabs.Screen name="Sessions" options={{ tabBarLabel: t('Sessions') }}>{() => <SessionsNavigator {...access} />}</Tabs.Screen>
       <Tabs.Screen
         name="Priority"
         options={{
+          tabBarLabel: t('Priority'),
           tabBarBadge: pendingCount || undefined,
           tabBarBadgeStyle: { backgroundColor: colors.coral },
           tabBarAccessibilityLabel: pendingCount
@@ -179,7 +190,7 @@ export function StaffNavigator(access: Access) {
           <PriorityNavigator {...access} onPendingCount={setPendingCount} />
         )}
       </Tabs.Screen>
-      <Tabs.Screen name="Profile">
+      <Tabs.Screen name="Profile" options={{ tabBarLabel: t('Profile') }}>
         {() => (
           <ProfileScreen
             accessToken={access.accessToken}
