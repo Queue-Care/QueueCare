@@ -150,7 +150,7 @@ export const ProfileScreen = ({
     let image: ImagePicker.ImagePickerAsset | undefined;
     try {
       // No in-picker crop step: on some Android phones its save button cannot be
-      // pressed. The photo is resized here and cropped square by the server.
+      // pressed. The photo is resized here and shown cropped to a circle.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 1,
@@ -377,7 +377,9 @@ export const ProfileScreen = ({
                   disabled={!item.onPress}
                   onPress={item.onPress}
                 >
-                  <Text style={styles.rowLabel}>{item.label}</Text>
+                  <Text style={styles.rowLabel} numberOfLines={1}>
+                    {item.label}
+                  </Text>
                   {item.value ? (
                     <Text style={styles.rightValueText}>{item.value}</Text>
                   ) : null}
@@ -755,7 +757,10 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontFamily: fonts.body,
-    flex: 1,
+    // The label keeps its full width on one line; only the value beside it wraps.
+    flexGrow: 1,
+    flexShrink: 0,
+    marginRight: 12,
     fontSize: 14,
     fontWeight: '500',
     color: colors.ink,
@@ -765,6 +770,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.inkSoft,
     marginRight: 8,
+    // Long values such as a hospital name wrap onto further lines.
+    flexShrink: 1,
+    textAlign: 'right',
   },
   chev: {
     fontFamily: fonts.body,

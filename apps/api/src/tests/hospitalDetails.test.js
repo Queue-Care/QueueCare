@@ -310,7 +310,7 @@ test(
             { _id: demoHospitals[0]._id },
             { $set: { isActive: false } }
           );
-        assert.equal((await seedServices(db)).upsertedCount, 4);
+        assert.equal((await seedServices(db)).upsertedCount, 8);
         await db
           .collection('hospitals')
           .updateOne(
@@ -325,7 +325,7 @@ test(
             { $set: { name: 'Edited demo service', isActive: false } }
           );
         assert.equal((await seedServices(db)).upsertedCount, 0);
-        assert.equal(await db.collection('opdServices').countDocuments({}), 14);
+        assert.equal(await db.collection('opdServices').countDocuments({}), 18);
         const edited = await db
           .collection('opdServices')
           .findOne({ _id: demoServices[0]._id });

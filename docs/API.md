@@ -48,8 +48,8 @@ Unknown parameters and repeated parameters are rejected with HTTP 400, `VALIDATI
   "data": [
     {
       "_id": "000000000000000000000101",
-      "name": "Demo Central Hospital",
-      "address": "Demo location — not a real hospital",
+      "name": "National Hospital of Sri Lanka (NHSL)",
+      "address": "Colombo 10",
       "city": "Colombo"
     }
   ],
@@ -77,8 +77,8 @@ Accept: application/json
   "success": true,
   "data": {
     "_id": "000000000000000000000101",
-    "name": "Demo Central Hospital",
-    "address": "Demo location — not a real hospital",
+    "name": "National Hospital of Sri Lanka (NHSL)",
+    "address": "Colombo 10",
     "city": "Colombo"
   }
 }

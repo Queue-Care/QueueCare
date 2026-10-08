@@ -17,7 +17,7 @@ npm run db:seed:discovery
 npm run dev:api
 ```
 
-The discovery seed inserts missing demo hospitals plus two services for each active demo hospital (six services across the three hospitals). It preserves existing data and edits, including deactivated services. It skips services whose demo parent is missing or inactive. The existing `db:seed:hospitals` command remains hospital-only. No database seeding happens automatically at startup.
+The discovery seed inserts missing demo hospitals plus two services for each active demo hospital (ten services across the five hospitals). It preserves existing data and edits, including deactivated services. It skips services whose demo parent is missing or inactive. The existing `db:seed:hospitals` command remains hospital-only. No database seeding happens automatically at startup.
 
 In another terminal, or by opening the URLs in a browser:
 
@@ -46,8 +46,8 @@ Keep the API running and set `EXPO_PUBLIC_API_BASE_URL=http://<computer-LAN-IP>:
 npm run dev:mobile -- --clear
 ```
 
-1. Open Expo Go, then **Continue as guest → Search hospitals → Demo Central Hospital**.
-2. Confirm the hospital address and two seeded services load. Newly seeded Demo Central records show clearly labelled fictional hours; older records without hours show the missing-hours message. No session counts are inferred from hours.
+1. Open Expo Go, then **Continue as guest → Search hospitals → National Hospital of Sri Lanka (NHSL)**.
+2. Confirm the hospital address and two seeded services load. Newly seeded NHSL records show clearly labelled fictional hours; older records without hours show the missing-hours message. No session counts are inferred from hours.
 3. Select General OPD, then Medical clinic. Only the last selection should be checked, and the CTA should become enabled.
 4. Tap View OPD sessions. Guests should reach the existing sign-in gate. A validated patient session reaches the implemented session-selection screen; real authentication is still owned separately.
 5. Go back and pull to refresh; selection should clear. Stop the API and refresh to check error/retry behavior, then restart it.
@@ -86,9 +86,9 @@ M1-17 implementation is complete locally. **Next: I-01 patient integration and T
 
 The remaining M1-06/M1-07 hours integration is implemented. Hospital Details now renders `hospitals.openingHours` from the public details API. This optional plain-text field supports line breaks and 1–500 characters after trimming; use hospital-local days/times and include the time zone in the text. Missing or malformed stored values are omitted by the API. The mobile adapter validates the response, preserves line breaks and allows text scaling/wrapping. Refresh removes outdated hours when the field is removed. General hours do not enable booking or imply that an OPD session is available.
 
-Newly inserted Demo Central Hospital records include explicitly fictional demo hours. `npm run db:seed:discovery` still only inserts missing records: **re-running it does not add hours to an existing hospital or replace edited values**. Demo Lakeside and Demo Southern retain no hours to demonstrate the fallback. No configured database was changed during implementation.
+Newly inserted National Hospital of Sri Lanka (NHSL) records include explicitly fictional demo hours. `npm run db:seed:discovery` still only inserts missing records: **re-running it does not add hours to an existing hospital or replace edited values**. The other four seeded hospitals retain no hours to demonstrate the fallback. No configured database was changed during implementation.
 
-To preview hours on an existing development database, use MongoDB Compass to locate `hospitals` → `_id: ObjectId("000000000000000000000101")` (Demo Central Hospital) and add an `openingHours` string containing:
+To preview hours on an existing development database, use MongoDB Compass to locate `hospitals` → `_id: ObjectId("000000000000000000000101")` (National Hospital of Sri Lanka) and add an `openingHours` string containing:
 
 ```text
 Demo hours (Sri Lanka time):

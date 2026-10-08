@@ -38,6 +38,17 @@ jest.mock('expo-image-manipulator', () => ({
   },
 }));
 
+// Records the files attached to an upload; the native file module is not
+// available under Jest.
+const mockUploadedFiles: string[] = [];
+jest.mock('expo-file-system', () => ({
+  File: class {
+    constructor(path: string) {
+      mockUploadedFiles.push(path);
+    }
+  },
+}));
+
 const originalFetch = globalThis.fetch;
 const originalUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
 const fetchMock = jest.fn();
@@ -136,7 +147,9 @@ function fakeApi() {
     'PATCH /me/preferences': body => ({ data: Object.assign(profile, body) }),
     'PATCH /me': body => ({ data: Object.assign(profile, body) }),
     'POST /me/profile-image': () => {
-      profile.profileImageUrl = `/media/profile-images/${'f'.repeat(32)}`;
+      profile.profileImageUrl = `/media/profile-photos/${'a'.repeat(
+        24,
+      )}-${'f'.repeat(32)}.jpg`;
       return { data: profile };
     },
     'DELETE /me/profile-image': () => {
@@ -417,15 +430,19 @@ test('a staff member adds, sees and removes a profile photo', async () => {
   // The photo is sent to the API as a multipart "image" field.
   const [[, init]] = calls('POST', '/me/profile-image');
   expect(init.body).toBeInstanceOf(FormData);
+  // It is attached as a real file: Expo's fetch refuses a { uri, name, type }
+  // description, which showed on the phone as "Could not connect".
+  expect(init.body.has('image')).toBe(true);
+  expect(mockUploadedFiles).toEqual(['file:///resized.jpg']);
   expect(init.headers['Content-Type']).toBeUndefined();
   expect(init.headers.Authorization).toBe('Bearer staff.jwt.token');
   // The API's relative photo path is shown from the API's own address.
-  expect(photos()).toEqual([
-    `http://api.test/api/v1/media/profile-images/${'f'.repeat(32)}`,
-  ]);
+  const saved = `http://api.test/api/v1/media/profile-photos/${'a'.repeat(
+    24,
+  )}-${'f'.repeat(32)}.jpg`;
+  expect(photos()).toEqual([saved]);
 
   // With a photo set, the same button offers to replace or remove it.
-  const saved = `http://api.test/api/v1/media/profile-images/${'f'.repeat(32)}`;
   await press('Change profile photo');
   expect(photos()).toEqual([saved, saved]);
   await press('Choose a new photo');

@@ -42,10 +42,7 @@ import {
   ensureNotificationIndexes,
 } from './modules/notifications/g_notificationRepository.js';
 import { createProfileRepository } from './modules/users/g_profileRepository.js';
-import {
-  createMongoMediaStore,
-  ensureProfileImageIndexes,
-} from './modules/media/g_mongoMediaStore.js';
+import { createFileMediaStore } from './modules/media/g_fileMediaStore.js';
 
 dotenv.config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../.env') });
 
@@ -63,9 +60,9 @@ try {
   await ensureNotificationIndexes(connection.db);
   await ensurePriorityIndexes(connection.db);
   await ensurePatientPriorityIndexes(connection.db);
-  await ensureProfileImageIndexes(connection.db);
-  // Profile photos go to Cloudinary when its keys are set, otherwise to MongoDB.
-  const profileImageStore = createMongoMediaStore(connection.db);
+  // Profile photos go to Cloudinary when its keys are set, otherwise to files in
+  // apps/api/profile_photo. Either way MongoDB stores only the photo's link.
+  const profileImageStore = createFileMediaStore();
   const mediaStore = createMediaStore() ?? profileImageStore;
   const priorityRepository = createPriorityRepository(connection.db);
   const notificationRepository = createNotificationRepository(connection.db);

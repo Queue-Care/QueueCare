@@ -42,8 +42,8 @@ Verification on 2026-10-02: all **70 mobile tests** pass, TypeScript and lint pa
 
 Phone checklist:
 
-- Confirm the three fictional seeded hospitals load from the API.
-- Search `demo`; filter city to `Colombo`; confirm one result. Search an absent name and clear the filters.
+- Confirm the five seeded hospitals load from the API.
+- Search `national`; filter city to `Colombo`; confirm two results. Search an absent name and clear the filters.
 - Tap a card and check that navigation reaches Hospital Details; use Back to return and reload.
 - Stop the API, refresh, and confirm an error rather than “no hospitals.” Restart it and tap Try again.
 - Check the keyboard, scrolling, large text, and touch targets on the phone. Test load-more with more than 20 active records in a separate development/test dataset.

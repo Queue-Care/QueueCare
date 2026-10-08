@@ -30,7 +30,7 @@ flowchart LR
   AUTH --> DB
   REPOS -->|"queries, indexes and booking transaction"| DB
   MEDIA -->|"credentials configured"| CLOUD
-  MEDIA -->|"otherwise: profileImages collection"| DB
+  MEDIA -->|"otherwise: files in apps/api/profile_photo, link only"| DB
   CLOUD -->|"image URL"| UI
   ROUTES -->|"fallback image bytes via public token URL"| UI
 ```
@@ -49,7 +49,7 @@ The backend reads `apps/api/.env`, connects to MongoDB, ensures indexes and inje
 | Booking | `POST /api/v1/bookings`, `GET /api/v1/bookings/me`, `GET /api/v1/bookings/:bookingId`. All require an active patient and enforce ownership. Saved reads power confirmation, Home, My Bookings and booking-alert navigation. | [Booking routes](../../apps/api/src/modules/bookings/bookingRoutes.js), [patient navigator](../../apps/mobile/src/navigation/PatientNavigator.tsx) |
 | Notifications | `/api/v1/notifications` provides owned list, mark-read/read-all and delete operations. Booking creation produces its confirmation notification within the transaction. | [Notification routes](../../apps/api/src/modules/notifications/g_notificationRoutes.js), [booking event](../../apps/api/src/modules/bookings/bookingNotification.js) |
 | Staff | `/api/v1/staff/auth` registration/sign-in, `/staff/dashboard` reads and `/staff/priority-requests` list/details/decision routes exist. The staff session list/editor remain navigation placeholders. | [Staff navigation](../../apps/mobile/src/navigation/StaffNavigator.tsx), [dashboard](../../apps/api/src/modules/staff/g_staffDashboard.js), [priority routes](../../apps/api/src/modules/priority/g_priorityRoutes.js) |
-| Profile/media | Protected `/api/v1/me` reads/updates/preferences and profile-image upload/delete. Cloudinary when configured, MongoDB otherwise. Fallback reads use `/api/v1/media/profile-images/:token`. | [Profile routes](../../apps/api/src/modules/users/g_profileRoutes.js), [media adapter](../../apps/api/src/modules/media/g_mongoMediaStore.js) |
+| Profile/media | Protected `/api/v1/me` reads/updates/preferences and profile-image upload/delete. Cloudinary when configured, otherwise files in `apps/api/profile_photo` with only the link in MongoDB. Fallback reads use `/api/v1/media/profile-photos/:name`. | [Profile routes](../../apps/api/src/modules/users/g_profileRoutes.js), [media adapter](../../apps/api/src/modules/media/g_fileMediaStore.js) |
 
 Protected routes verify the JWT signature, issuer, audience, timestamps and subject using `jose`, then load the current user's role/status from MongoDB. Token claims or client-supplied identity are not the authority for booking. Role/ownership checks follow authentication. Missing/inactive hospitals are indistinguishable to public discovery; cross-patient booking reads cannot reveal another patient's saved booking. [Authentication middleware](../../apps/api/src/middleware/auth.js), [booking detail reader](../../apps/api/src/modules/bookings/bookingDetails.js).
 

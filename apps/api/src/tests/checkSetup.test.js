@@ -58,7 +58,7 @@ test('valid base files pass without mutation; absent media keys are only a warni
     checks.some(
       (check) =>
         check.status === 'WARN' &&
-        check.message.includes('MongoDB photo storage')
+        check.message.includes('saves photos in apps/api/profile_photo')
     )
   );
   assert.equal(readFileSync(join(f.root, 'apps/api/.env'), 'utf8'), api);

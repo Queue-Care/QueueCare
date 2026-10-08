@@ -453,6 +453,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 14,
     color: colors.ink,
+    // A long hospital name wraps inside the control instead of pushing the chevron out.
+    flex: 1,
+    marginRight: 8,
   },
   placeholder: {
     fontFamily: fonts.body,

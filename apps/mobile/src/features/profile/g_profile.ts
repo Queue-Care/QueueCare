@@ -1,3 +1,4 @@
+import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import {
   apiRequest,
@@ -25,8 +26,6 @@ export type Profile = {
 export type PickedImage = {
   uri: string;
   width?: number;
-  mimeType?: string | null;
-  fileName?: string | null;
 };
 const MAX_UPLOAD_WIDTH = 1000;
 
@@ -97,7 +96,6 @@ export async function updatePreferences(
 
 // Shrinks the chosen photo to a small JPEG on the phone, so camera photos stay
 // under the upload limit and every phone sends a format the API accepts.
-// The square crop is done by Cloudinary, centred on the face.
 export async function prepareProfileImage(
   image: PickedImage,
 ): Promise<PickedImage> {
@@ -110,26 +108,24 @@ export async function prepareProfileImage(
       format: SaveFormat.JPEG,
       compress: 0.8,
     });
-    return { uri: saved.uri, mimeType: 'image/jpeg', fileName: 'profile.jpg' };
+    return { uri: saved.uri };
   } catch {
     // If the phone cannot process the photo, the original is still tried.
     return image;
   }
 }
 
-// The photo goes to the Express API, which stores it (MongoDB, or Cloudinary
-// when its keys are set) and saves its address on the user's account.
+// The photo goes to the Express API, which saves it as a file in its
+// profile_photo folder (or in Cloudinary when its keys are set) and stores the
+// photo's link on the user's account. Staff and patients use the same upload.
 export async function uploadProfileImage(
   token: string | undefined,
   image: PickedImage,
 ) {
   const formData = new FormData();
-  // React Native's FormData takes a { uri, name, type } file description.
-  formData.append('image', {
-    uri: image.uri,
-    name: image.fileName ?? 'profile.jpg',
-    type: image.mimeType ?? 'image/jpeg',
-  } as unknown as Blob);
+  // Expo's fetch only sends real file objects. It rejects React Native's older
+  // { uri, name, type } description before anything leaves the phone.
+  formData.append('image', new File(image.uri));
   const { data } = await apiRequest('/me/profile-image', {
     token,
     method: 'POST',
