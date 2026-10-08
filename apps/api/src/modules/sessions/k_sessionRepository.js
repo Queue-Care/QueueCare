@@ -111,6 +111,14 @@ export function createStaffSessionRepository(db, { now = () => new Date() } = {}
           if (!hospital)
             throw new HttpError(403, 'FORBIDDEN', 'An active linked hospital is required to edit sessions.');
           const merged = { ...item, ...input };
+          // An assigned time is a promise to a patient. Freeze the grid once
+          // appointments exist; explicit queue rearrangement is a separate action.
+          const changesGrid = ['sessionDate', 'startTime', 'endTime', 'capacity'].some(key =>
+            input[key] !== undefined && String(input[key]) !== String(item[key]));
+          if (changesGrid && await db.collection('bookings').findOne({
+            sessionId, status: { $ne: 'CANCELLED' }, assignedTime: { $type: 'date' },
+          }, options)) throw new HttpError(409, 'SESSION_HAS_ASSIGNED_SLOTS',
+            'Appointment times are already assigned. Keep the date, times and capacity unchanged.');
           // Preserve the BSON day marker; never normalize malformed stored dates.
           const publicItem = toPublic(merged);
           const final = parseCreateSessionBody({

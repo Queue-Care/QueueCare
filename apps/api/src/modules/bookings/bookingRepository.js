@@ -6,6 +6,7 @@ import { readBookingDetails } from './bookingDetails.js';
 import { insertBookingConfirmation } from './bookingNotification.js';
 import { readBookingList } from './bookingList.js';
 import { writeAuditLog } from '../audit/g_auditLog.js';
+import { readAvailableSlots, slotFields } from './appointmentSlots.js';
 
 export async function ensureBookingIndexes(db) {
   await db.collection('bookings').createIndexes([
@@ -15,6 +16,8 @@ export async function ensureBookingIndexes(db) {
       unique: true,
     },
     { key: { bookingCode: 1 }, name: 'booking_code_unique', unique: true },
+    { key: { sessionId: 1, slotIndex: 1 }, name: 'booking_active_slot_unique', unique: true,
+      partialFilterExpression: { slotIndex: { $type: 'number' }, status: { $in: ['CONFIRMED', 'COMPLETED', 'SKIPPED', 'RESCHEDULED'] } } },
   ]);
 }
 const unavailable = () =>
@@ -153,6 +156,8 @@ export function createBookingRepository(
                   'SESSION_FULL',
                   'This session is fully booked.'
                 );
+              const slot = (await readAvailableSlots(db, opd, options)).find(s => s.queueType === 'NORMAL');
+              if (!slot) throw new HttpError(409, 'SESSION_FULL', 'All normal appointment slots are booked. Priority slots remain reserved.');
               const updated = await db.collection('opdSessions').updateOne(
                 {
                   _id: sessionId,
@@ -174,6 +179,7 @@ export function createBookingRepository(
                 patientId,
                 sessionId,
                 status: 'CONFIRMED',
+                ...slotFields(slot),
                 createdAt: at,
                 updatedAt: at,
               };
@@ -186,6 +192,7 @@ export function createBookingRepository(
                 sessionId: sessionId.toString(),
                 createdAt: at.toISOString(),
                 updatedAt: at.toISOString(),
+                assignedTime: slot.assignedTime.toISOString(),
               };
             },
             {

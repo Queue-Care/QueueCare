@@ -316,3 +316,7 @@ Follow README section 16 for errors, using an appropriate HTTP status and `succe
 The adapter validates the envelope and booking summary. It requires zero or one booking, rejects unzoned/invalid dates and unexpected booking statuses, and never renders raw backend error messages. Requests time out after 15 seconds and are cancelled when superseded or when Home loses focus.
 
 This is a joined response DTO, not a change to the README's MongoDB document schema. Existing patient/session indexes cover the initial owner filter. The list never reserves capacity, cancels bookings, or creates notifications. See [integration evidence and phone checks](PATIENT_INTEGRATION.md).
+# Appointment time and reserved priority slots
+
+Booking and priority endpoints now allocate server-owned appointment times.
+See [appointment-slot rules, data fields, concurrency and tests](APPOINTMENT_SLOTS.md).

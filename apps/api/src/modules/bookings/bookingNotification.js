@@ -29,11 +29,12 @@ export async function insertBookingConfirmation(db, booking, session) {
       userId: booking.patientId,
       type: 'BOOKING',
       title: 'Booking confirmed',
-      message: `Your booking ${booking.bookingCode} is confirmed. Open your booking for appointment details.`,
+      message: `Your booking ${booking.bookingCode} is confirmed.${booking.assignedTime ? ` Appointment time: ${booking.assignedTime.toLocaleString('en-GB', { timeZone: 'Asia/Colombo' })} (Sri Lanka time). Queue type: Normal.` : ''} Open your booking for appointment details.`,
       data: {
         event: 'BOOKING_CONFIRMED',
         bookingId: booking._id,
         sessionId: booking.sessionId,
+        ...(booking.assignedTime ? { assignedTime: booking.assignedTime, queueType: booking.queueType } : {}),
       },
       readAt: null,
       createdAt: booking.createdAt,

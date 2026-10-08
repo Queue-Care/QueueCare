@@ -18,6 +18,7 @@ export type AvailableSession = {
   capacity: number;
   bookedCount: number;
   remainingCapacity: number;
+  normalRemainingCapacity?: number;
   isBookable: boolean;
 };
 export class AvailableSessionsError extends Error {
@@ -146,7 +147,9 @@ export function parseAvailableSessions(
       !integer(item.bookedCount) ||
       item.remainingCapacity !==
         Math.max(0, item.capacity - item.bookedCount) ||
-      item.isBookable !== item.remainingCapacity > 0
+      (item.normalRemainingCapacity !== undefined &&
+        (!integer(item.normalRemainingCapacity) || item.normalRemainingCapacity > (item.remainingCapacity as number))) ||
+      item.isBookable !== ((item.normalRemainingCapacity ?? item.remainingCapacity) as number) > 0
     )
       throw new AvailableSessionsError('response');
     return {
@@ -163,6 +166,7 @@ export function parseAvailableSessions(
       capacity: item.capacity,
       bookedCount: item.bookedCount,
       remainingCapacity: item.remainingCapacity as number,
+      ...(item.normalRemainingCapacity !== undefined ? { normalRemainingCapacity: item.normalRemainingCapacity as number } : {}),
       isBookable: item.isBookable as boolean,
     };
   });
