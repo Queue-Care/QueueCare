@@ -6,11 +6,12 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
   type TextInputProps,
 } from 'react-native';
+import { Text } from '../i18n/g_Text';
+import { useT } from '../i18n/g_language';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from './ActionButton';
 import {
@@ -66,6 +67,7 @@ export function Field({
   error,
   ...props
 }: TextInputProps & { label: string; hint?: string; error?: string }) {
+  const t = useT();
   return (
     <View style={{ gap: 7 }}>
       <Text style={patientStyles.label}>{label}</Text>
@@ -77,6 +79,7 @@ export function Field({
           error ? { borderColor: colors.coral } : undefined,
         ]}
         {...props}
+        placeholder={props.placeholder && t(props.placeholder)}
       />
       {error ? (
         <Text accessibilityRole="alert" style={patientStyles.error}>

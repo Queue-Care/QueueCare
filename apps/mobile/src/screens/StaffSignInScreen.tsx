@@ -65,6 +65,7 @@ export const StaffSignInScreen = ({
           fullName: session.fullName,
           staffId: session.staffId,
           hospital: session.hospital,
+          preferredLanguage: session.preferredLanguage,
         },
       });
     } catch (error) {
@@ -365,6 +366,8 @@ const styles = StyleSheet.create({
     borderColor: colors.sage,
     backgroundColor: 'transparent',
     paddingVertical: 14,
+    // Space at the sides so a two-line label stays inside the rounded ends.
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -373,5 +376,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.tealDark,
+    // Each line is centred when the label wraps on a narrow phone.
+    textAlign: 'center',
   },
 });

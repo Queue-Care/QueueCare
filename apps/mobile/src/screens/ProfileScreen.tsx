@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -31,6 +31,7 @@ import {
   type Profile,
 } from '../features/profile/g_profile';
 import { initials } from '../features/priority/g_priorityRequests';
+import { setLanguage, useT } from '../i18n/g_language';
 
 type Props = {
   accessToken?: string;
@@ -56,6 +57,13 @@ export const ProfileScreen = ({
     reload,
     setData,
   } = useApiResource(load, { onUnauthorized: onSessionExpired });
+  const t = useT();
+  // The app follows the language saved on the account, for patients and staff.
+  // It changes as soon as a language is picked and goes back if the save fails.
+  const savedLanguage = profile?.preferredLanguage;
+  useEffect(() => {
+    if (savedLanguage) setLanguage(savedLanguage);
+  }, [savedLanguage]);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [form, setForm] = useState({ fullName: '', phone: '', email: '' });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -68,7 +76,7 @@ export const ProfileScreen = ({
   const failed = (failure: unknown, title: string) => {
     if (failure instanceof ApiError && failure.status === 401)
       onSessionExpired?.();
-    Alert.alert(title, errorMessage(failure));
+    Alert.alert(t(title), t(errorMessage(failure)));
   };
 
   const closeSheet = () => {
@@ -80,7 +88,7 @@ export const ProfileScreen = ({
   const photoFailed = (failure: unknown) => {
     if (failure instanceof ApiError && failure.status === 401)
       onSessionExpired?.();
-    setPhotoError(errorMessage(failure));
+    setPhotoError(t(errorMessage(failure)));
   };
 
   const openPersonal = () => {
@@ -159,8 +167,8 @@ export const ProfileScreen = ({
       image = result.assets[0];
     } catch {
       Alert.alert(
-        'Could not open your photos',
-        'Allow QueueCare to access your photos, then try again.',
+        t('Could not open your photos'),
+        t('Allow QueueCare to access your photos, then try again.'),
       );
       return;
     }
@@ -218,9 +226,9 @@ export const ProfileScreen = ({
   const photoPreviewUri = photoDraft?.uri ?? profile?.profileImageUrl;
 
   const confirmSignOut = () =>
-    Alert.alert('Sign out?', 'You will need to sign in again to continue.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => onSignOut?.() },
+    Alert.alert(t('Sign out?'), t('You will need to sign in again to continue.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Sign out'), style: 'destructive', onPress: () => onSignOut?.() },
     ]);
 
   const rows: {
@@ -229,30 +237,32 @@ export const ProfileScreen = ({
     onPress?: () => void;
   }[] = profile
     ? [
-        { label: 'Personal information', onPress: openPersonal },
+        { label: t('Personal information'), onPress: openPersonal },
         {
-          label: 'Notification settings',
-          value: profile.notificationsEnabled ? 'On' : 'Off',
+          label: t('Notification settings'),
+          value: t(profile.notificationsEnabled ? 'On' : 'Off'),
           onPress: () =>
             void savePreferences({
               notificationsEnabled: !profile.notificationsEnabled,
             }),
         },
         {
-          label: 'Language',
+          label: t('Language'),
           value: languageLabels[profile.preferredLanguage],
           onPress: () => setSheet('language'),
         },
         // Staff see their workplace where patients have saved hospitals.
         ...(profile.staffId
-          ? [{ label: 'Hospital', value: profile.hospital ?? 'Not set' }]
+          ? [{ label: t('Hospital'), value: profile.hospital ?? t('Not set') }]
           : []),
         {
-          label: 'Help and support',
+          label: t('Help and support'),
           onPress: () =>
             Alert.alert(
-              'Help and support',
-              'For help with your account or a booking, speak to the reception desk at your hospital.',
+              t('Help and support'),
+              t(
+                'For help with your account or a booking, speak to the reception desk at your hospital.',
+              ),
             ),
         },
       ]
@@ -273,7 +283,7 @@ export const ProfileScreen = ({
         {...props}
       />
       {fieldErrors[key] ? (
-        <Text style={styles.errorText}>{fieldErrors[key]}</Text>
+        <Text style={styles.errorText}>{t(fieldErrors[key])}</Text>
       ) : null}
     </View>
   );
@@ -282,7 +292,7 @@ export const ProfileScreen = ({
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.navHead}>
         <Text accessibilityRole="header" style={styles.navTitle}>
-          Profile
+          {t('Profile')}
         </Text>
         <TouchableOpacity
           style={styles.iconBtn}
@@ -301,13 +311,13 @@ export const ProfileScreen = ({
         ) : null}
         {error && !profile ? (
           <View style={styles.state}>
-            <Text style={styles.stateText}>{error}</Text>
+            <Text style={styles.stateText}>{t(error)}</Text>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Try again"
               onPress={reload}
             >
-              <Text style={styles.stateLink}>Try again</Text>
+              <Text style={styles.stateLink}>{t('Try again')}</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -357,7 +367,7 @@ export const ProfileScreen = ({
                 onPress={openPersonal}
                 activeOpacity={0.8}
               >
-                <Text style={styles.editBtnText}>Edit profile</Text>
+                <Text style={styles.editBtnText}>{t('Edit profile')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -393,13 +403,13 @@ export const ProfileScreen = ({
         <View style={styles.spacer} />
 
         <TouchableOpacity
-          style={styles.outlineBtn}
+          style={styles.primaryBtn}
           accessibilityRole="button"
           accessibilityLabel="Sign out"
           onPress={confirmSignOut}
           activeOpacity={0.8}
         >
-          <Text style={styles.outlineBtnText}>Sign out</Text>
+          <Text style={styles.primaryBtnText}>{t('Sign out')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -417,11 +427,11 @@ export const ProfileScreen = ({
             {sheet === 'personal' ? (
               <>
                 <Text accessibilityRole="header" style={styles.sheetTitle}>
-                  Edit profile
+                  {t('Edit profile')}
                 </Text>
-                {field('fullName', 'Full name')}
-                {field('phone', 'Mobile number', { keyboardType: 'phone-pad' })}
-                {field('email', 'Email', {
+                {field('fullName', t('Full name'))}
+                {field('phone', t('Mobile number'), { keyboardType: 'phone-pad' })}
+                {field('email', t('Email'), {
                   keyboardType: 'email-address',
                   autoCapitalize: 'none',
                 })}
@@ -434,7 +444,7 @@ export const ProfileScreen = ({
                   activeOpacity={0.8}
                 >
                   <Text style={styles.primaryBtnText}>
-                    {saving ? 'Saving…' : 'Save changes'}
+                    {t(saving ? 'Saving…' : 'Save changes')}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -442,7 +452,7 @@ export const ProfileScreen = ({
             {sheet === 'language' ? (
               <>
                 <Text accessibilityRole="header" style={styles.sheetTitle}>
-                  Language
+                  {t('Language')}
                 </Text>
                 <View style={styles.list}>
                   {languages.map((language, index) => {
@@ -476,7 +486,7 @@ export const ProfileScreen = ({
             {sheet === 'photo' && profile ? (
               <>
                 <Text accessibilityRole="header" style={styles.sheetTitle}>
-                  Profile photo
+                  {t('Profile photo')}
                 </Text>
                 <View style={styles.photoPreview}>
                   {photoPreviewUri ? (
@@ -497,9 +507,11 @@ export const ProfileScreen = ({
                   )}
                 </View>
                 <Text style={styles.photoHint}>
-                  {photoDraft
-                    ? 'This is how your photo will look. Save it to use it on your profile.'
-                    : 'Choose a new photo from your phone, or remove this one.'}
+                  {t(
+                    photoDraft
+                      ? 'This is how your photo will look. Save it to use it on your profile.'
+                      : 'Choose a new photo from your phone, or remove this one.',
+                  )}
                 </Text>
                 {photoError ? (
                   <Text
@@ -520,7 +532,7 @@ export const ProfileScreen = ({
                     activeOpacity={0.8}
                   >
                     <Text style={styles.primaryBtnText}>
-                      {photoBusy ? 'Saving…' : 'Save photo'}
+                      {t(photoBusy ? 'Saving…' : 'Save photo')}
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -539,7 +551,7 @@ export const ProfileScreen = ({
                   activeOpacity={0.8}
                 >
                   <Text style={styles.outlineBtnText}>
-                    {photoDraft ? 'Choose a different photo' : 'Choose a new photo'}
+                    {t(photoDraft ? 'Choose a different photo' : 'Choose a new photo')}
                   </Text>
                 </TouchableOpacity>
                 {!photoDraft && profile.profileImageUrl ? (
@@ -557,7 +569,7 @@ export const ProfileScreen = ({
                     activeOpacity={0.8}
                   >
                     <Text style={[styles.outlineBtnText, styles.dangerBtnText]}>
-                      {photoBusy ? 'Removing…' : 'Remove photo'}
+                      {t(photoBusy ? 'Removing…' : 'Remove photo')}
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -570,7 +582,7 @@ export const ProfileScreen = ({
               onPress={closeSheet}
               activeOpacity={0.8}
             >
-              <Text style={styles.outlineBtnText}>Cancel</Text>
+              <Text style={styles.outlineBtnText}>{t('Cancel')}</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

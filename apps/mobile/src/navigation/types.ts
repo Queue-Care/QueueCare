@@ -1,11 +1,18 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 // Display fields from the validated account/profile response, never route params.
-export type PatientSummary = { fullName: string; nic?: string };
+export type PatientSummary = {
+  fullName: string;
+  nic?: string;
+  // The language saved on the patient account; patient screens open in it.
+  preferredLanguage?: 'en' | 'si' | 'ta';
+};
 export type StaffSummary = {
   fullName: string;
   staffId: string;
   hospital: string;
+  // The language saved on the staff account; staff screens open in it.
+  preferredLanguage?: 'en' | 'si' | 'ta';
 };
 
 // The authentication owner supplies this only after validating the session.

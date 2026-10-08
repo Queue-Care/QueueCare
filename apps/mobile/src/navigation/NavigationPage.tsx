@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet} from 'react-native';
+import { Text } from '../i18n/g_Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, fonts, surfaces, radii } from '../theme/tokens';

@@ -27,5 +27,7 @@ export async function loginPatient(repository, config, body) {
     .setProtectedHeader({ alg: 'HS256' }).setSubject(user._id.toString())
     .setIssuer(config.issuer).setAudience(config.audience)
     .setIssuedAt().setExpirationTime('24h').sign(config.key);
-  return { accessToken, userId: user._id.toString(), role: 'PATIENT', patient: { fullName: user.fullName, nic: user.nic } };
+  return { accessToken, userId: user._id.toString(), role: 'PATIENT', patient: { fullName: user.fullName, nic: user.nic,
+    // Lets the patient screens open in the saved language straight after sign-in.
+    preferredLanguage: ['en', 'si', 'ta'].includes(user.preferredLanguage) ? user.preferredLanguage : 'en' } };
 }

@@ -20,6 +20,7 @@ import {
   reasonLabels,
   statusLabels,
 } from '../features/priority/g_priorityRequests';
+import { useT } from '../i18n/g_language';
 
 type Props = {
   route: { params: { requestId: string } };
@@ -35,6 +36,7 @@ export const PriorityRequestDetailsScreen = ({
   onSessionExpired,
 }: Props) => {
   const { requestId } = route.params;
+  const t = useT();
   const load = useCallback(
     (signal: AbortSignal) =>
       fetchPriorityRequest(accessToken, requestId, signal),
@@ -58,7 +60,7 @@ export const PriorityRequestDetailsScreen = ({
         onSessionExpired?.();
       // Another staff member may have decided first; show the saved decision.
       else if (failure instanceof ApiError && failure.status === 409) reload();
-      Alert.alert('Could not save the decision', errorMessage(failure));
+      Alert.alert(t('Could not save the decision'), t(errorMessage(failure)));
     } finally {
       setSaving(null);
     }
@@ -67,14 +69,17 @@ export const PriorityRequestDetailsScreen = ({
   const confirm = (decision: 'ACCEPTED' | 'DECLINED') => {
     const accepting = decision === 'ACCEPTED';
     Alert.alert(
-      accepting ? 'Accept this request?' : 'Decline this request?',
-      accepting
-        ? `${item?.patient.fullName} will be moved to the priority queue and notified.`
-        : `${item?.patient.fullName} will be notified. The booking stays confirmed.`,
+      t(accepting ? 'Accept this request?' : 'Decline this request?'),
+      t(
+        accepting
+          ? '{name} will be moved to the priority queue and notified.'
+          : '{name} will be notified. The booking stays confirmed.',
+        { name: item?.patient.fullName },
+      ),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: accepting ? 'Accept' : 'Decline',
+          text: t(accepting ? 'Accept' : 'Decline'),
           style: accepting ? 'default' : 'destructive',
           onPress: () => void decide(decision),
         },
@@ -97,7 +102,7 @@ export const PriorityRequestDetailsScreen = ({
           <Text style={styles.backBtnArrow}>‹</Text>
         </TouchableOpacity>
         <Text accessibilityRole="header" style={styles.navTitle}>
-          Request details
+          {t('Request details')}
         </Text>
       </View>
 
@@ -107,13 +112,13 @@ export const PriorityRequestDetailsScreen = ({
         ) : null}
         {error && !item ? (
           <View style={styles.state}>
-            <Text style={styles.stateText}>{error}</Text>
+            <Text style={styles.stateText}>{t(error)}</Text>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Try again"
               onPress={reload}
             >
-              <Text style={styles.stateLink}>Try again</Text>
+              <Text style={styles.stateLink}>{t('Try again')}</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -142,7 +147,7 @@ export const PriorityRequestDetailsScreen = ({
                       item.patient.phone,
                     ]
                       .filter(Boolean)
-                      .join(' · ') || 'Contact details unavailable'}
+                      .join(' · ') || t('Contact details unavailable')}
                   </Text>
                 </View>
                 <View
@@ -156,7 +161,7 @@ export const PriorityRequestDetailsScreen = ({
                       accepted ? styles.badgeDoneText : styles.badgePriorityText
                     }
                   >
-                    {statusLabels[item.status]}
+                    {t(statusLabels[item.status])}
                   </Text>
                 </View>
               </View>
@@ -164,30 +169,30 @@ export const PriorityRequestDetailsScreen = ({
               <View style={styles.divider} />
 
               <View style={styles.kv}>
-                <Text style={styles.k}>Booking</Text>
+                <Text style={styles.k}>{t('Booking')}</Text>
                 <Text style={[styles.v, styles.mono]}>
-                  {item.booking.bookingCode ?? 'Unavailable'}
+                  {item.booking.bookingCode ?? t('Unavailable')}
                 </Text>
               </View>
               <View style={styles.kv}>
-                <Text style={styles.k}>Service</Text>
+                <Text style={styles.k}>{t('Service')}</Text>
                 <Text style={styles.v}>{item.service.name}</Text>
               </View>
               {item.booking.assignedTime ? <View style={styles.kv}>
-                <Text style={styles.k}>Appointment time</Text>
-                <Text style={styles.v}>{formatSession(item.booking.assignedTime)} · {item.booking.queueType === 'PRIORITY' ? 'Priority' : 'Normal'}</Text>
+                <Text style={styles.k}>{t('Appointment time')}</Text>
+                <Text style={styles.v}>{formatSession(item.booking.assignedTime)} · {t(item.booking.queueType === 'PRIORITY' ? 'Priority' : 'Normal')}</Text>
               </View> : null}
               <View style={[styles.kv, styles.kvLast]}>
-                <Text style={styles.k}>Session</Text>
+                <Text style={styles.k}>{t('Session')}</Text>
                 <Text style={styles.v}>
-                  {formatSession(item.session.startsAt)}
+                  {t(formatSession(item.session.startsAt))}
                 </Text>
               </View>
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardHeading}>Reason given</Text>
-              <Text style={styles.reasonMain}>{reasonLabels[item.reason]}</Text>
+              <Text style={styles.cardHeading}>{t('Reason given')}</Text>
+              <Text style={styles.reasonMain}>{t(reasonLabels[item.reason])}</Text>
               {item.note ? (
                 <Text style={styles.reasonQuote}>{`"${item.note}"`}</Text>
               ) : null}
@@ -198,8 +203,9 @@ export const PriorityRequestDetailsScreen = ({
                 <View style={styles.note}>
                   <Text style={styles.infoIcon}>ℹ</Text>
                   <Text style={styles.noteText}>
-                    The patient is notified as soon as you decide, and the queue
-                    order updates immediately.
+                    {t(
+                      'The patient is notified as soon as you decide, and the queue order updates immediately.',
+                    )}
                   </Text>
                 </View>
 
@@ -214,7 +220,7 @@ export const PriorityRequestDetailsScreen = ({
                   activeOpacity={0.8}
                 >
                   <Text style={styles.btnPrimaryText}>
-                    {saving === 'ACCEPTED' ? 'Accepting…' : 'Accept request'}
+                    {t(saving === 'ACCEPTED' ? 'Accepting…' : 'Accept request')}
                   </Text>
                 </TouchableOpacity>
 
@@ -227,7 +233,7 @@ export const PriorityRequestDetailsScreen = ({
                   activeOpacity={0.8}
                 >
                   <Text style={styles.btnDangerGhostText}>
-                    {saving === 'DECLINED' ? 'Declining…' : 'Decline request'}
+                    {t(saving === 'DECLINED' ? 'Declining…' : 'Decline request')}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -235,11 +241,15 @@ export const PriorityRequestDetailsScreen = ({
               <View style={styles.note}>
                 <Text style={styles.infoIcon}>ℹ</Text>
                 <Text style={styles.noteText}>
-                  {accepted
-                    ? 'Request accepted. The patient has been notified and is admitted through the priority queue.'
-                    : 'Request declined. The patient has been notified and keeps the confirmed booking.'}
+                  {t(
+                    accepted
+                      ? 'Request accepted. The patient has been notified and is admitted through the priority queue.'
+                      : 'Request declined. The patient has been notified and keeps the confirmed booking.',
+                  )}
                   {item.reviewedAt
-                    ? ` Decided ${formatSession(item.reviewedAt)}.`
+                    ? ` ${t('Decided {when}.', {
+                        when: formatSession(item.reviewedAt),
+                      })}`
                     : ''}
                   {item.decisionNote ? ` ${item.decisionNote}` : ''}
                 </Text>
