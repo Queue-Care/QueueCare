@@ -67,7 +67,7 @@ export function inspectSetup(root) {
       count === 3 ? 'PASS' : 'WARN',
       count === 3
         ? 'All three Cloudinary settings are present; credentials are not verified.'
-        : 'Cloudinary settings are incomplete or absent; the current server uses MongoDB photo storage.'
+        : 'Cloudinary settings are incomplete or absent; the current server saves photos in apps/api/profile_photo.'
     );
   }
   const mobile = read('apps/mobile/.env');

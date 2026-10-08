@@ -42,7 +42,7 @@ All routes below require `Authorization: Bearer <JWT>` from staff sign-in. Staff
 | PATCH | `/api/v1/me` | **Update** `fullName`, `phone`, `email` |
 | PATCH | `/api/v1/me/preferences` | **Update** `preferredLanguage` (`en`, `si`, `ta`) and `notificationsEnabled` |
 | POST | `/api/v1/me/profile-image` | **Create/replace** the profile photo: multipart field `image` (JPEG, PNG, or WebP, up to 5 MB) |
-| DELETE | `/api/v1/me/profile-image` | **Delete** the profile photo from Cloudinary and MongoDB |
+| DELETE | `/api/v1/me/profile-image` | **Delete** the profile photo file and its link in MongoDB |
 
 `POST /api/v1/staff/auth/register` is the **Create** for a staff account; it also writes a welcome notification and an audit record.
 
@@ -57,7 +57,7 @@ npm run db:seed:priority         # adds demo patients, bookings and 4 pending + 
 npm run db:seed:priority:reset   # returns those demo requests to their starting state
 ```
 
-The requests belong to **Demo Central Hospital** on today's sessions (Asia/Colombo), so register the staff account with that hospital to see them. The reset command changes only the demo requests; run it before each demonstration or usability-test participant.
+The requests belong to **National Hospital of Sri Lanka (NHSL)** on today's sessions (Asia/Colombo), so register the staff account with that hospital to see them. The reset command changes only the demo requests; run it before each demonstration or usability-test participant.
 
 ### Profile photos (Cloudinary)
 
@@ -71,7 +71,7 @@ CLOUDINARY_API_SECRET=
 
 The secrets are server-side only; never put them in `apps/mobile/.env`.
 
-**Without Cloudinary keys, photos are stored in MongoDB.** The image bytes go into the `profileImages` collection (one document per user, replaced on each upload), and the user document stores a relative address such as `/media/profile-images/<random token>`. The app loads the photo from `GET /api/v1/media/profile-images/:token`, which needs no sign-in because the token is random and changes on every upload. This is a deviation from the main README (section 13.11: binary images are not stored in MongoDB) and should be recorded in `docs/milestone03/DEVIATIONS.md`. Adding the three Cloudinary keys switches new uploads to Cloudinary with no code change.
+**Without Cloudinary keys, photos are saved as files in `apps/api/profile_photo`.** Staff and patients use the same upload. Each account has one file, `<userId>-<random token>.jpg|png|webp`, replaced on each upload, and the user document stores only its link in `profileImageUrl`, a relative address such as `/media/profile-photos/<file name>`. The app loads the photo from `GET /api/v1/media/profile-photos/:name`, which needs no sign-in because the token is random and changes on every upload. The folder's contents are git-ignored, so a photo exists only on the machine whose API received it; an API on another machine sharing the same database answers 404 for that link. This is a deviation from the main README (Cloudinary as the only media store) and should be recorded in `docs/milestone03/DEVIATIONS.md`. Adding the three Cloudinary keys switches new uploads to Cloudinary with no code change.
 
 ### Not implemented yet
 
@@ -90,7 +90,7 @@ Configure the database and a random JWT_SECRET before starting; follow [the setu
 
 MongoDB must already be running before starting the API. Set a random `JWT_SECRET` of at least 32 bytes in `apps/api/.env`; patient and staff sign-in require it. Startup checks the database connection and creates hospital, service, session, staff identity, and booking indexes. The server listens on port 4000 by default. `npm run start:api` runs without the development file watcher. Ctrl+C stops the API and closes its MongoDB connection.
 
-In another terminal at the repository root, optionally add **three fictional demo hospitals**:
+In another terminal at the repository root, optionally add the **five seeded hospitals** (real hospital names; their hours, services and sessions are demo data). Hospitals still carrying a former `Demo …` name are renamed in place:
 
 ```bash
 npm run db:seed:hospitals
@@ -98,9 +98,9 @@ npm run db:seed:hospitals
 
 This command inserts missing demo IDs only: repeated runs do not duplicate records, overwrite edited seeds, or delete existing data. It does not create users, services, or sessions. Starting the server does not seed data automatically.
 
-For the hospital details/services flow, use `npm run db:seed:discovery` instead. It inserts the same missing demo hospitals plus six fictional OPD services, preserving existing records and edits. It creates no users or sessions. See [M1-06 setup and handoff](../../docs/HOSPITAL_DETAILS.md).
+For the hospital details/services flow, use `npm run db:seed:discovery` instead. It inserts the same missing demo hospitals plus ten demo OPD services, preserving existing records and edits. It creates no users or sessions. See [M1-06 setup and handoff](../../docs/HOSPITAL_DETAILS.md).
 
-For session availability, run `npm run db:seed:sessions`. This adds missing demo hospitals/services and up to 12 fictional sessions for tomorrow in Asia/Colombo, preserving existing records. The command prints the date to query. To choose another day, use `npm run db:seed:sessions -- --date=YYYY-MM-DD`. See [M1-08 setup and next steps](../../docs/SESSIONS.md).
+For session availability, run `npm run db:seed:sessions`. This adds missing demo hospitals/services and up to 20 fictional sessions for tomorrow in Asia/Colombo, preserving existing records. The command prints the date to query. To choose another day, use `npm run db:seed:sessions -- --date=YYYY-MM-DD`. See [M1-08 setup and next steps](../../docs/SESSIONS.md).
 
 Try the endpoints:
 

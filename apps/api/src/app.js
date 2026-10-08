@@ -9,7 +9,7 @@ import { staffPriorityRoutes } from './modules/priority/g_priorityRoutes.js';
 import { patientPriorityRoutes } from './modules/priority/patientPriorityRoutes.js';
 import { notificationRoutes } from './modules/notifications/g_notificationRoutes.js';
 import { profileRoutes } from './modules/users/g_profileRoutes.js';
-import { mediaRoutes } from './modules/media/g_mongoMediaStore.js';
+import { mediaRoutes } from './modules/media/g_fileMediaStore.js';
 import { patientAuthRoutes } from './modules/auth/patientAuthRoutes.js';
 import { staffSessionRoutes } from './modules/sessions/k_sessionRoutes.js';
 import { staffPatientSearchRoutes } from './modules/staff/k_patientSearchRoutes.js';

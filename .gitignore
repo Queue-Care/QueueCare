@@ -10,6 +10,10 @@ pnpm-debug.log*
 !.env.example
 
 
+# Uploaded profile photos stay on the server that received them
+apps/api/profile_photo/*
+!apps/api/profile_photo/.gitkeep
+
 # Build and test output
 dist/
 build/
