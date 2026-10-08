@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { once } from 'node:events';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import dotenv from 'dotenv';
@@ -42,10 +43,7 @@ import {
   ensureNotificationIndexes,
 } from './modules/notifications/g_notificationRepository.js';
 import { createProfileRepository } from './modules/users/g_profileRepository.js';
-import {
-  createMongoMediaStore,
-  ensureProfileImageIndexes,
-} from './modules/media/g_mongoMediaStore.js';
+import { createFileMediaStore } from './modules/media/g_fileMediaStore.js';
 
 dotenv.config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../.env') });
 
@@ -53,7 +51,7 @@ let connection;
 try {
   const config = readConfig();
   const authConfig = readAuthConfig();
-  connection = await connectMongo(config);
+  connection = await connectWithRetry(config);
   await ensurePatientRegistrationIndexes(connection.db);
   await ensureHospitalIndexes(connection.db);
   await ensureStaffAuthIndexes(connection.db);
@@ -63,9 +61,9 @@ try {
   await ensureNotificationIndexes(connection.db);
   await ensurePriorityIndexes(connection.db);
   await ensurePatientPriorityIndexes(connection.db);
-  await ensureProfileImageIndexes(connection.db);
-  // Profile photos go to Cloudinary when its keys are set, otherwise to MongoDB.
-  const profileImageStore = createMongoMediaStore(connection.db);
+  // Profile photos go to Cloudinary when its keys are set, otherwise to files in
+  // apps/api/profile_photo. Either way MongoDB stores only the photo's link.
+  const profileImageStore = createFileMediaStore();
   const mediaStore = createMediaStore() ?? profileImageStore;
   const priorityRepository = createPriorityRepository(connection.db);
   const notificationRepository = createNotificationRepository(connection.db);
@@ -119,7 +117,47 @@ try {
     });
   }
 } catch (error) {
-  console.error(`API startup failed. ${connectionDiagnostic(error)}`);
   if (connection) await connection.client.close();
-  process.exitCode = 1;
+  // Starting the API twice is a slip, not a failure: it is already serving.
+  if (error?.code === 'EADDRINUSE' && (await isQueueCareApi(error.port))) {
+    console.log(
+      `QueueCare API is already running on port ${error.port}, so there is nothing to start. To restart it, stop the other one first (Ctrl+C in its terminal).`
+    );
+  } else {
+    console.error(`API startup failed. ${connectionDiagnostic(error)}`);
+    process.exitCode = 1;
+  }
+}
+
+// The database can be out of reach for a moment (Wi-Fi still joining, laptop
+// just woke up). Try a few times before calling the startup failed; a wrong
+// password or connection string fails straight away.
+async function connectWithRetry(config, attempts = 5, waitMs = 2000) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await connectMongo(config);
+    } catch (error) {
+      const unreachable =
+        ['MongoServerSelectionError', 'MongoNetworkError'].includes(
+          error?.name
+        ) || ['querySrv', 'queryTxt'].includes(error?.syscall);
+      if (!unreachable || attempt >= attempts) throw error;
+      console.log(
+        `MongoDB is not reachable yet, trying again (${attempt + 1}/${attempts})...`
+      );
+      await delay(waitMs);
+    }
+  }
+}
+
+// True when the busy port answers /health the way this API does.
+async function isQueueCareApi(port) {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/health`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    return (await response.json())?.data?.status === 'ok';
+  } catch {
+    return false;
+  }
 }

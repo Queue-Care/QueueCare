@@ -185,7 +185,7 @@ test('shows supplied opening hours with wrapping text and removes outdated hours
   expect(hours.props.numberOfLines).toBeUndefined();
   expect(hours.props.allowFontScaling).not.toBe(false);
   expect(cta()?.props.disabled).toBe(true);
-  await press('Refresh hospital details');
+  await pullToRefresh();
   expect(hasText(openingHours)).toBe(false);
   expect(
     hasText(
@@ -194,16 +194,22 @@ test('shows supplied opening hours with wrapping text and removes outdated hours
   ).toBe(true);
 });
 
-test('session action precedes opening hours and refresh, with a large scalable primary touch target', async () => {
+async function pullToRefresh() {
+  await act(async () => {
+    renderer.root
+      .findByType(HospitalDetailsScreen)
+      .findByType(RefreshControl)
+      .props.onRefresh();
+  });
+}
+test('session action precedes opening hours, with a large scalable primary touch target', async () => {
   await mount();
   await press('General OPD');
   const screen = renderer.root.findByType(HospitalDetailsScreen);
   const actions = screen.findAllByType(ActionButton);
   expect(actions.map(node => node.props.label)).toEqual([
     'View OPD sessions',
-    'Refresh hospital details',
   ]);
-  expect(actions[1].props.variant).toBe('outline');
   const labels = screen.findAllByType(Text).map(node => node.props.children);
   expect(labels.indexOf('View OPD sessions')).toBeLessThan(
     labels.indexOf('Opening hours'),
@@ -223,12 +229,12 @@ test('session action precedes opening hours and refresh, with a large scalable p
   expect(StyleSheet.flatten(label.props.style).color).toBe(colors.panel);
 });
 
-test('visible refresh removes selected-service guidance and prevents continuing during reload', async () => {
+test('pull-to-refresh removes selected-service guidance and prevents continuing during reload', async () => {
   await mount();
   await press('General OPD');
   const pending = deferred();
   details.mockReturnValueOnce(pending.promise);
-  await press('Refresh hospital details');
+  await pullToRefresh();
   expect(hasText('Selected service: General OPD')).toBe(false);
   expect(cta()).toBeUndefined();
   await act(async () => {

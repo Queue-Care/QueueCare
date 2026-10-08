@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { RefreshControl, Text } from 'react-native';
+import { MyBookingsScreen } from '../src/screens/MyBookingsScreen';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -89,6 +90,14 @@ async function mount() {
     );
   });
 }
+async function pullToRefresh() {
+  await act(async () => {
+    renderer!.root
+      .findByType(MyBookingsScreen)
+      .findByType(RefreshControl)
+      .props.onRefresh();
+  });
+}
 async function press(label: string) {
   const control = renderer!.root
     .findAll(
@@ -156,7 +165,7 @@ test('switching categories resets the page, aborts stale loads, and refresh can 
         resolve = done;
       }),
   );
-  await press('Refresh bookings');
+  await pullToRefresh();
   const pendingSignal = fetchMock.mock.calls.at(-1)![1].signal;
   await tab('past');
   expect(pendingSignal.aborted).toBe(true);
@@ -170,7 +179,7 @@ test('switching categories resets the page, aborts stale loads, and refresh can 
   expect(hasText('No past bookings')).toBe(true);
   expect(hasText('Page 2 · 21 upcoming bookings')).toBe(false);
   fetchMock.mockResolvedValueOnce(response({}, 500));
-  await press('Refresh bookings');
+  await pullToRefresh();
   expect(hasText('No past bookings')).toBe(false);
   await press('Try again');
   expect(hasText('No past bookings')).toBe(true);

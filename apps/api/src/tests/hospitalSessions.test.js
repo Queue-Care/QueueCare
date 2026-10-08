@@ -355,7 +355,7 @@ test(
         await seedHospitals(db);
         await seedServices(db);
         const first = await seedSessions(db, { now });
-        assert.deepEqual(first, { date: '2026-10-03', upsertedCount: 12 });
+        assert.deepEqual(first, { date: '2026-10-03', upsertedCount: 20 });
         const seeded = await collection.findOne({
           seedSource: 'queuecare-demo',
         });
@@ -386,7 +386,7 @@ test(
           );
         assert.equal(
           (await seedSessions(db, { now, date: '2026-10-04' })).upsertedCount,
-          6
+          14
         );
         await assert.rejects(seedSessions(db, { date: '2026-02-29' }));
       }

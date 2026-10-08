@@ -64,7 +64,10 @@ export function RequestStatusScreen({
   const pending = data?.request.status === 'PENDING';
   const accepted = data?.request.status === 'ACCEPTED';
   return (
-    <PatientPage>
+    <PatientPage
+      refreshing={state.loading && !!state.data}
+      onRefresh={state.reload}
+    >
       <LoadState
         loading={state.loading}
         error={state.error}
@@ -105,7 +108,7 @@ export function RequestStatusScreen({
           >
             <Text style={s.label}>Current status</Text>
             <Text style={s.title}>
-              {pending ? 'Under review' : accepted ? 'Accepted' : 'Declined'}
+              {pending ? 'Under review' : accepted ? 'Accepted' : data.request.decisionCode === 'NO_PRIORITY_SLOT_AVAILABLE' ? 'Not available' : 'Declined'}
             </Text>
             <Text style={[s.small, { textAlign: 'center' }]}>
               Submitted {formatVisit(data.request.createdAt)}
@@ -179,9 +182,10 @@ export function RequestStatusScreen({
             <DetailRow
               label="Appointment"
               value={`${data.booking.serviceName} · ${formatVisit(
-                data.booking.startsAt,
+                data.booking.assignedTime ?? data.booking.startsAt,
               )}`}
             />
+            {data.booking.queueType ? <DetailRow label="Queue type" value={data.booking.queueType === 'PRIORITY' ? 'Priority' : 'Normal'} /> : null}
             {data.request.note ? (
               <DetailRow label="Your note" value={data.request.note} />
             ) : null}
@@ -193,11 +197,6 @@ export function RequestStatusScreen({
             ) : null}
           </View>
           <View style={{ flex: 1 }} />
-          <ActionButton
-            label="Refresh status"
-            variant="secondary"
-            onPress={state.reload}
-          />
           <ActionButton
             label="Back to booking"
             variant="outline"

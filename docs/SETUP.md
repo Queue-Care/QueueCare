@@ -71,7 +71,7 @@ npm run dev:mobile -- --clear
 
 Scan the QR code, reopen the app in Expo Go and keep both terminals running. Restart Expo after changing the API URL; restarting the backend alone does not update the phone's bundled configuration. An Expo tunnel carries the Metro connection, not your separate backend API: the phone must still be able to reach the configured API address.
 
-Create a fictional patient account, then sign in with its **NIC and password**. Session state is in memory; reopening the app may require signing in again. Search for Demo Central Hospital → select a service → View OPD sessions → choose the seeded date/session → confirm → open saved booking. Then check Home/My Bookings and the booking alert. Record actual results in [the phone checklist](PATIENT_FLOW_TESTING.md); successful startup/sign-in is only part of that checklist.
+Create a fictional patient account, then sign in with its **NIC and password**. Session state is in memory; reopening the app may require signing in again. Search for National Hospital of Sri Lanka (NHSL) → select a service → View OPD sessions → choose the seeded date/session → confirm → open saved booking. Then check Home/My Bookings and the booking alert. Record actual results in [the phone checklist](PATIENT_FLOW_TESTING.md); successful startup/sign-in is only part of that checklist.
 
 ## 4. Diagnose a failure
 
@@ -88,7 +88,7 @@ Create a fictional patient account, then sign in with its **NIC and password**. 
 
 ## 5. Optional media and repeatable checks
 
-For Cloudinary uploads, configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` in the API environment and restart the backend. The current implementation uses MongoDB `profileImages` when these are absent/incomplete; that is an existing deviation from the original Cloudinary-only media plan. [Profile/media setup](../apps/api/README.md#profile-photos-cloudinary). Credential presence does not prove upload/delete works; Member 4 owns that final verification.
+For Cloudinary uploads, configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` in the API environment and restart the backend. When these are absent/incomplete, photos are saved as files in `apps/api/profile_photo` and MongoDB stores only the link; that is a deviation from the original Cloudinary-only media plan. [Profile/media setup](../apps/api/README.md#profile-photos-cloudinary). Credential presence does not prove upload/delete works; Member 4 owns that final verification.
 
 ```bash
 npm run test:patient-flow

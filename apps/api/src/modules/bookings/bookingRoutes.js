@@ -28,6 +28,21 @@ export function parseBookingBody(body, query = {}) {
     );
   return new ObjectId(body.sessionId);
 }
+function parseBookingId(request) {
+  const errors = Object.create(null);
+  if (!/^[a-f\d]{24}$/i.test(request.params.bookingId))
+    errors.bookingId = 'Must be a 24-character hexadecimal MongoDB ID.';
+  for (const key of Object.keys(request.query))
+    errors[key] = 'Unsupported query parameter.';
+  if (Object.keys(errors).length)
+    throw new HttpError(
+      400,
+      'VALIDATION_ERROR',
+      'Check the booking reference.',
+      errors
+    );
+  return new ObjectId(request.params.bookingId);
+}
 export function bookingRoutes(repository, authenticate) {
   const router = Router();
   router.get(
@@ -69,18 +84,7 @@ export function bookingRoutes(repository, authenticate) {
     authenticate,
     authorize('PATIENT'),
     async (request, response) => {
-      const errors = Object.create(null);
-      if (!/^[a-f\d]{24}$/i.test(request.params.bookingId))
-        errors.bookingId = 'Must be a 24-character hexadecimal MongoDB ID.';
-      for (const key of Object.keys(request.query))
-        errors[key] = 'Unsupported query parameter.';
-      if (Object.keys(errors).length)
-        throw new HttpError(
-          400,
-          'VALIDATION_ERROR',
-          'Check the booking reference.',
-          errors
-        );
+      const bookingId = parseBookingId(request);
       if (!repository)
         throw new HttpError(
           503,
@@ -89,8 +93,26 @@ export function bookingRoutes(repository, authenticate) {
         );
       const booking = await repository.getDetails(
         request.auth.userId,
-        new ObjectId(request.params.bookingId)
+        bookingId
       );
+      response
+        .set('Cache-Control', 'no-store')
+        .json({ success: true, data: booking });
+    }
+  );
+  router.patch(
+    '/:bookingId/cancel',
+    authenticate,
+    authorize('PATIENT'),
+    async (request, response) => {
+      const bookingId = parseBookingId(request);
+      if (!repository?.cancel)
+        throw new HttpError(
+          503,
+          'SERVICE_UNAVAILABLE',
+          'Cancellation is unavailable.'
+        );
+      const booking = await repository.cancel(request.auth.userId, bookingId);
       response
         .set('Cache-Control', 'no-store')
         .json({ success: true, data: booking });

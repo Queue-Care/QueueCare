@@ -27,6 +27,7 @@ import {
   updateProfile,
   uploadProfileImage,
   type Language,
+  type PickedImage,
   type Profile,
 } from '../features/profile/g_profile';
 import { initials } from '../features/priority/g_priorityRequests';
@@ -36,7 +37,7 @@ type Props = {
   onSignOut?: () => void;
   onSessionExpired?: () => void;
 };
-type Sheet = 'personal' | 'language' | null;
+type Sheet = 'personal' | 'language' | 'photo' | null;
 const languages = Object.keys(languageLabels) as Language[];
 
 export const ProfileScreen = ({
@@ -60,11 +61,26 @@ export const ProfileScreen = ({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  // The photo chosen from the phone, shown for review until it is saved.
+  const [photoDraft, setPhotoDraft] = useState<PickedImage | null>(null);
+  const [photoError, setPhotoError] = useState<string>();
 
   const failed = (failure: unknown, title: string) => {
     if (failure instanceof ApiError && failure.status === 401)
       onSessionExpired?.();
     Alert.alert(title, errorMessage(failure));
+  };
+
+  const closeSheet = () => {
+    setSheet(null);
+    setPhotoDraft(null);
+    setPhotoError(undefined);
+  };
+  // Shown inside the photo sheet, which stays open so the user can try again.
+  const photoFailed = (failure: unknown) => {
+    if (failure instanceof ApiError && failure.status === 401)
+      onSessionExpired?.();
+    setPhotoError(errorMessage(failure));
   };
 
   const openPersonal = () => {
@@ -127,12 +143,14 @@ export const ProfileScreen = ({
     }
   };
 
+  // Opens the phone's photos. The chosen picture is only previewed; nothing is
+  // stored until Save photo is pressed.
   const choosePhoto = async () => {
     if (photoBusy) return;
     let image: ImagePicker.ImagePickerAsset | undefined;
     try {
       // No in-picker crop step: on some Android phones its save button cannot be
-      // pressed. The photo is resized here and cropped square by the server.
+      // pressed. The photo is resized here and shown cropped to a circle.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 1,
@@ -149,44 +167,55 @@ export const ProfileScreen = ({
     if (!image) return;
     setPhotoBusy(true);
     try {
-      setData(
-        await uploadProfileImage(accessToken, await prepareProfileImage(image)),
-      );
+      setPhotoDraft(await prepareProfileImage(image));
+      setPhotoError(undefined);
+      setSheet('photo');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  // Stores the previewed photo on the account, so it is shown at every sign-in.
+  const savePhoto = async () => {
+    if (!photoDraft || photoBusy) return;
+    setPhotoBusy(true);
+    setPhotoError(undefined);
+    try {
+      setData(await uploadProfileImage(accessToken, photoDraft));
+      closeSheet();
     } catch (failure) {
-      failed(failure, 'Could not save your photo');
+      photoFailed(failure);
     } finally {
       setPhotoBusy(false);
     }
   };
 
   const removePhoto = async () => {
+    if (photoBusy) return;
     setPhotoBusy(true);
+    setPhotoError(undefined);
     try {
       setData(await deleteProfileImage(accessToken));
+      closeSheet();
     } catch (failure) {
-      failed(failure, 'Could not remove your photo');
+      photoFailed(failure);
     } finally {
       setPhotoBusy(false);
     }
   };
 
-  // With a photo already set, the user chooses between replacing and removing it.
   const editPhoto = () => {
     if (!profile || photoBusy) return;
+    // With no photo yet, the phone's pictures open straight away.
     if (!profile.profileImageUrl) {
       void choosePhoto();
       return;
     }
-    Alert.alert('Profile photo', undefined, [
-      { text: 'Choose a new photo', onPress: () => void choosePhoto() },
-      {
-        text: 'Remove photo',
-        style: 'destructive',
-        onPress: () => void removePhoto(),
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    // With a photo already set, the sheet offers to replace or remove it.
+    setPhotoError(undefined);
+    setSheet('photo');
   };
+  const photoPreviewUri = photoDraft?.uri ?? profile?.profileImageUrl;
 
   const confirmSignOut = () =>
     Alert.alert('Sign out?', 'You will need to sign in again to continue.', [
@@ -348,7 +377,9 @@ export const ProfileScreen = ({
                   disabled={!item.onPress}
                   onPress={item.onPress}
                 >
-                  <Text style={styles.rowLabel}>{item.label}</Text>
+                  <Text style={styles.rowLabel} numberOfLines={1}>
+                    {item.label}
+                  </Text>
                   {item.value ? (
                     <Text style={styles.rightValueText}>{item.value}</Text>
                   ) : null}
@@ -376,7 +407,7 @@ export const ProfileScreen = ({
         visible={sheet !== null}
         transparent
         animationType="slide"
-        onRequestClose={() => setSheet(null)}
+        onRequestClose={closeSheet}
       >
         <KeyboardAvoidingView
           style={styles.backdrop}
@@ -442,11 +473,101 @@ export const ProfileScreen = ({
                 </View>
               </>
             ) : null}
+            {sheet === 'photo' && profile ? (
+              <>
+                <Text accessibilityRole="header" style={styles.sheetTitle}>
+                  Profile photo
+                </Text>
+                <View style={styles.photoPreview}>
+                  {photoPreviewUri ? (
+                    <Image
+                      source={{ uri: photoPreviewUri }}
+                      style={styles.photoPreviewImage}
+                      accessibilityLabel={
+                        photoDraft
+                          ? 'Preview of your new profile photo'
+                          : 'Your current profile photo'
+                      }
+                      accessibilityIgnoresInvertColors
+                    />
+                  ) : (
+                    <Text style={styles.photoPreviewText}>
+                      {initials(profile.fullName)}
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.photoHint}>
+                  {photoDraft
+                    ? 'This is how your photo will look. Save it to use it on your profile.'
+                    : 'Choose a new photo from your phone, or remove this one.'}
+                </Text>
+                {photoError ? (
+                  <Text
+                    style={[styles.errorText, styles.photoError]}
+                    accessibilityRole="alert"
+                    accessibilityLiveRegion="polite"
+                  >
+                    {photoError}
+                  </Text>
+                ) : null}
+                {photoDraft ? (
+                  <TouchableOpacity
+                    style={[styles.primaryBtn, photoBusy && styles.disabled]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Save photo"
+                    disabled={photoBusy}
+                    onPress={savePhoto}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.primaryBtnText}>
+                      {photoBusy ? 'Saving…' : 'Save photo'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+                <TouchableOpacity
+                  style={[
+                    styles.outlineBtn,
+                    styles.sheetCancel,
+                    photoBusy && styles.disabled,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    photoDraft ? 'Choose a different photo' : 'Choose a new photo'
+                  }
+                  disabled={photoBusy}
+                  onPress={choosePhoto}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.outlineBtnText}>
+                    {photoDraft ? 'Choose a different photo' : 'Choose a new photo'}
+                  </Text>
+                </TouchableOpacity>
+                {!photoDraft && profile.profileImageUrl ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.outlineBtn,
+                      styles.dangerBtn,
+                      styles.sheetCancel,
+                      photoBusy && styles.disabled,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove photo"
+                    disabled={photoBusy}
+                    onPress={removePhoto}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.outlineBtnText, styles.dangerBtnText]}>
+                      {photoBusy ? 'Removing…' : 'Remove photo'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </>
+            ) : null}
             <TouchableOpacity
               style={[styles.outlineBtn, styles.sheetCancel]}
               accessibilityRole="button"
               accessibilityLabel="Cancel"
-              onPress={() => setSheet(null)}
+              onPress={closeSheet}
               activeOpacity={0.8}
             >
               <Text style={styles.outlineBtnText}>Cancel</Text>
@@ -636,7 +757,10 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontFamily: fonts.body,
-    flex: 1,
+    // The label keeps its full width on one line; only the value beside it wraps.
+    flexGrow: 1,
+    flexShrink: 0,
+    marginRight: 12,
     fontSize: 14,
     fontWeight: '500',
     color: colors.ink,
@@ -646,6 +770,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.inkSoft,
     marginRight: 8,
+    // Long values such as a hospital name wrap onto further lines.
+    flexShrink: 1,
+    textAlign: 'right',
   },
   chev: {
     fontFamily: fonts.body,
@@ -698,6 +825,48 @@ const styles = StyleSheet.create({
   },
   sheetCancel: {
     marginTop: 10,
+  },
+  photoPreview: {
+    borderRadius: radii.circle,
+    overflow: 'hidden',
+    alignSelf: 'center',
+    width: 132,
+    height: 132,
+    backgroundColor: colors.tealTint,
+    borderWidth: 1,
+    borderColor: colors.sageLine,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  photoPreviewImage: {
+    width: 132,
+    height: 132,
+  },
+  photoPreviewText: {
+    fontFamily: fonts.display,
+    fontSize: 40,
+    fontWeight: '700',
+    color: colors.tealDark,
+  },
+  photoHint: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  photoError: {
+    textAlign: 'center',
+    marginTop: 0,
+    marginBottom: 12,
+  },
+  dangerBtn: {
+    borderColor: colors.coralTint,
+  },
+  dangerBtnText: {
+    color: '#A7402C',
   },
   field: {
     marginBottom: 14,

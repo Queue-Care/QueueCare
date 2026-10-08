@@ -15,7 +15,7 @@ Startup and the hospital seed create these indexes idempotently:
 
 The repository includes only active documents and exposes a fixed set of public fields. Name ordering ignores case and uses `_id` to break ties. Text filters are escaped before being used in regex queries. Case-insensitive substring regex search can scan the active records even with these indexes; it is intended for the small academic dataset. Review query plans before scaling. Each query has a three-second MongoDB execution limit, with a maximum page size of 50.
 
-`npm run db:seed:hospitals` adds three clearly named fictional demo hospitals using fixed IDs and `$setOnInsert`. It neither deletes data nor overwrites existing records. No real hospital contact details are invented. See [run and seed instructions](../apps/api/README.md).
+`npm run db:seed:hospitals` adds five hospitals using fixed IDs and `$setOnInsert`. They carry real hospital names and areas; seeded hours, services and sessions are demo data. It neither deletes data nor overwrites existing records, except that a hospital still carrying an untouched former `Demo …` name is renamed in place (same `_id`), along with the name copied onto its staff accounts. No real hospital contact details are invented. See [run and seed instructions](../apps/api/README.md).
 
 ## OPD services — M1-06
 
@@ -23,7 +23,7 @@ The `opdServices` documents follow README section 13.3: `_id` and `hospitalId` a
 
 Startup/seed index setup also creates `service_hospital_active_name` on `{ hospitalId: 1, isActive: 1, name: 1, _id: 1 }`, with `en` collation at strength 2. The service read first verifies the parent is active, then reads only that hospital's active services with a three-second query execution limit. The response exposes only `_id`, `hospitalId`, and `name`.
 
-`npm run db:seed:discovery` extends the explicit hospital seed with six fictional service records, using fixed IDs and `$setOnInsert`. Missing/inactive demo parents are skipped. Reruns preserve service edits and existing records. Services do not imply open sessions or available booking capacity. Opening hours are not yet represented in the hospital schema.
+`npm run db:seed:discovery` extends the explicit hospital seed with ten demo service records, using fixed IDs and `$setOnInsert`. Missing/inactive demo parents are skipped. Reruns preserve service edits and existing records. Services do not imply open sessions or available booking capacity. Opening hours are not yet represented in the hospital schema.
 
 ## OPD sessions — M1-08 read API
 

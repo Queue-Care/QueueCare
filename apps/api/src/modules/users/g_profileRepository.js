@@ -99,7 +99,7 @@ export function createProfileRepository(
 
     updatePreferences: (userId, preferences) => save(userId, preferences),
 
-    // MongoDB keeps only the Cloudinary URL and public ID, never the image itself.
+    // MongoDB keeps only the photo's link and public ID, never the image itself.
     async setImage(userId, buffer) {
       if (!mediaStore) throw mediaUnavailable();
       if (!(await users.findOne({ _id: userId }, { projection: { _id: 1 } })))

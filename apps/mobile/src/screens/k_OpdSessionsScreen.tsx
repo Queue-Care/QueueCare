@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
 import { InterfaceIcon } from '../components/InterfaceIcon';
@@ -7,20 +9,52 @@ import { SessionToast } from '../components/k_SessionToast';
 import { ApiError, errorMessage } from '../api/g_apiClient';
 import { useApiResource } from '../api/g_useApiResource';
 import { closeStaffSessionBookings, fetchStaffSession, fetchStaffSessions, sessionDayLabel,
-  type SessionView, type StaffOpdSession } from '../features/sessions/k_staffSessions';
+  type SessionView, type StaffOpdSession, type StaffSessionPage } from '../features/sessions/k_staffSessions';
 import { colors, radii, surfaces } from '../theme/tokens';
 import { useHomeFonts } from '../theme/homeFonts';
 import { useSessionWaitingCounts } from '../features/sessions/k_useSessionWaitingCounts';
 import { endedSessionMessage, sessionEndTimestamp, sessionHasEnded, useSessionEditClock } from '../features/sessions/k_sessionEditing';
+import { pickerStrings } from '../features/sessions/k_sessionForm';
 
-type Props = { accessToken?: string; hospital?: string; onSessionExpired?: () => void;
+type Props = { accessToken?: string; hospital?: string; onSessionExpired?: () => void; targetSessionId?: string;
   savedSessionDate?: string; saveMessage?: string; onSaveMessageConsumed?: () => void;
   onAdd: () => void; onEdit: (sessionId: string) => void };
 
 export function OpdSessionsScreen(props: Props) {
+  const { targetSessionId, accessToken, onSessionExpired } = props;
   const [view, setView] = useState<SessionView>('today');
   const [page, setPage] = useState(1);
   const [date, setDate] = useState(props.savedSessionDate);
+  const [resolvedTarget, setResolvedTarget] = useState<string>();
+  const locating = !!targetSessionId && /^[a-f\d]{24}$/i.test(targetSessionId) && resolvedTarget !== targetSessionId;
+  const [targetPage, setTargetPage] = useState<{ view: SessionView; page: number; date?: string; data: StaffSessionPage }>();
+  useEffect(() => {
+    const targetId = targetSessionId;
+    if (!targetId || !/^[a-f\d]{24}$/i.test(targetId)) return;
+    const controller = new AbortController();
+    void (async () => {
+      const session = await fetchStaffSession(accessToken, targetId, controller.signal);
+      if (session._id !== targetId) return;
+      const today = pickerStrings(new Date()).date;
+      if (session.sessionDate < today) return;
+      const nextView = session.sessionDate > today ? 'upcoming' : 'today';
+      const nextDate = session.sessionDate < today ? session.sessionDate : undefined;
+      for (let nextPage = 1; !controller.signal.aborted; nextPage++) {
+        const result = nextDate ? await fetchStaffSessions(accessToken, nextView, nextPage, controller.signal, nextDate)
+          : await fetchStaffSessions(accessToken, nextView, nextPage, controller.signal);
+        if (controller.signal.aborted) return;
+        if (result.data.some(item => item._id === targetId)) {
+          setView(nextView); setPage(nextPage); setDate(nextDate);
+          setTargetPage({ view: nextView, page: nextPage, date: nextDate, data: result });
+          return;
+        }
+        if (!result.hasMore || result.data.length === 0) return;
+      }
+    })().catch(reason => {
+      if (!controller.signal.aborted && reason instanceof ApiError && reason.status === 401) onSessionExpired?.();
+    }).finally(() => { if (!controller.signal.aborted) setResolvedTarget(targetId); });
+    return () => controller.abort();
+  }, [targetSessionId, accessToken, onSessionExpired]);
   const [successToast, setSuccessToast] = useState(() => props.saveMessage?.replace(/\.$/, ''));
   const { onSaveMessageConsumed } = props;
   const consumed = useRef(false);
@@ -30,22 +64,43 @@ export function OpdSessionsScreen(props: Props) {
   const dismissSuccessToast = useCallback(() => setSuccessToast(undefined), []);
   return <SafeAreaView style={styles.safe} edges={['top']}>
     <SessionToast message={successToast} onDismiss={dismissSuccessToast} />
-    <SessionsPage key={`${view}:${page}:${date ?? ''}`} {...props} date={date}
-    view={view} page={page} onPage={setPage}
-    onView={next => { setView(next); setPage(1); setDate(undefined); }} />
+    {locating ? <ActivityIndicator accessibilityLabel="Finding selected session" color={colors.teal} /> : <SessionsPage key={`${view}:${page}:${date ?? ''}:${props.targetSessionId ?? ''}`} {...props} date={date}
+    targetSessionId={targetPage ? props.targetSessionId : undefined}
+    initialData={targetPage?.view === view && targetPage.page === page && targetPage.date === date ? targetPage.data : undefined}
+    view={view} page={page} onPage={next => { setTargetPage(undefined); setPage(next); }}
+    onView={next => { setTargetPage(undefined); setView(next); setPage(1); setDate(undefined); }} />}
   </SafeAreaView>;
 }
 
-function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView, date }:
-  Props & { view: SessionView; page: number; date?: string; onPage: (page: number) => void; onView: (view: SessionView) => void }) {
+function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView, date, targetSessionId, initialData }:
+  Props & { view: SessionView; page: number; date?: string; initialData?: StaffSessionPage; onPage: (page: number) => void; onView: (view: SessionView) => void }) {
   const fonts = useHomeFonts();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterDate, setFilterDate] = useState<string>();
+  const [pickerDate, setPickerDate] = useState<Date | null>(null);
+  const [calendarTick, setCalendarTick] = useState(0);
+  const today = pickerStrings(new Date()).date;
+  // Increment a UTC calendar-day marker, then construct the Colombo midnight instant.
+  const tomorrow = new Date(Date.parse(`${today}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
+  const minimumDate = new Date(`${tomorrow}T00:00:00+05:30`);
+  const activeFilterDate = view === 'upcoming' && filterDate && filterDate > today ? filterDate : undefined;
+  useEffect(() => {
+    // Re-evaluate stale filters and rows at Colombo midnight without API polling.
+    void calendarTick;
+    const timer = setTimeout(() => setCalendarTick(tick => tick + 1), Math.max(1, Date.parse(`${tomorrow}T00:00:00+05:30`) - Date.now() + 1));
+    return () => clearTimeout(timer);
+  }, [tomorrow, calendarTick]);
   const listPending = useRef(false);
+  const initial = useRef(initialData);
+  const scroll = useRef<ScrollView>(null);
+  const revealed = useRef(false);
   const load = useCallback(async (signal: AbortSignal) => {
     listPending.current = true;
     try {
-      const result = await (date ? fetchStaffSessions(accessToken, view, page, signal, date)
+      if (initial.current) { const result = initial.current; initial.current = undefined; return result; }
+      const requestedDate = date && (view !== 'upcoming' || date > pickerStrings(new Date()).date) ? date : undefined;
+      const result = await (requestedDate ? fetchStaffSessions(accessToken, view, page, signal, requestedDate)
         : fetchStaffSessions(accessToken, view, page, signal));
       // Give every successful refresh an identity so metrics refresh too.
       return { ...result };
@@ -100,10 +155,25 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
   };
   const bodyFont = { fontFamily: fonts.body };
   const query = searchQuery.trim().toLowerCase();
-  const visibleSessions = data?.data.filter(session => !query ||
-    [session.serviceName, session.doctorOrTeam].some(value => value?.toLowerCase().includes(query))) ?? [];
+  const visibleSessions = data?.data.filter(session =>
+    (view !== 'upcoming' || session.sessionDate > today) &&
+    (!query || [session.serviceName, session.doctorOrTeam].some(value => value?.toLowerCase().includes(query))) &&
+    (!activeFilterDate || session.sessionDate === activeFilterDate)) ?? [];
+  const acceptDate = (value: Date) => {
+    if (Number.isFinite(value.getTime())) {
+      const selected = pickerStrings(value).date;
+      setFilterDate(selected > pickerStrings(new Date()).date ? selected : undefined);
+    }
+    setPickerDate(null);
+  };
+  const calendar = pickerDate ? <DateTimePicker value={pickerDate < minimumDate ? minimumDate : pickerDate}
+    minimumDate={minimumDate} mode="date" timeZoneName="Asia/Colombo"
+    themeVariant="light" display={Platform.OS === 'ios' ? 'inline' : 'default'}
+    onValueChange={(_event, value) => Platform.OS === 'ios' ? setPickerDate(value) : acceptDate(value)}
+    onDismiss={() => setPickerDate(null)}
+    onError={() => { setPickerDate(null); setFeedback('Could not open the picker. Please try again.'); }} /> : null;
   return <SafeAreaView style={styles.safe} edges={['left', 'right']}>
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
+    <ScrollView ref={scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.teal} />}>
       <View style={styles.header}>
         <Text accessibilityRole="header" style={[styles.title, styles.grow, { fontFamily: fonts.display }]}>OPD sessions</Text>
@@ -114,12 +184,37 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
       </View>
       {hospital ? <Text style={[styles.sub, bodyFont]}>{hospital}</Text> : null}
       {searchOpen ? <View style={styles.searchRow}>
-        <TextInput accessibilityLabel="Search sessions" placeholder="Search sessions" autoFocus
-          value={searchQuery} onChangeText={setSearchQuery} autoCorrect={false} autoCapitalize="none"
-          placeholderTextColor={colors.inkSoft} style={[styles.searchInput, bodyFont]} />
+        <View style={styles.searchField}>
+          <TextInput accessibilityLabel="Search sessions by session name, doctor, or clinic team"
+            placeholder="Search by session or doctor" autoFocus
+            value={searchQuery} onChangeText={setSearchQuery} autoCorrect={false} autoCapitalize="none"
+            placeholderTextColor={colors.inkSoft} style={[styles.searchInput, bodyFont]} />
+          {view === 'upcoming' ? <Pressable accessibilityRole="button" accessibilityLabel="Filter sessions by date"
+            accessibilityState={{ expanded: !!pickerDate }} style={styles.searchIcon}
+            onPress={() => { Keyboard.dismiss(); setPickerDate(new Date(`${activeFilterDate ?? tomorrow}T12:00:00+05:30`)); }}>
+            <Ionicons name="calendar-outline" size={22} color={colors.tealDark} accessible={false} />
+          </Pressable> : null}
+          <Pressable accessibilityRole="button" accessibilityLabel="Close session search" style={styles.searchIcon}
+            onPress={() => { Keyboard.dismiss(); setSearchQuery(''); setFilterDate(undefined); setPickerDate(null); setSearchOpen(false); }}>
+            <Ionicons name="close" size={22} color={colors.tealDark} accessible={false} />
+          </Pressable>
+        </View>
         {searchQuery ? <ActionButton label="Clear search" variant="outline" onPress={() => setSearchQuery('')} /> : null}
-        <ActionButton label="Close search" variant="outline" onPress={() => { setSearchQuery(''); setSearchOpen(false); }} />
+        {activeFilterDate ? <View style={styles.searchRow}>
+          <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>Date: {sessionDayLabel(activeFilterDate)}</Text>
+          <ActionButton label="Clear date filter" variant="outline" onPress={() => setFilterDate(undefined)} />
+        </View> : null}
       </View> : null}
+      {Platform.OS !== 'ios' ? calendar : null}
+      {Platform.OS === 'ios' && pickerDate ? <Modal transparent animationType="fade" onRequestClose={() => setPickerDate(null)}>
+        <View style={styles.pickerOverlay}><View style={styles.pickerPanel}>
+          {calendar}
+          <View style={styles.actions}>
+            <ActionButton label="Cancel date selection" variant="outline" onPress={() => setPickerDate(null)} />
+            <ActionButton label="Apply date filter" onPress={() => acceptDate(pickerDate)} />
+          </View>
+        </View></View>
+      </Modal> : null}
       <View style={styles.segment}>{(['today', 'upcoming'] as const).map(option =>
         <Pressable key={option} accessibilityRole="tab" accessibilityLabel={option === 'today' ? 'Today' : 'Upcoming'}
           accessibilityState={{ selected: !date && view === option, disabled: !!busy }} disabled={!!busy}
@@ -133,16 +228,23 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
         <Text style={[styles.sub, bodyFont]}>Loading sessions…</Text></View> : null}
       {error ? <View style={styles.state}><Text accessibilityRole="alert" style={[styles.sub, bodyFont]}>{error}</Text>
         <ActionButton label="Try again" onPress={reload} /></View> : null}
-      {!loading && !error && data && query && visibleSessions.length === 0 ? <View style={styles.state}>
+      {!loading && !error && data && (query || activeFilterDate) && visibleSessions.length === 0 ? <View style={styles.state}>
         <Text accessibilityLiveRegion="polite" style={[styles.heading, { fontFamily: fonts.semibold }]}>No sessions match your search.</Text>
       </View> : null}
-      {!loading && !error && !query && data?.data.length === 0 ? <View style={styles.state}>
+      {!loading && !error && !query && !activeFilterDate && data && visibleSessions.length === 0 ? <View style={styles.state}>
         <Text style={[styles.heading, { fontFamily: fonts.semibold }]}>{date ? 'No sessions on this date' : view === 'today' ? 'No sessions today' : 'No upcoming sessions'}</Text>
         <Text style={[styles.sub, bodyFont]}>Add a session or pull down to refresh.</Text></View> : null}
-      {visibleSessions.map(session => <View key={session._id} style={styles.card}>
+      {visibleSessions.map(session => <View key={session._id} style={[styles.card, session._id === targetSessionId && styles.targetCard]}
+        onLayout={session._id === targetSessionId ? event => {
+          if (!revealed.current && scroll.current) {
+            scroll.current.scrollTo({ y: Math.max(0, event.nativeEvent.layout.y - 14), animated: true });
+            revealed.current = true;
+          }
+        } : undefined}>
+        {session._id === targetSessionId ? <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>Selected session</Text> : null}
         <View style={styles.cardTop}><Text style={[styles.heading, styles.grow, { fontFamily: fonts.semibold }]}>{session.serviceName ?? 'Service unavailable'}</Text>
-          <View style={[styles.badge, session.status === 'OPEN' || session.status === 'RUNNING' ? styles.tealBadge : styles.neutralBadge]}>
-            <Text style={[styles.status, bodyFont]}>{session.status === 'CLOSED' ? 'Bookings closed' : session.status?.toLowerCase().replace(/^./, letter => letter.toUpperCase()) ?? 'Status unavailable'}</Text>
+          <View style={[styles.badge, session.status === 'OPEN' ? styles.openBadge : session.status === 'RUNNING' ? styles.tealBadge : styles.neutralBadge]}>
+            <Text style={[styles.status, bodyFont, session.status === 'OPEN' && styles.openStatus]}>{session.status === 'CLOSED' ? 'Bookings closed' : session.status?.toLowerCase().replace(/^./, letter => letter.toUpperCase()) ?? 'Status unavailable'}</Text>
           </View></View>
         <Text style={[styles.sub, bodyFont]}>{sessionDayLabel(session.sessionDate)} · {session.startTime ?? '—'} – {session.endTime ?? '—'}</Text>
         <Text style={[styles.sub, bodyFont]}>{session.doctorOrTeam ?? 'Team unavailable'}</Text>
@@ -189,7 +291,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   searchButton: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.panel, borderRadius: radii.note },
   searchRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  searchInput: { flexGrow: 1, flexShrink: 1, minWidth: 150, minHeight: 48, paddingHorizontal: 14, borderWidth: 1, borderColor: colors.sageLine, borderRadius: radii.note, backgroundColor: colors.panel, color: colors.ink, fontSize: 16 },
+  searchField: { width: '100%', flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.sageLine, borderRadius: radii.note, backgroundColor: colors.panel },
+  searchIcon: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  searchInput: { flex: 1, minHeight: 48, paddingHorizontal: 14, color: colors.ink, fontSize: 15 },
+  pickerOverlay: { flex: 1, justifyContent: 'center', padding: 22, backgroundColor: 'rgba(0,0,0,0.35)' },
+  pickerPanel: { padding: 16, borderRadius: radii.note, backgroundColor: colors.panel, gap: 14 },
   sub: { fontSize: 15, color: colors.inkSoft },
   heading: { fontSize: 18, color: colors.ink },
   grow: { flex: 1 },
@@ -198,9 +304,12 @@ const styles = StyleSheet.create({
   selected: { backgroundColor: colors.panel },
   tabText: { fontSize: 16, color: colors.tealDark },
   card: { ...surfaces.card, gap: 10 },
+  targetCard: { borderColor: colors.tealDark, borderWidth: 2 },
   cardTop: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   badge: { borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 6 },
   tealBadge: { backgroundColor: colors.tealTint },
+  openBadge: { backgroundColor: colors.tealTint, borderWidth: 1, borderColor: colors.tealDark },
+  openStatus: { color: colors.tealDark, fontWeight: '600' },
   neutralBadge: { backgroundColor: colors.amberTint },
   status: { fontSize: 14, color: colors.ink },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.sageLine },

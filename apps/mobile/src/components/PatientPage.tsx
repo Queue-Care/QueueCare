@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,7 +23,15 @@ import {
   ticketStyles,
 } from '../theme/tokens';
 
-export function PatientPage({ children }: { children: React.ReactNode }) {
+export function PatientPage({
+  children,
+  refreshing = false,
+  onRefresh,
+}: {
+  children: React.ReactNode;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}) {
   return (
     <SafeAreaView
       style={patientStyles.page}
@@ -35,6 +44,15 @@ export function PatientPage({ children }: { children: React.ReactNode }) {
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={patientStyles.content}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.teal}
+              />
+            ) : undefined
+          }
         >
           {children}
         </ScrollView>

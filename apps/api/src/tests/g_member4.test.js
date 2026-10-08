@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { SignJWT } from 'jose';
 import { ObjectId } from 'mongodb';
@@ -19,12 +22,9 @@ import {
 } from '../modules/staff/g_staffAuthRepository.js';
 import { createStaffDashboardRepository } from '../modules/staff/g_staffDashboard.js';
 import { createProfileRepository } from '../modules/users/g_profileRepository.js';
-import {
-  createMongoMediaStore,
-  ensureProfileImageIndexes,
-} from '../modules/media/g_mongoMediaStore.js';
+import { createFileMediaStore } from '../modules/media/g_fileMediaStore.js';
 import { ensurePatientRegistrationIndexes } from '../modules/auth/patientRegistration.js';
-import { demoHospitals } from '../seeds/hospitals.js';
+import { demoHospitals, seedHospitals } from '../seeds/hospitals.js';
 import { seedPriorityDemo } from '../seeds/g_priorityDemo.js';
 import { startHttp, startMongo } from './testServer.js';
 
@@ -37,9 +37,11 @@ async function setup(t, { mediaStore } = {}) {
   await ensurePatientRegistrationIndexes(db);
   await ensureNotificationIndexes(db);
   await ensurePriorityIndexes(db);
-  await ensureProfileImageIndexes(db);
-  const profileImageStore = createMongoMediaStore(db);
-  if (mediaStore === 'mongodb') mediaStore = profileImageStore;
+  // Each run saves photos to its own temporary folder, never the real profile_photo.
+  const photoDirectory = await mkdtemp(join(tmpdir(), 'queuecare-photo-test-'));
+  t.after(() => rm(photoDirectory, { recursive: true, force: true }));
+  const profileImageStore = createFileMediaStore(photoDirectory);
+  if (mediaStore === 'files') mediaStore = profileImageStore;
   const priorityRepository = createPriorityRepository(db);
   const notificationRepository = createNotificationRepository(db);
   const base = await startHttp(
@@ -102,7 +104,7 @@ async function setup(t, { mediaStore } = {}) {
     });
     return { status: response.status, ...(await response.json()) };
   }
-  return { db, call, staff, upload, base };
+  return { db, call, staff, upload, base, photoDirectory };
 }
 
 async function tokenFor(userId) {
@@ -129,7 +131,7 @@ test(
 
     // A typed hospital name is matched to its record regardless of letter case.
     const reception = await staff('CNH-RC-0421', {
-      hospital: 'demo central hospital',
+      hospital: demoHospitals[0].name.toLowerCase(),
     });
     assert.equal(reception.hospital, demoHospitals[0].name);
     const saved = await db
@@ -553,11 +555,11 @@ test(
 );
 
 test(
-  'without Cloudinary a profile photo is saved in MongoDB and served back',
+  'without Cloudinary staff and patient photos are saved as files and only the link in MongoDB',
   { timeout: 60000 },
   async (t) => {
-    const { db, call, staff, upload, base } = await setup(t, {
-      mediaStore: 'mongodb',
+    const { db, call, staff, upload, base, photoDirectory } = await setup(t, {
+      mediaStore: 'files',
     });
     await db.collection('hospitals').insertOne({ ...demoHospitals[0] });
     const { token, userId } = await staff('CNH-RC-0421', {
@@ -573,12 +575,20 @@ test(
     const saved = await upload(token, jpeg);
     assert.equal(saved.status, 201);
     // A path relative to the API base URL, with an unguessable token.
-    assert.match(saved.data.profileImageUrl, /^\/media\/profile-images\/[a-f\d]{32}$/);
-    const stored = await db
-      .collection('profileImages')
-      .findOne({ _id: `queuecare/profiles/${userId}` });
-    assert.ok(Buffer.from(stored.data.buffer).equals(jpeg));
-    assert.equal(stored.contentType, 'image/jpeg');
+    const fileName = `${userId}-[a-f\\d]{32}`;
+    assert.match(
+      saved.data.profileImageUrl,
+      new RegExp(`^/media/profile-photos/${fileName}\\.jpg$`)
+    );
+    // The image is a file in the folder; the account holds only its link.
+    const [stored] = await readdir(photoDirectory);
+    assert.equal(saved.data.profileImageUrl, `/media/profile-photos/${stored}`);
+    assert.ok((await readFile(join(photoDirectory, stored))).equals(jpeg));
+    const account = await db
+      .collection('users')
+      .findOne({ staffId: 'CNH-RC-0421' });
+    assert.equal(account.profileImageUrl, saved.data.profileImageUrl);
+    assert.ok(!Object.values(account).some((value) => value?._bsontype === 'Binary'));
     assert.equal(
       (await call('GET', '/me', { token })).data.profileImageUrl,
       saved.data.profileImageUrl
@@ -602,15 +612,90 @@ test(
     ]);
     const replaced = await upload(token, png, 'image/png');
     assert.notEqual(replaced.data.profileImageUrl, saved.data.profileImageUrl);
-    assert.equal(await db.collection('profileImages').countDocuments(), 1);
+    assert.equal((await readdir(photoDirectory)).length, 1);
     assert.equal((await view(saved.data.profileImageUrl)).status, 404);
     const updated = await view(replaced.data.profileImageUrl);
     assert.equal(updated.headers.get('content-type'), 'image/png');
 
+    // A patient changes their photo the same way; each account keeps its own file.
+    const patientId = new ObjectId();
+    await db.collection('users').insertOne({
+      _id: patientId,
+      role: 'PATIENT',
+      status: 'ACTIVE',
+      fullName: 'Kamala Perera',
+      nic: '000000009999V',
+      mobile: '+94 77 000 0099',
+    });
+    const patientToken = await tokenFor(patientId);
+    const patientPhoto = await upload(patientToken, jpeg);
+    assert.equal(patientPhoto.status, 201);
+    assert.equal(patientPhoto.data.role, 'PATIENT');
+    assert.ok(patientPhoto.data.profileImageUrl.includes(`/${patientId}-`));
+    assert.equal((await view(patientPhoto.data.profileImageUrl)).status, 200);
+    assert.equal((await readdir(photoDirectory)).length, 2);
+    assert.equal(
+      (await call('DELETE', '/me/profile-image', { token: patientToken })).data
+        .profileImageUrl,
+      null
+    );
+    assert.equal((await readdir(photoDirectory)).length, 1);
+    assert.equal((await view(replaced.data.profileImageUrl)).status, 200);
+
     const removed = await call('DELETE', '/me/profile-image', { token });
     assert.equal(removed.data.profileImageUrl, null);
-    assert.equal(await db.collection('profileImages').countDocuments(), 0);
+    assert.deepEqual(await readdir(photoDirectory), []);
     assert.equal((await view(replaced.data.profileImageUrl)).status, 404);
-    assert.equal((await view('/media/profile-images/not-a-token')).status, 404);
+    // Only stored photo names are ever read; nothing else in the folder or beyond it.
+    for (const name of ['not-a-photo', '..%2F..%2F.env', '.gitkeep'])
+      assert.equal((await view(`/media/profile-photos/${name}`)).status, 404);
+  }
+);
+
+test(
+  'the hospital seed renames former demo hospitals and their staff in place',
+  { timeout: 60000 },
+  async (t) => {
+    const { db } = await setup(t);
+    const [central, lakeside] = demoHospitals;
+    await db.collection('hospitals').insertMany([
+      { ...central, name: 'Demo Central Hospital', city: 'Colombo' },
+      // An edited record no longer carries its former demo name.
+      { ...lakeside, name: 'Renamed by the team', city: 'Kandy' },
+    ]);
+    await db.collection('users').insertOne({
+      staffId: 'CNH-RC-0001',
+      role: 'RECEPTION',
+      status: 'ACTIVE',
+      hospitalId: central._id,
+      hospital: 'Demo Central Hospital',
+    });
+
+    const seeded = await seedHospitals(db);
+    assert.deepEqual(seeded, { upsertedCount: 3, renamedCount: 1 });
+    const renamed = await db
+      .collection('hospitals')
+      .findOne({ _id: central._id });
+    assert.equal(renamed.name, central.name);
+    assert.equal(renamed.city, central.city);
+    assert.equal(renamed.address, central.address);
+    assert.equal(
+      (await db.collection('hospitals').findOne({ _id: lakeside._id })).name,
+      'Renamed by the team'
+    );
+    // Staff accounts keep a copy of the name, shown on their dashboard and profile.
+    assert.equal(
+      (await db.collection('users').findOne({ staffId: 'CNH-RC-0001' }))
+        .hospital,
+      central.name
+    );
+
+    const listed = await db.collection('hospitals').find({}).toArray();
+    assert.equal(listed.length, 5);
+    assert.ok(!listed.some((hospital) => hospital.name.startsWith('Demo ')));
+    assert.deepEqual(await seedHospitals(db), {
+      upsertedCount: 0,
+      renamedCount: 0,
+    });
   }
 );

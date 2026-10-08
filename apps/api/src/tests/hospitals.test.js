@@ -164,7 +164,7 @@ test(
     await t.test(
       'explicit demo seed is idempotent and preserves existing data and edits',
       async () => {
-        assert.equal((await seedHospitals(db)).upsertedCount, 3);
+        assert.equal((await seedHospitals(db)).upsertedCount, 5);
         assert.equal(
           (await collection.findOne({ _id: demoHospitals[0]._id }))
             .openingHours,
@@ -180,7 +180,7 @@ test(
           }
         );
         assert.equal((await seedHospitals(db)).upsertedCount, 0);
-        assert.equal(await collection.countDocuments({}), fixture.length + 3);
+        assert.equal(await collection.countDocuments({}), fixture.length + 5);
         assert.equal(
           (await collection.findOne({ _id: demoHospitals[0]._id }))
             .openingHours,

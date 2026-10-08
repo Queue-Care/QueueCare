@@ -21,7 +21,7 @@ export type StaffPriorityRequest = {
     maskedNic?: string | null;
     phone?: string | null;
   };
-  booking: { _id: string; bookingCode: string | null };
+  booking: { _id: string; bookingCode: string | null; assignedTime?: string | null; queueType?: string | null };
   service: { name: string };
   hospital: { name: string };
   session: { startsAt: string | null };
@@ -74,6 +74,8 @@ export function parsePriorityRequest(value: unknown): StaffPriorityRequest {
     booking: {
       _id: value.booking._id,
       bookingCode: optionalText(value.booking.bookingCode),
+      assignedTime: optionalText(value.booking.assignedTime),
+      queueType: optionalText(value.booking.queueType),
     },
     service: { name: optionalText(value.service.name) ?? 'OPD service' },
     hospital: { name: optionalText(value.hospital.name) ?? 'Hospital' },

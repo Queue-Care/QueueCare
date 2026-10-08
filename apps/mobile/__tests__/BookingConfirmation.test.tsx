@@ -51,6 +51,14 @@ async function mount() {
     renderer = ReactTestRenderer.create(tree());
   });
 }
+test('confirmation displays the assigned appointment time and priority queue type', async () => {
+  load.mockResolvedValue({ ...saved, assignedTime: '2026-10-03T03:55:00.000Z', queueType: 'PRIORITY' });
+  await mount();
+  const shown = renderer.root.findAllByType(Text).map(node => [node.props.children].flat().join('')).join(' ');
+  expect(shown).toContain('Appointment time:');
+  expect(shown).toContain('09:25:00 am');
+  expect(shown).toContain('Queue type: Priority');
+});
 function has(value: string) {
   return renderer.root
     .findAllByType(Text)

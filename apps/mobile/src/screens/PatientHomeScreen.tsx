@@ -58,6 +58,11 @@ export function PatientHomeScreen({
     : 'P';
   const tiles = [
     {
+      label: 'Find a hospital',
+      icon: 'Location',
+      onPress: onSearch,
+    },
+    {
       label: 'My bookings',
       icon: 'Bookings',
       onPress: guest ? onSignIn : onBookings,
@@ -252,13 +257,6 @@ export function PatientHomeScreen({
               </Text>
             </View>
           )}
-          {!guest && state.status !== 'loading' && (
-            <ActionButton
-              label="Refresh appointment"
-              variant="outline"
-              onPress={reload}
-            />
-          )}
         </View>
         <Text
           accessibilityRole="header"
@@ -273,7 +271,9 @@ export function PatientHomeScreen({
               accessibilityRole="button"
               accessibilityLabel={tile.label}
               accessibilityHint={
-                guest && tile.icon !== 'Location'
+                tile.icon === 'Location'
+                  ? 'Opens the same hospital search as the search bar'
+                  : guest
                   ? 'Sign in to continue'
                   : undefined
               }

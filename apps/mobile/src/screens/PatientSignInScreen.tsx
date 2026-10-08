@@ -8,6 +8,7 @@ import {
   patientStyles as s,
 } from '../components/PatientPage';
 import { ActionButton } from '../components/ActionButton';
+import { PasswordField } from '../components/g_PasswordField';
 import { message, patientApi, PatientApiError } from '../features/patient/api';
 
 type Props = NativeStackScreenProps<PatientAuthParams, 'PatientSignIn'> & {
@@ -70,11 +71,10 @@ export function PatientSignInScreen({ navigation, route, onSignedIn }: Props) {
         maxLength={12}
         editable={!busy}
       />
-      <Field
+      <PasswordField
         label="Password"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         autoComplete="current-password"
         editable={!busy}
       />

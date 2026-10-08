@@ -2,30 +2,40 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
+  Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { bookingMessages } from '../features/booking/createBooking';
 import type { BookingSubmission } from '../features/booking/useBookingSubmission';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '../components/ActionButton';
 import { StatusText } from '../components/StatusText';
+import { InterfaceIcon } from '../components/InterfaceIcon';
 import {
   colomboDate,
   isCalendarDate,
   isSessionBookable,
   sessionTimeLabel,
-  shiftDate,
+  SESSION_TIME_ZONE,
 } from '../features/booking/availableSessions';
 import { useAvailableSessions } from '../features/booking/useAvailableSessions';
 import type { PatientSummary } from '../navigation/types';
-import { colors, fonts, surfaces, typography, radii, spacing } from '../theme/tokens';
+import {
+  colors,
+  fonts,
+  surfaces,
+  typography,
+  radii,
+  spacing,
+} from '../theme/tokens';
 
 export function BookAppointmentScreen({
   hospitalId,
@@ -47,11 +57,13 @@ export function BookAppointmentScreen({
   onChooseHospital: () => void;
 }) {
   const [date, setDate] = useState(colomboDate);
-  const [draftDate, setDraftDate] = useState(date);
+  const [showAllServices, setShowAllServices] = useState(false);
   const [dateError, setDateError] = useState('');
+  // Pending calendar value; iOS confirms it with "Use date", Android applies it on selection.
+  const [picker, setPicker] = useState<Date | null>(null);
   const { state, selected, select, reload, now } = useAvailableSessions({
     hospitalId,
-    serviceId,
+    serviceId: showAllServices ? undefined : serviceId,
     date,
   });
   const focused = useIsFocused();
@@ -103,18 +115,44 @@ export function BookAppointmentScreen({
   const refresh = () => {
     if (!submission.pending) reload();
   };
-  const today = colomboDate(new Date(now));
   const chooseDate = (value: string) => {
     if (submission.pending) return;
     if (!isCalendarDate(value) || value < colomboDate()) {
-      setDateError('Enter today or a future date in YYYY-MM-DD format.');
+      setDateError('Choose today or a future date.');
       return;
     }
     setDateError('');
-    setDraftDate(value);
     if (value === date) reload();
     else setDate(value);
   };
+  const openCalendar = () => {
+    if (submission.pending) return;
+    setDateError('');
+    setPicker(new Date(`${date}T12:00:00+05:30`));
+  };
+  const acceptCalendar = (value: Date) => {
+    setPicker(null);
+    if (Number.isFinite(value.getTime())) chooseDate(colomboDate(value));
+  };
+  const calendar = picker ? (
+    <DateTimePicker
+      value={picker}
+      mode="date"
+      display={Platform.OS === 'ios' ? 'inline' : 'default'}
+      timeZoneName={SESSION_TIME_ZONE}
+      themeVariant="light"
+      accentColor={colors.teal}
+      minimumDate={new Date(`${colomboDate()}T00:00:00+05:30`)}
+      onValueChange={(_event, value) =>
+        Platform.OS === 'ios' ? setPicker(value) : acceptCalendar(value)
+      }
+      onDismiss={() => setPicker(null)}
+      onError={() => {
+        setPicker(null);
+        setDateError('Could not open the calendar. Please try again.');
+      }}
+    />
+  ) : null;
   const patientName =
     typeof patient?.fullName === 'string' ? patient.fullName.trim() : '';
   const nic = typeof patient?.nic === 'string' ? patient.nic.trim() : '';
@@ -191,65 +229,55 @@ export function BookAppointmentScreen({
           <Text style={styles.body}>
             All dates and times are in Sri Lanka time.
           </Text>
-          <TextInput
-            accessibilityLabel="Appointment date, YYYY-MM-DD"
-            accessibilityHint={
-              dateError ||
-              'Enter today or a future date in Sri Lanka time, then choose Show sessions'
-            }
-            accessibilityState={{ disabled: submission.pending }}
-            style={styles.input}
-            value={draftDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.inkSoft}
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={10}
-            editable={!submission.pending}
-            onChangeText={value => {
-              setDraftDate(value);
-              setDateError('');
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Appointment date"
+            accessibilityValue={{ text: friendlyDate(date) }}
+            accessibilityHint="Opens a calendar to choose today or a future date"
+            accessibilityState={{
+              disabled: submission.pending,
+              expanded: !!picker,
             }}
-            onSubmitEditing={() => chooseDate(draftDate)}
-            returnKeyType="search"
-          />
+            disabled={submission.pending}
+            onPress={openCalendar}
+            style={({ pressed }) => [
+              styles.dateControl,
+              pressed && styles.dateControlPressed,
+              submission.pending && styles.dateControlDisabled,
+            ]}
+          >
+            <View style={styles.dateIcon}>
+              <InterfaceIcon name="Calendar" color={colors.tealDark} />
+            </View>
+            <Text style={[styles.heading, styles.grow]}>
+              {friendlyDate(date)}
+            </Text>
+            <Text style={styles.dateChange}>Change</Text>
+          </Pressable>
           {!!dateError && (
             <StatusText accessibilityRole="alert" style={styles.error}>
               {dateError}
             </StatusText>
           )}
-          <ActionButton
-            label="Show sessions"
-            disabled={submission.pending}
-            variant="outline"
-            onPress={() => chooseDate(draftDate)}
-          />
-          <View style={styles.dateNavigation}>
-            <View style={styles.dateAction}>
-              <ActionButton
-                label="Previous day"
-                variant="outline"
-                disabled={submission.pending || date <= today}
-                onPress={() => {
-                  if (date > colomboDate()) chooseDate(shiftDate(date, -1));
-                }}
-              />
-            </View>
-            <View style={styles.dateAction}>
-              <ActionButton
-                label="Next day"
-                variant="outline"
-                disabled={submission.pending || date === '9999-12-31'}
-                onPress={() => {
-                  if (date !== '9999-12-31') chooseDate(shiftDate(date, 1));
-                }}
-              />
-            </View>
-          </View>
         </View>
         <Text accessibilityRole="header" style={styles.heading}>
           Sessions for {date}
         </Text>
+        <View style={styles.card}>
+          <Text style={styles.body}>
+            {serviceId && !showAllServices
+              ? 'Showing sessions for the OPD service you selected.'
+              : 'Showing sessions for all OPD services at this hospital.'}
+          </Text>
+          {serviceId && (
+            <ActionButton
+              label={showAllServices ? 'Show selected service' : 'Show all services'}
+              variant="secondary"
+              disabled={submission.pending}
+              onPress={() => setShowAllServices(current => !current)}
+            />
+          )}
+        </View>
         {state.status === 'loading' ? (
           <View style={styles.card} accessibilityState={{ busy: true }}>
             <ActivityIndicator
@@ -286,7 +314,7 @@ export function BookAppointmentScreen({
               label="Try again"
               onPress={refresh}
               disabled={submission.pending}
-              variant="outline"
+              variant="secondary"
             />
           </View>
         ) : (
@@ -306,18 +334,21 @@ export function BookAppointmentScreen({
                   No upcoming sessions for this date
                 </StatusText>
                 <Text style={styles.body}>
-                  Try another date or check again later.
+                  {serviceId && !showAllServices
+                    ? 'Try Show all services to check other clinics at this hospital, or choose another date.'
+                    : 'Try another date or check again later.'}
                 </Text>
               </View>
             ) : (
               sessions.map(session => {
+                const remaining = session.normalRemainingCapacity ?? session.remainingCapacity;
                 const bookable = isSessionBookable(session, now);
                 const checked = selected?.id === session.id;
                 const capacity =
-                  session.remainingCapacity === 0
+                  remaining === 0
                     ? 'Fully booked'
-                    : `${session.remainingCapacity} ${
-                        session.remainingCapacity === 1 ? 'slot' : 'slots'
+                    : `${remaining} ${
+                        remaining === 1 ? 'slot' : 'slots'
                       } left`;
                 return (
                   <Pressable
@@ -370,12 +401,6 @@ export function BookAppointmentScreen({
                 );
               })
             )}
-            <ActionButton
-              label="Refresh availability"
-              variant="outline"
-              onPress={refresh}
-              disabled={submission.pending}
-            />
           </>
         )}
         <View style={styles.card}>
@@ -415,7 +440,7 @@ export function BookAppointmentScreen({
             {onSessionExpired && (
               <ActionButton
                 label="Sign in again"
-                variant="outline"
+                variant="secondary"
                 onPress={onSessionExpired}
               />
             )}
@@ -457,7 +482,7 @@ export function BookAppointmentScreen({
                 {['duplicate', 'uncertain'].includes(outcome.kind) && (
                   <ActionButton
                     label="Check My bookings"
-                    variant="outline"
+                    variant="secondary"
                     onPress={onBookings}
                   />
                 )}
@@ -465,7 +490,7 @@ export function BookAppointmentScreen({
                   selected?.id === attempt.sessionId && (
                     <ActionButton
                       label="Retry same session"
-                      variant="outline"
+                      variant="quiet"
                       disabled={
                         !patientName ||
                         !submission.authenticated ||
@@ -510,6 +535,36 @@ export function BookAppointmentScreen({
           }}
         />
       </ScrollView>
+      {Platform.OS === 'ios' ? (
+        <Modal
+          visible={!!picker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPicker(null)}
+        >
+          <View style={styles.overlay}>
+            <View style={styles.dialog}>
+              <Text accessibilityRole="header" style={styles.heading}>
+                Choose appointment date
+              </Text>
+              {calendar}
+              <ActionButton
+                label="Use date"
+                onPress={() => {
+                  if (picker) acceptCalendar(picker);
+                }}
+              />
+              <ActionButton
+                label="Cancel"
+                variant="quiet"
+                onPress={() => setPicker(null)}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : (
+        calendar
+      )}
     </SafeAreaView>
   );
 }
@@ -533,21 +588,50 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.panel,
   },
-  input: {
-    fontFamily: fonts.body,
-    minHeight: 52,
+  dateControl: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     borderWidth: 1,
     borderColor: colors.controlBorder,
     borderRadius: radii.sm,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 15,
-    color: colors.ink,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: colors.panel,
   },
+  dateControlPressed: {
+    backgroundColor: colors.tealTint,
+    borderColor: colors.tealDark,
+  },
+  dateControlDisabled: { backgroundColor: colors.canvas },
+  dateIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.icon,
+    backgroundColor: colors.tealTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateChange: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.tealDark,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(23,48,42,0.45)',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  dialog: {
+    backgroundColor: colors.panel,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
   row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  dateNavigation: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  dateAction: { flexBasis: 140, flexGrow: 1 },
   sessionControl: { minHeight: 52, borderColor: colors.controlBorder },
   grow: { flex: 1 },
   selected: surfaces.selected,
@@ -582,3 +666,12 @@ const styles = StyleSheet.create({
   error: { color: colors.ink, fontSize: 16, lineHeight: 24 },
   pressed: { borderColor: colors.tealDark, borderWidth: 2 },
 });
+function friendlyDate(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${value}T00:00:00.000Z`));
+}

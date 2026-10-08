@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { demoHospitals } from './hospitals.js';
 
-// These services belong only to the fictional demo hospitals.
+// Demo services for the seeded hospitals only; not the hospitals' real clinic lists.
 export const demoServices = demoHospitals.flatMap((hospital, index) =>
   ['General OPD', 'Medical clinic'].map((name, serviceIndex) => ({
     _id: new ObjectId(

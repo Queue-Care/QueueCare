@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { HttpError } from '../../utils/HttpError.js';
-import { imageContentType } from '../media/g_mongoMediaStore.js';
+import { imageContentType } from '../media/g_fileMediaStore.js';
 import { LANGUAGES } from './g_profileRepository.js';
 
 function fields(body, allowed, errors) {
@@ -89,7 +89,7 @@ const receive = multer({
 const invalidImage = (message, status = 400) =>
   new HttpError(status, 'VALIDATION_ERROR', message, { image: message });
 
-// Reads the multipart "image" field into memory for the Cloudinary upload.
+// Reads the multipart "image" field into memory for the photo store.
 function receiveImage(request, response, next) {
   receive(request, response, (error) => {
     if (!error) return next();

@@ -23,6 +23,10 @@ try {
   console.log(
     `Inserted ${result.upsertedCount} demo hospitals. Existing records were preserved.`
   );
+  if (result.renamedCount)
+    console.log(
+      `Renamed ${result.renamedCount} former demo hospitals to their current names.`
+    );
   if (process.argv.includes('--services')) {
     const services = await seedServices(connection.db);
     console.log(

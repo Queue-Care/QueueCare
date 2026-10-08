@@ -8,6 +8,7 @@ import { readAuthConfig } from '../config/auth.js';
 import {
   createBookingRepository,
   ensureBookingIndexes,
+  makeBookingCode,
 } from '../modules/bookings/bookingRepository.js';
 import { createStaffSessionRepository } from '../modules/sessions/k_sessionRepository.js';
 import { parseBookingBody } from '../modules/bookings/bookingRoutes.js';
@@ -55,6 +56,10 @@ async function post(base, sessionId, bearer, extra = {}, suffix = '') {
   });
   return { status: response.status, body: await response.json() };
 }
+test('booking codes are short and avoid look-alike characters', () => {
+  for (let i = 0; i < 500; i++)
+    assert.match(makeBookingCode(), /^OPD-[A-HJ-NP-Z2-9]{6}$/);
+});
 test('booking payload is strict and never accepts patient identity, codes, or counts', () => {
   assert.ok(
     parseBookingBody({ sessionId: id(10).toString().toUpperCase() }).equals(
@@ -241,7 +246,10 @@ test(
         await sessions.insertOne(sample(301));
         const result = await post(base, id(301), bearer);
         assert.equal(result.status, 201);
-        assert.match(result.body.data.bookingCode, /^OPD-[A-F0-9]{32}$/);
+        assert.match(
+          result.body.data.bookingCode,
+          /^OPD-[A-HJ-NP-Z2-9]{6}$/
+        );
         assert.deepEqual(
           Object.keys(result.body.data).sort(),
           [
@@ -580,6 +588,34 @@ test(
             .collection('hospitals')
             .updateOne({ _id: hospitalId }, { $set: { isActive: true } });
         }
+      }
+    );
+    await t.test(
+      'booking-code collision retries with a new short code',
+      async () => {
+        await sessions.insertOne(sample(501));
+        await bookings.insertOne({
+          _id: id(901),
+          patientId: id(16),
+          sessionId: id(901),
+          bookingCode: 'OPD-TAKEN2',
+          status: 'CONFIRMED',
+        });
+        const codes = ['OPD-TAKEN2', 'OPD-FRESH3'];
+        const retryBase = await startHttp(
+          t,
+          app(db, client, { makeCode: () => codes.shift() })
+        );
+        const result = await post(retryBase, id(501), bearer);
+        assert.equal(result.status, 201);
+        assert.equal(result.body.data.bookingCode, 'OPD-FRESH3');
+        assert.equal(codes.length, 0);
+        assert.equal((await sessions.findOne({ _id: id(501) })).bookedCount, 1);
+        assert.equal(await bookings.countDocuments({ sessionId: id(501) }), 1);
+        assert.equal(
+          await notifications.countDocuments({ 'data.sessionId': id(501) }),
+          1
+        );
       }
     );
     await t.test(
