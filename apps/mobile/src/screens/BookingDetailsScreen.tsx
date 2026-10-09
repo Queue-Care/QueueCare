@@ -1,5 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { Text } from '../i18n/g_Text';
+import { useT } from '../i18n/g_language';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BookingsStackParams } from '../navigation/types';
 import {
@@ -28,6 +30,7 @@ export function BookingDetailsScreen({
   accessToken?: string;
 }) {
   const id = route.params.bookingId;
+  const t = useT();
   const load = useCallback(
     async (signal: AbortSignal) => {
       const booking = parseBooking(
@@ -139,12 +142,12 @@ export function BookingDetailsScreen({
               disabled={busy}
               onPress={() =>
                 Alert.alert(
-                  'Cancel this booking?',
-                  'Your appointment will be cancelled and its slot released.',
+                  t('Cancel this booking?'),
+                  t('Your appointment will be cancelled and its slot released.'),
                   [
-                    { text: 'Keep booking', style: 'cancel' },
+                    { text: t('Keep booking'), style: 'cancel' },
                     {
-                      text: 'Cancel booking',
+                      text: t('Cancel booking'),
                       style: 'destructive',
                       onPress: cancel,
                     },

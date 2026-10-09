@@ -21,6 +21,7 @@ import {
   type AppNotification,
   type NotificationType,
 } from '../features/notifications/g_notifications';
+import { translateWhen, useLanguage, useT } from '../i18n/g_language';
 
 type Props = {
   accessToken?: string;
@@ -47,6 +48,8 @@ export const NotificationsScreen = ({
   onOpenBooking,
   onBack,
 }: Props) => {
+  const t = useT();
+  const language = useLanguage();
   // A late read acknowledgement must not sign out a replacement account or
   // show an alert after this screen has been unmounted.
   const readScope = useRef({ active: true });
@@ -73,7 +76,7 @@ export const NotificationsScreen = ({
   const failed = (failure: unknown) => {
     if (failure instanceof ApiError && failure.status === 401)
       onSessionExpired?.();
-    Alert.alert('Notifications', errorMessage(failure));
+    Alert.alert(t('Notifications'), t(errorMessage(failure)));
     reload();
   };
   const show = (notifications: AppNotification[]) =>
@@ -116,10 +119,10 @@ export const NotificationsScreen = ({
   };
 
   const remove = (item: AppNotification) =>
-    Alert.alert('Delete this notification?', item.title, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('Delete this notification?'), t(item.title), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('Delete'),
         style: 'destructive',
         onPress: async () => {
           if (!data) return;
@@ -147,7 +150,7 @@ export const NotificationsScreen = ({
           </TouchableOpacity>
         ) : null}
         <Text accessibilityRole="header" style={styles.navTitle}>
-          Notifications
+          {t('Notifications')}
         </Text>
         <TouchableOpacity
           style={[styles.iconBtn, !data?.unreadCount && styles.disabled]}
@@ -166,20 +169,21 @@ export const NotificationsScreen = ({
           <ActivityIndicator style={styles.state} color={colors.teal} />
         ) : error && !data ? (
           <View style={styles.state}>
-            <Text style={styles.stateText}>{error}</Text>
+            <Text style={styles.stateText}>{t(error)}</Text>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Try again"
               onPress={reload}
             >
-              <Text style={styles.stateLink}>Try again</Text>
+              <Text style={styles.stateLink}>{t('Try again')}</Text>
             </TouchableOpacity>
           </View>
         ) : data && !data.notifications.length ? (
           <View style={styles.state}>
             <Text style={styles.stateText}>
-              You have no notifications yet. Booking, priority and session
-              updates will appear here.
+              {t(
+                'You have no notifications yet. Booking, priority and session updates will appear here.',
+              )}
             </Text>
           </View>
         ) : (
@@ -229,20 +233,20 @@ export const NotificationsScreen = ({
                   </View>
 
                   <View style={styles.contentWrap}>
-                    <Text style={styles.titleText}>{item.title}</Text>
+                    <Text style={styles.titleText}>{t(item.title)}</Text>
                     <Text style={styles.subText}>{item.message}</Text>
                     {opensBooking && (
-                      <Text style={styles.stateLink}>View booking</Text>
+                      <Text style={styles.stateLink}>{t('View booking')}</Text>
                     )}
                     <Text style={styles.timestampText}>
-                      {formatWhen(item.createdAt)}
+                      {translateWhen(language, formatWhen(item.createdAt))}
                     </Text>
                   </View>
 
                   {unread ? (
                     <View style={styles.priorityBadge}>
                       <View style={styles.badgeDot} />
-                      <Text style={styles.priorityBadgeText}>New</Text>
+                      <Text style={styles.priorityBadgeText}>{t('New')}</Text>
                     </View>
                   ) : null}
                 </TouchableOpacity>

@@ -19,6 +19,7 @@ import {
   statusLabels,
   type PriorityFilter,
 } from '../features/priority/g_priorityRequests';
+import { useT } from '../i18n/g_language';
 
 type Props = {
   navigation: {
@@ -38,6 +39,7 @@ export const PriorityRequestsScreen = ({
   onSessionExpired,
   onPendingCount,
 }: Props) => {
+  const t = useT();
   const [tab, setTab] = useState<PriorityFilter>('pending');
   const load = useCallback(
     (signal: AbortSignal) => fetchPriorityRequests(accessToken, tab, signal),
@@ -60,7 +62,7 @@ export const PriorityRequestsScreen = ({
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.navHead}>
         <Text accessibilityRole="header" style={styles.navTitle}>
-          Priority requests
+          {t('Priority requests')}
         </Text>
       </View>
 
@@ -83,8 +85,8 @@ export const PriorityRequestsScreen = ({
               ]}
             >
               {pendingCount === undefined
-                ? 'Pending'
-                : `Pending · ${pendingCount}`}
+                ? t('Pending')
+                : `${t('Pending')} · ${pendingCount}`}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -103,7 +105,7 @@ export const PriorityRequestsScreen = ({
                 tab === 'decided' && styles.segmentTextActive,
               ]}
             >
-              Decided
+              {t('Decided')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -123,21 +125,23 @@ export const PriorityRequestsScreen = ({
           <ActivityIndicator style={styles.state} color={colors.teal} />
         ) : error && !data ? (
           <View style={styles.state}>
-            <Text style={styles.stateText}>{error}</Text>
+            <Text style={styles.stateText}>{t(error)}</Text>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Try again"
               onPress={reload}
             >
-              <Text style={styles.stateLink}>Try again</Text>
+              <Text style={styles.stateLink}>{t('Try again')}</Text>
             </TouchableOpacity>
           </View>
         ) : data && !data.requests.length ? (
           <View style={styles.state}>
             <Text style={styles.stateText}>
-              {tab === 'pending'
-                ? 'No priority requests are waiting for review.'
-                : 'No requests have been decided yet.'}
+              {t(
+                tab === 'pending'
+                  ? 'No priority requests are waiting for review.'
+                  : 'No requests have been decided yet.',
+              )}
             </Text>
           </View>
         ) : (
@@ -188,7 +192,7 @@ export const PriorityRequestsScreen = ({
                     </Text>
                     {/* The reason stays visible without opening the request. */}
                     <Text style={styles.reason}>
-                      {reasonLabels[item.reason]}
+                      {t(reasonLabels[item.reason])}
                     </Text>
                   </View>
 
@@ -205,7 +209,7 @@ export const PriorityRequestsScreen = ({
                         accepted ? styles.badgeTextDone : styles.badgeTextCoral
                       }
                     >
-                      {statusLabels[item.status]}
+                      {t(statusLabels[item.status])}
                     </Text>
                   </View>
                 </TouchableOpacity>

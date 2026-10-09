@@ -15,6 +15,7 @@ import { useHomeFonts } from '../theme/homeFonts';
 import { useSessionWaitingCounts } from '../features/sessions/k_useSessionWaitingCounts';
 import { endedSessionMessage, sessionEndTimestamp, sessionHasEnded, useSessionEditClock } from '../features/sessions/k_sessionEditing';
 import { pickerStrings } from '../features/sessions/k_sessionForm';
+import { useT } from '../i18n/g_language';
 
 type Props = { accessToken?: string; hospital?: string; onSessionExpired?: () => void; targetSessionId?: string;
   savedSessionDate?: string; saveMessage?: string; onSaveMessageConsumed?: () => void;
@@ -22,6 +23,7 @@ type Props = { accessToken?: string; hospital?: string; onSessionExpired?: () =>
 
 export function OpdSessionsScreen(props: Props) {
   const { targetSessionId, accessToken, onSessionExpired } = props;
+  const t = useT();
   const [view, setView] = useState<SessionView>('today');
   const [page, setPage] = useState(1);
   const [date, setDate] = useState(props.savedSessionDate);
@@ -63,7 +65,7 @@ export function OpdSessionsScreen(props: Props) {
   }, [successToast, onSaveMessageConsumed]);
   const dismissSuccessToast = useCallback(() => setSuccessToast(undefined), []);
   return <SafeAreaView style={styles.safe} edges={['top']}>
-    <SessionToast message={successToast} onDismiss={dismissSuccessToast} />
+    <SessionToast message={successToast && t(successToast)} onDismiss={dismissSuccessToast} />
     {locating ? <ActivityIndicator accessibilityLabel="Finding selected session" color={colors.teal} /> : <SessionsPage key={`${view}:${page}:${date ?? ''}:${props.targetSessionId ?? ''}`} {...props} date={date}
     targetSessionId={targetPage ? props.targetSessionId : undefined}
     initialData={targetPage?.view === view && targetPage.page === page && targetPage.date === date ? targetPage.data : undefined}
@@ -75,6 +77,7 @@ export function OpdSessionsScreen(props: Props) {
 function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, view, page, onPage, onView, date, targetSessionId, initialData }:
   Props & { view: SessionView; page: number; date?: string; initialData?: StaffSessionPage; onPage: (page: number) => void; onView: (view: SessionView) => void }) {
   const fonts = useHomeFonts();
+  const t = useT();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDate, setFilterDate] = useState<string>();
@@ -138,9 +141,9 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
   const confirmClose = (session: StaffOpdSession) => {
     if (lock.current || session.status !== 'OPEN') return;
     lock.current = true;
-    Alert.alert('Close bookings?', `Stop new bookings for ${session.serviceName ?? 'this session'} on ${sessionDayLabel(session.sessionDate)}? Existing bookings will remain valid.`, [
-      { text: 'Cancel', style: 'cancel', onPress: release },
-      { text: 'Close bookings', style: 'destructive', onPress: () => {
+    Alert.alert(t('Close bookings?'), t('Stop new bookings for {service} on {day}? Existing bookings will remain valid.', { service: session.serviceName ?? t('this session'), day: sessionDayLabel(session.sessionDate) }), [
+      { text: t('Cancel'), style: 'cancel', onPress: release },
+      { text: t('Close bookings'), style: 'destructive', onPress: () => {
         if (!alive.current) { release(); return; }
         setBusy(session._id); setFeedback('');
         controller.current = new AbortController();
@@ -176,7 +179,7 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
     <ScrollView ref={scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.teal} />}>
       <View style={styles.header}>
-        <Text accessibilityRole="header" style={[styles.title, styles.grow, { fontFamily: fonts.display }]}>OPD sessions</Text>
+        <Text accessibilityRole="header" style={[styles.title, styles.grow, { fontFamily: fonts.display }]}>{t('OPD sessions')}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Search sessions"
           accessibilityState={{ expanded: searchOpen }} onPress={() => setSearchOpen(true)} style={styles.searchButton}>
           <InterfaceIcon name="Search" color={colors.tealDark} />
@@ -186,7 +189,7 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
       {searchOpen ? <View style={styles.searchRow}>
         <View style={styles.searchField}>
           <TextInput accessibilityLabel="Search sessions by session name, doctor, or clinic team"
-            placeholder="Search by session or doctor" autoFocus
+            placeholder={t('Search by session or doctor')} autoFocus
             value={searchQuery} onChangeText={setSearchQuery} autoCorrect={false} autoCapitalize="none"
             placeholderTextColor={colors.inkSoft} style={[styles.searchInput, bodyFont]} />
           {view === 'upcoming' ? <Pressable accessibilityRole="button" accessibilityLabel="Filter sessions by date"
@@ -199,10 +202,10 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
             <Ionicons name="close" size={22} color={colors.tealDark} accessible={false} />
           </Pressable>
         </View>
-        {searchQuery ? <ActionButton label="Clear search" variant="outline" onPress={() => setSearchQuery('')} /> : null}
+        {searchQuery ? <ActionButton label={t('Clear search')} variant="outline" onPress={() => setSearchQuery('')} /> : null}
         {activeFilterDate ? <View style={styles.searchRow}>
-          <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>Date: {sessionDayLabel(activeFilterDate)}</Text>
-          <ActionButton label="Clear date filter" variant="outline" onPress={() => setFilterDate(undefined)} />
+          <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>{t('Date: {day}', { day: sessionDayLabel(activeFilterDate) })}</Text>
+          <ActionButton label={t('Clear date filter')} variant="outline" onPress={() => setFilterDate(undefined)} />
         </View> : null}
       </View> : null}
       {Platform.OS !== 'ios' ? calendar : null}
@@ -210,8 +213,8 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
         <View style={styles.pickerOverlay}><View style={styles.pickerPanel}>
           {calendar}
           <View style={styles.actions}>
-            <ActionButton label="Cancel date selection" variant="outline" onPress={() => setPickerDate(null)} />
-            <ActionButton label="Apply date filter" onPress={() => acceptDate(pickerDate)} />
+            <ActionButton label={t('Cancel date selection')} variant="outline" onPress={() => setPickerDate(null)} />
+            <ActionButton label={t('Apply date filter')} onPress={() => acceptDate(pickerDate)} />
           </View>
         </View></View>
       </Modal> : null}
@@ -219,21 +222,21 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
         <Pressable key={option} accessibilityRole="tab" accessibilityLabel={option === 'today' ? 'Today' : 'Upcoming'}
           accessibilityState={{ selected: !date && view === option, disabled: !!busy }} disabled={!!busy}
           onPress={() => onView(option)} style={[styles.tab, !date && view === option && styles.selected]}>
-          <Text style={[styles.tabText, { fontFamily: fonts.semibold }]}>{option === 'today' ? 'Today' : 'Upcoming'}</Text>
+          <Text style={[styles.tabText, { fontFamily: fonts.semibold }]}>{t(option === 'today' ? 'Today' : 'Upcoming')}</Text>
         </Pressable>)}</View>
-      <Text style={[styles.sub, bodyFont]}>Session times are shown in Sri Lanka time.</Text>
-      {date ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>Sessions for {sessionDayLabel(date)}</Text> : null}
-      {feedback ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>{feedback}</Text> : null}
+      <Text style={[styles.sub, bodyFont]}>{t('Session times are shown in Sri Lanka time.')}</Text>
+      {date ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>{t('Sessions for {day}', { day: sessionDayLabel(date) })}</Text> : null}
+      {feedback ? <Text accessibilityLiveRegion="polite" style={[styles.note, bodyFont]}>{t(feedback)}</Text> : null}
       {loading && !data ? <View style={styles.state}><ActivityIndicator color={colors.teal} />
-        <Text style={[styles.sub, bodyFont]}>Loading sessions…</Text></View> : null}
-      {error ? <View style={styles.state}><Text accessibilityRole="alert" style={[styles.sub, bodyFont]}>{error}</Text>
-        <ActionButton label="Try again" onPress={reload} /></View> : null}
+        <Text style={[styles.sub, bodyFont]}>{t('Loading sessions…')}</Text></View> : null}
+      {error ? <View style={styles.state}><Text accessibilityRole="alert" style={[styles.sub, bodyFont]}>{t(error)}</Text>
+        <ActionButton label={t('Try again')} onPress={reload} /></View> : null}
       {!loading && !error && data && (query || activeFilterDate) && visibleSessions.length === 0 ? <View style={styles.state}>
-        <Text accessibilityLiveRegion="polite" style={[styles.heading, { fontFamily: fonts.semibold }]}>No sessions match your search.</Text>
+        <Text accessibilityLiveRegion="polite" style={[styles.heading, { fontFamily: fonts.semibold }]}>{t('No sessions match your search.')}</Text>
       </View> : null}
       {!loading && !error && !query && !activeFilterDate && data && visibleSessions.length === 0 ? <View style={styles.state}>
-        <Text style={[styles.heading, { fontFamily: fonts.semibold }]}>{date ? 'No sessions on this date' : view === 'today' ? 'No sessions today' : 'No upcoming sessions'}</Text>
-        <Text style={[styles.sub, bodyFont]}>Add a session or pull down to refresh.</Text></View> : null}
+        <Text style={[styles.heading, { fontFamily: fonts.semibold }]}>{t(date ? 'No sessions on this date' : view === 'today' ? 'No sessions today' : 'No upcoming sessions')}</Text>
+        <Text style={[styles.sub, bodyFont]}>{t('Add a session or pull down to refresh.')}</Text></View> : null}
       {visibleSessions.map(session => <View key={session._id} style={[styles.card, session._id === targetSessionId && styles.targetCard]}
         onLayout={session._id === targetSessionId ? event => {
           if (!revealed.current && scroll.current) {
@@ -241,45 +244,45 @@ function SessionsPage({ accessToken, hospital, onSessionExpired, onAdd, onEdit, 
             revealed.current = true;
           }
         } : undefined}>
-        {session._id === targetSessionId ? <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>Selected session</Text> : null}
-        <View style={styles.cardTop}><Text style={[styles.heading, styles.grow, { fontFamily: fonts.semibold }]}>{session.serviceName ?? 'Service unavailable'}</Text>
+        {session._id === targetSessionId ? <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>{t('Selected session')}</Text> : null}
+        <View style={styles.cardTop}><Text style={[styles.heading, styles.grow, { fontFamily: fonts.semibold }]}>{session.serviceName ?? t('Service unavailable')}</Text>
           <View style={[styles.badge, session.status === 'OPEN' ? styles.openBadge : session.status === 'RUNNING' ? styles.tealBadge : styles.neutralBadge]}>
-            <Text style={[styles.status, bodyFont, session.status === 'OPEN' && styles.openStatus]}>{session.status === 'CLOSED' ? 'Bookings closed' : session.status?.toLowerCase().replace(/^./, letter => letter.toUpperCase()) ?? 'Status unavailable'}</Text>
+            <Text style={[styles.status, bodyFont, session.status === 'OPEN' && styles.openStatus]}>{t(session.status === 'CLOSED' ? 'Bookings closed' : session.status?.toLowerCase().replace(/^./, letter => letter.toUpperCase()) ?? 'Status unavailable')}</Text>
           </View></View>
         <Text style={[styles.sub, bodyFont]}>{sessionDayLabel(session.sessionDate)} · {session.startTime ?? '—'} – {session.endTime ?? '—'}</Text>
-        <Text style={[styles.sub, bodyFont]}>{session.doctorOrTeam ?? 'Team unavailable'}</Text>
-        <View style={styles.metrics}><Text style={[styles.booked, bodyFont]}>{session.bookedCount ?? '—'} of {session.capacity ?? '—'} booked</Text>
+        <Text style={[styles.sub, bodyFont]}>{session.doctorOrTeam ?? t('Team unavailable')}</Text>
+        <View style={styles.metrics}><Text style={[styles.booked, bodyFont]}>{t('{booked} of {capacity} booked', { booked: session.bookedCount, capacity: session.capacity })}</Text>
           {waiting[session._id] ? <View style={styles.waitingBadge} accessible
             accessibilityLabel={`${session.serviceName ?? 'OPD session'}: ${waiting[session._id].count !== undefined
               ? `${waiting[session._id].count} ${waiting[session._id].count === 1 ? 'patient' : 'patients'} waiting${waiting[session._id].state === 'stale' ? ', last updated' : ''}`
               : waiting[session._id].state === 'loading' ? 'Loading waiting count' : 'Waiting count unavailable'}`}>
             <Text style={[styles.booked, bodyFont]}>{waiting[session._id].count !== undefined
-              ? `${waiting[session._id].count} waiting`
-              : waiting[session._id].state === 'loading' ? 'Loading waiting count…' : 'Waiting count unavailable'}</Text>
-            {waiting[session._id].state === 'stale' ? <Text style={[styles.sub, bodyFont]}>Last updated</Text> : null}
+              ? t('{count} waiting', { count: waiting[session._id].count })
+              : t(waiting[session._id].state === 'loading' ? 'Loading waiting count…' : 'Waiting count unavailable')}</Text>
+            {waiting[session._id].state === 'stale' ? <Text style={[styles.sub, bodyFont]}>{t('Last updated')}</Text> : null}
           </View> : null}
           {waiting[session._id] ? <View style={styles.waitingBadge} accessible
             accessibilityLabel={`${session.serviceName ?? 'OPD session'}: ${waiting[session._id].priorityCount !== undefined
               ? `${waiting[session._id].priorityCount} priority patients waiting${waiting[session._id].state === 'stale' ? ', last updated' : ''}`
               : waiting[session._id].state === 'loading' ? 'Loading priority count' : 'Priority count unavailable'}`}>
             <Text style={[styles.booked, bodyFont]}>{waiting[session._id].priorityCount !== undefined
-              ? `${waiting[session._id].priorityCount} priority waiting`
-              : waiting[session._id].state === 'loading' ? 'Loading priority count…' : 'Priority count unavailable'}</Text>
-            {waiting[session._id].state === 'stale' ? <Text style={[styles.sub, bodyFont]}>Last updated</Text> : null}
+              ? t('{count} priority waiting', { count: waiting[session._id].priorityCount })
+              : t(waiting[session._id].state === 'loading' ? 'Loading priority count…' : 'Priority count unavailable')}</Text>
+            {waiting[session._id].state === 'stale' ? <Text style={[styles.sub, bodyFont]}>{t('Last updated')}</Text> : null}
           </View> : null}
         </View>
         <View style={styles.actions}>
-          {!sessionHasEnded(session, editTime) ? <ActionButton label="Edit session" variant="secondary" disabled={!!busy || loading} busy={busy === session._id}
+          {!sessionHasEnded(session, editTime) ? <ActionButton label={t('Edit session')} variant="secondary" disabled={!!busy || loading} busy={busy === session._id}
             accessibilityHint={`Edit ${session.serviceName ?? 'OPD session'} on ${sessionDayLabel(session.sessionDate)}`} onPress={() => void edit(session)} /> : null}
-          {session.status === 'OPEN' ? <ActionButton label="Close bookings" variant="outline" disabled={!!busy || loading}
+          {session.status === 'OPEN' ? <ActionButton label={t('Close bookings')} variant="outline" disabled={!!busy || loading}
             accessibilityHint={`Stop new bookings for ${session.serviceName ?? 'OPD session'}`} onPress={() => confirmClose(session)} /> : null}
         </View>
       </View>)}
       {data && (page > 1 || data.hasMore) ? <View style={styles.actions}>
-        <ActionButton label="Previous page" variant="outline" disabled={page === 1 || !!busy || loading} onPress={() => onPage(page - 1)} />
-        <ActionButton label="Next page" variant="outline" disabled={!data.hasMore || !!busy || loading} onPress={() => onPage(page + 1)} />
+        <ActionButton label={t('Previous page')} variant="outline" disabled={page === 1 || !!busy || loading} onPress={() => onPage(page - 1)} />
+        <ActionButton label={t('Next page')} variant="outline" disabled={!data.hasMore || !!busy || loading} onPress={() => onPage(page + 1)} />
       </View> : null}
-      <ActionButton label="Add a session" disabled={!!busy} onPress={onAdd} />
+      <ActionButton label={t('Add a session')} disabled={!!busy} onPress={onAdd} />
     </ScrollView>
   </SafeAreaView>;
 }

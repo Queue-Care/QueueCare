@@ -149,6 +149,10 @@ function publicUser(user) {
     staffId: user.staffId,
     hospital: user.hospital,
     role: user.role,
+    // Lets the staff screens open in the saved language straight after sign-in.
+    preferredLanguage: ['en', 'si', 'ta'].includes(user.preferredLanguage)
+      ? user.preferredLanguage
+      : 'en',
   };
 }
 

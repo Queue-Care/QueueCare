@@ -3,9 +3,9 @@ import {
   AccessibilityInfo,
   AppState,
   Platform,
-  Text,
   type TextProps,
 } from 'react-native';
+import { Text } from '../i18n/g_Text';
 import { useFocusEffect } from '@react-navigation/native';
 
 // Android uses a native live region. VoiceOver needs an explicit announcement.

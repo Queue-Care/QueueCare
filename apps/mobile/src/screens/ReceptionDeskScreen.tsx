@@ -23,6 +23,7 @@ import {
 } from '../features/staff/g_staffDashboard';
 import { formatTime, initials } from '../features/priority/g_priorityRequests';
 import type { StaffSummary } from '../navigation/types';
+import { useT } from '../i18n/g_language';
 
 type Props = {
   accessToken?: string;
@@ -64,6 +65,7 @@ export function ReceptionDeskScreen({
   onOpenProfile,
 }: Props) {
   const homeFonts = useHomeFonts();
+  const t = useT();
   const navigation = useContext(NavigationContext);
   const [greetingTime, setGreetingTime] = useState(() => new Date());
   useEffect(() => {
@@ -156,30 +158,30 @@ export function ReceptionDeskScreen({
 
       <ScrollView contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={colors.teal} />}>
-        <Text style={[styles.greet, bodyFont]}>{name ? `${greeting(greetingTime)} ${name}` : greeting(greetingTime).replace(/,$/, '')}</Text>
+        <Text style={[styles.greet, bodyFont]}>{name ? `${t(greeting(greetingTime))} ${name}` : t(greeting(greetingTime)).replace(/,$/, '')}</Text>
         <Text accessibilityRole="header" style={[styles.title, displayFont]}>
-          Reception desk
+          {t('Reception desk')}
         </Text>
         {hospital ? <Text style={[styles.sub, bodyFont]}>{hospital}</Text> : null}
 
         {(error || refreshError) ? (
           <View style={styles.noteWarn}>
-            <Text accessibilityLiveRegion="polite" style={[styles.noteWarnText, bodyFont]}>{error ?? refreshError}</Text>
-            {data ? <Text style={[styles.noteWarnText, bodyFont]}>Showing last loaded dashboard data.</Text> : null}
+            <Text accessibilityLiveRegion="polite" style={[styles.noteWarnText, bodyFont]}>{t(error ?? refreshError ?? '')}</Text>
+            {data ? <Text style={[styles.noteWarnText, bodyFont]}>{t('Showing last loaded dashboard data.')}</Text> : null}
             <TouchableOpacity
               style={styles.linkButton}
               accessibilityRole="button"
               accessibilityLabel="Try again"
               onPress={reload}
             >
-              <Text style={[styles.link, semiboldFont]}>Try again</Text>
+              <Text style={[styles.link, semiboldFont]}>{t('Try again')}</Text>
             </TouchableOpacity>
           </View>
         ) : null}
         {loading && !data ? (
           <View style={styles.loader}>
             <ActivityIndicator color={colors.teal} />
-            <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>Loading dashboard…</Text>
+            <Text accessibilityLiveRegion="polite" style={[styles.sub, bodyFont]}>{t('Loading dashboard…')}</Text>
           </View>
         ) : null}
 
@@ -189,11 +191,11 @@ export function ReceptionDeskScreen({
               <TouchableOpacity style={styles.kpi} accessibilityRole="button"
                 accessibilityLabel="View today's OPD sessions" disabled={loading}
                 accessibilityState={{ disabled: loading }} onPress={onOpenSessions}>
-                <Text style={[styles.kpiLabel, semiboldFont]}>Sessions today</Text>
+                <Text style={[styles.kpiLabel, semiboldFont]}>{t('Sessions today')}</Text>
                 <Text style={[styles.kpiNumber, displayFont]}>{data.sessionsToday}</Text>
               </TouchableOpacity>
               <View style={styles.kpi}>
-                <Text style={[styles.kpiLabel, semiboldFont]}>Priority waiting</Text>
+                <Text style={[styles.kpiLabel, semiboldFont]}>{t('Priority waiting')}</Text>
                 <Text style={[styles.kpiNumber, styles.kpiAlert, displayFont]}>
                   {data.priorityWaiting}
                 </Text>
@@ -204,7 +206,7 @@ export function ReceptionDeskScreen({
 
         <View style={styles.groupRow}>
           <Text accessibilityRole="header" style={[styles.group, semiboldFont]}>
-            {"Today's sessions"}
+            {t("Today's sessions")}
           </Text>
           <TouchableOpacity
             style={styles.linkButton}
@@ -214,7 +216,7 @@ export function ReceptionDeskScreen({
             accessibilityState={{ disabled: loading }}
             onPress={onOpenSessions}
           >
-            <Text style={[styles.link, semiboldFont]}>View all</Text>
+            <Text style={[styles.link, semiboldFont]}>{t('View all')}</Text>
           </TouchableOpacity>
         </View>
         {!data ? null : data.sessions.length ? (
@@ -235,14 +237,17 @@ export function ReceptionDeskScreen({
                   <View style={styles.grow}>
                     <Text style={[styles.rowName, semiboldFont]}>{session.serviceName}</Text>
                     <Text style={[styles.rowSub, bodyFont]}>
-                      {formatTime(session.startsAt)} · {session.bookedCount} of{' '}
-                      {session.capacity} booked
+                      {formatTime(session.startsAt)} ·{' '}
+                      {t('{booked} of {capacity} booked', {
+                        booked: session.bookedCount,
+                        capacity: session.capacity,
+                      })}
                     </Text>
                   </View>
                   <View style={[styles.badge, badge.badge]}>
                     <View style={[styles.badgeDot, badge.dot]} />
                     <Text style={[styles.badgeText, badge.text, semiboldFont]}>
-                      {session.label}
+                      {t(session.label)}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -252,7 +257,7 @@ export function ReceptionDeskScreen({
         ) : (
           <View style={styles.empty}>
             <Text style={[styles.rowSub, bodyFont]}>
-              No OPD sessions are scheduled for today.
+              {t('No OPD sessions are scheduled for today.')}
             </Text>
           </View>
         )}
@@ -267,8 +272,13 @@ export function ReceptionDeskScreen({
         >
           <Text style={[waiting ? styles.btnUrgentText : styles.btnOutlineText, semiboldFont]}>
             {waiting
-              ? `Review ${waiting} priority request${waiting === 1 ? '' : 's'}`
-              : 'View priority requests'}
+              ? t(
+                  waiting === 1
+                    ? 'Review {count} priority request'
+                    : 'Review {count} priority requests',
+                  { count: waiting },
+                )
+              : t('View priority requests')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

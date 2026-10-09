@@ -8,9 +8,9 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '../i18n/g_Text';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { bookingMessages } from '../features/booking/createBooking';

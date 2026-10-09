@@ -12,12 +12,14 @@ import { emptySessionForm, friendlySessionDate, friendlySessionTime, pickerStrin
 import { colors, radii, surfaces } from '../theme/tokens';
 import { useHomeFonts } from '../theme/homeFonts';
 import { endedSessionMessage, sessionEndTimestamp, useSessionEditClock } from '../features/sessions/k_sessionEditing';
+import { useT } from '../i18n/g_language';
 
 type Props = { accessToken?: string; sessionId?: string; onCancel: () => void;
   onSaved: (session: StaffOpdSession) => void; onSessionExpired?: () => void };
 
 export function AddEditSessionScreen({ accessToken, sessionId, onCancel, onSaved, onSessionExpired }: Props) {
   const fonts = useHomeFonts();
+  const t = useT();
   const navigation = useContext(NavigationContext);
   useLayoutEffect(() => {
     navigation?.setOptions({ headerTitleStyle: {
@@ -143,9 +145,9 @@ export function AddEditSessionScreen({ accessToken, sessionId, onCancel, onSaved
         accessibilityHint="Required"
         accessibilityValue={{ text: display }} accessibilityState={{ disabled: saving, expanded: picker?.field === key }}
         disabled={saving} onPress={() => openPicker(key)} style={[styles.input, styles.control, visibleErrors[key] && styles.invalid]}>
-        <Text style={[styles.value, styles.controlValue, bodyFont]}>{display}</Text><Text accessible={false}>{'\u2304'}</Text>
+        <Text style={[styles.value, styles.controlValue, bodyFont]}>{t(display)}</Text><Text accessible={false}>{'\u2304'}</Text>
       </Pressable>
-      {visibleErrors[key] ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, bodyFont]}>{visibleErrors[key]}</Text> : null}
+      {visibleErrors[key] ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, bodyFont]}>{t(visibleErrors[key])}</Text> : null}
     </View>;
   };
   const nativePicker = picker ? <DateTimePicker value={picker.value} mode={picker.field === 'sessionDate' ? 'date' : 'time'}
@@ -161,57 +163,57 @@ export function AddEditSessionScreen({ accessToken, sessionId, onCancel, onSaved
         onChangeText={value => change(key, value)} placeholder={placeholder} placeholderTextColor={colors.inkSoft}
         keyboardType={key === 'capacity' ? 'number-pad' : 'default'} autoCapitalize="none" autoCorrect={false} />
       {visibleErrors[key] ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite"
-        style={[styles.error, bodyFont]}>{visibleErrors[key]}</Text> : null}
+        style={[styles.error, bodyFont]}>{t(visibleErrors[key])}</Text> : null}
     </View>;
   return <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
-    <SessionToast message={connectionToast} kind="error" onDismiss={dismissConnectionToast} />
+    <SessionToast message={connectionToast && t(connectionToast)} kind="error" onDismiss={dismissConnectionToast} />
     <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.sub, bodyFont]}>{sessionId ? 'Update the session details. Existing bookings remain in place.' : 'Bookings open to patients as soon as you save.'}</Text>
-        {loading ? <View style={styles.field}><ActivityIndicator color={colors.teal} /><Text style={[styles.sub, bodyFont]}>Loading session details…</Text></View> : null}
-        {loadError ? <View style={styles.field}><Text accessibilityRole="alert" style={[styles.error, bodyFont]}>{loadError}</Text>
-          <ActionButton label="Try again" onPress={() => { setLoading(true); setLoadError(''); setVersion(value => value + 1); }} /></View> : null}
+        <Text style={[styles.sub, bodyFont]}>{t(sessionId ? 'Update the session details. Existing bookings remain in place.' : 'Bookings open to patients as soon as you save.')}</Text>
+        {loading ? <View style={styles.field}><ActivityIndicator color={colors.teal} /><Text style={[styles.sub, bodyFont]}>{t('Loading session details…')}</Text></View> : null}
+        {loadError ? <View style={styles.field}><Text accessibilityRole="alert" style={[styles.error, bodyFont]}>{t(loadError)}</Text>
+          <ActionButton label={t('Try again')} onPress={() => { setLoading(true); setLoadError(''); setVersion(value => value + 1); }} /></View> : null}
         {!loading && !loadError ? <>
-          <View style={styles.field}><Text style={[styles.label, { fontFamily: fonts.semibold }]}>OPD service</Text>
+          <View style={styles.field}><Text style={[styles.label, { fontFamily: fonts.semibold }]}>{t('OPD service')}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Select OPD service" accessibilityHint="Required" accessibilityState={{ disabled: saving || !services.length, expanded: servicePicker }}
               disabled={saving || !services.length} onPress={() => setServicePicker(true)} style={[styles.input, styles.control, visibleErrors.serviceId && styles.invalid]}>
-              <Text style={[styles.value, styles.controlValue, bodyFont]}>{services.find(service => service.id === form.serviceId)?.name ?? 'Select service'}</Text><Text accessible={false}>{'\u2304'}</Text>
+              <Text style={[styles.value, styles.controlValue, bodyFont]}>{services.find(service => service.id === form.serviceId)?.name ?? t('Select service')}</Text><Text accessible={false}>{'\u2304'}</Text>
             </Pressable>
-            {!services.length ? <Text style={[styles.error, bodyFont]}>No active services are available. Ask your hospital administrator to set up a service.</Text> : null}
-            {form.serviceId && !services.some(service => service.id === form.serviceId) ? <Text style={[styles.error, bodyFont]}>The saved service is unavailable. Select an active service.</Text> : null}
-            {visibleErrors.serviceId ? <Text accessibilityRole="alert" style={[styles.error, bodyFont]}>{visibleErrors.serviceId}</Text> : null}
+            {!services.length ? <Text style={[styles.error, bodyFont]}>{t('No active services are available. Ask your hospital administrator to set up a service.')}</Text> : null}
+            {form.serviceId && !services.some(service => service.id === form.serviceId) ? <Text style={[styles.error, bodyFont]}>{t('The saved service is unavailable. Select an active service.')}</Text> : null}
+            {visibleErrors.serviceId ? <Text accessibilityRole="alert" style={[styles.error, bodyFont]}>{t(visibleErrors.serviceId)}</Text> : null}
           </View>
-          {pickerControl('sessionDate', 'Date', 'Select session date')}
+          {pickerControl('sessionDate', t('Date'), 'Select session date')}
           <View style={styles.timeRow}>
-            {pickerControl('startTime', 'Starts', 'Select session start time')}
-            {pickerControl('endTime', 'Ends', 'Select session end time')}
+            {pickerControl('startTime', t('Starts'), 'Select session start time')}
+            {pickerControl('endTime', t('Ends'), 'Select session end time')}
           </View>
-          {field('capacity', 'Patient capacity', 'Number of patients')}
-          <Text style={[styles.sub, bodyFont]}>Priority requests are admitted within this capacity.</Text>
-          {field('doctorOrTeam', 'Doctor or clinic team', 'Doctor or clinic team')}
+          {field('capacity', t('Patient capacity'), t('Number of patients'))}
+          <Text style={[styles.sub, bodyFont]}>{t('Priority requests are admitted within this capacity.')}</Text>
+          {field('doctorOrTeam', t('Doctor or clinic team'), t('Doctor or clinic team'))}
           <View style={styles.note}><Text accessible={false} style={styles.value}>{'\u24d8'}</Text>
-            <Text style={[styles.noteText, bodyFont]}>Only authorised staff can create or edit sessions. Changes are recorded against your staff ID.</Text></View>
-          {ended || message ? <Text accessibilityRole="alert" style={[styles.error, bodyFont]}>{ended ? endedSessionMessage : message}</Text> : null}
-          <ActionButton label={saving ? 'Saving session…' : sessionId ? 'Save changes' : 'Save session'} busy={saving}
+            <Text style={[styles.noteText, bodyFont]}>{t('Only authorised staff can create or edit sessions. Changes are recorded against your staff ID.')}</Text></View>
+          {ended || message ? <Text accessibilityRole="alert" style={[styles.error, bodyFont]}>{t(ended ? endedSessionMessage : message)}</Text> : null}
+          <ActionButton label={t(saving ? 'Saving session…' : sessionId ? 'Save changes' : 'Save session')} busy={saving}
             disabled={saving || ended} onPress={() => void save()} />
         </> : null}
-        <ActionButton label="Cancel" variant="outline" disabled={saving} onPress={onCancel} />
+        <ActionButton label={t('Cancel')} variant="outline" disabled={saving} onPress={onCancel} />
       </ScrollView>
     </KeyboardAvoidingView>
     <Modal visible={servicePicker} transparent animationType="fade" onRequestClose={() => setServicePicker(false)}>
       <View style={styles.overlay}><View style={styles.dialog}>
-        <Text accessibilityRole="header" style={[styles.label, bodyFont]}>OPD service</Text>
+        <Text accessibilityRole="header" style={[styles.label, bodyFont]}>{t('OPD service')}</Text>
         <ScrollView>{services.map(service => <Pressable key={service.id} accessibilityRole="radio" accessibilityLabel={service.name}
           accessibilityState={{ checked: form.serviceId === service.id }} onPress={() => { change('serviceId', service.id); setServicePicker(false); }}
           style={[styles.input, form.serviceId === service.id && styles.selected]}><Text style={[styles.value, bodyFont]}>{service.name}</Text></Pressable>)}</ScrollView>
-        <ActionButton label="Cancel service selection" variant="outline" onPress={() => setServicePicker(false)} />
+        <ActionButton label={t('Cancel service selection')} variant="outline" onPress={() => setServicePicker(false)} />
       </View></View>
     </Modal>
     {Platform.OS === 'ios' ? <Modal visible={!!picker} transparent animationType="fade" onRequestClose={() => setPicker(null)}>
       <View style={styles.overlay}><View style={styles.dialog}>
         {nativePicker}
-        <ActionButton label={picker?.field === 'sessionDate' ? 'Use date' : 'Use time'} onPress={() => { if (picker) acceptPicker(picker.value); }} />
-        <ActionButton label="Cancel picker" variant="outline" onPress={() => setPicker(null)} />
+        <ActionButton label={t(picker?.field === 'sessionDate' ? 'Use date' : 'Use time')} onPress={() => { if (picker) acceptPicker(picker.value); }} />
+        <ActionButton label={t('Cancel picker')} variant="outline" onPress={() => setPicker(null)} />
       </View></View>
     </Modal> : nativePicker}
   </SafeAreaView>;
