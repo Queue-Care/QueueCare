@@ -1,5 +1,7 @@
 # Government Hospital OPD Booking & Queue Management System
 
+New to the project? Read [QueueCare: complete guide from GitHub to a running app](RUN_PROJECT.md) for installation, environment configuration, phone/browser setup, troubleshooting, tests, and Android APK builds.
+
 > **Development Master Plan — React Native + Node.js**  
 > **Group:** WE_85  
 > **Course context:** IT3060 Human Computer Interaction, Year 3 Semester 2, 2026  
